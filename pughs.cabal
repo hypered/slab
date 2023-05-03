@@ -1,0 +1,49 @@
+cabal-version:      2.2
+name:               pughs
+version:            0.1.0.0
+category:           web
+
+common common-extensions
+  default-language: Haskell2010
+  default-extensions:
+    ImportQualifiedPost
+    LambdaCase
+    NoImplicitPrelude
+    OverloadedStrings
+    RecordWildCards
+    StrictData
+    TypeApplications
+    TypeOperators
+
+common common-options
+  default-language: Haskell2010
+  ghc-options:
+    -Wall
+    -Wmissing-export-lists
+    -fno-warn-unused-do-bind
+    +RTS -A256m -n4m -qg -RTS
+
+-- Generating version bounds can be done with
+--     nix-shell --run 'cabal freeze'
+common common-dependencies
+  build-depends:
+      base-noprelude >=4.7 && <5
+    , optparse-applicative
+    , protolude
+
+library
+  import: common-extensions, common-options, common-dependencies
+  hs-source-dirs: src
+  build-depends:
+      blaze-html
+    , blaze-markup
+    , megaparsec
+
+executable pughs
+  import: common-extensions, common-options, common-dependencies
+  main-is: pughs.hs
+  hs-source-dirs: bin
+  build-depends:
+    pughs
+  ghc-options:
+    -threaded
