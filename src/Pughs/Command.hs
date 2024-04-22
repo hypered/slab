@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+
 module Pughs.Command where
 
 import Options.Applicative ((<**>))
@@ -5,7 +7,7 @@ import Options.Applicative qualified as A
 
 --------------------------------------------------------------------------------
 data Command
-  = Render
+  = Render FilePath
 
 --------------------------------------------------------------------------------
 parserInfo :: A.ParserInfo Command
@@ -30,4 +32,9 @@ parser =
 
 --------------------------------------------------------------------------------
 parserRender :: A.Parser Command
-parserRender = pure Render
+parserRender = do
+  path <-
+    A.argument
+      A.str
+      (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to render.")
+  pure $ Render path

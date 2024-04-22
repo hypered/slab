@@ -52,3 +52,23 @@ executable pughs
     pughs
   ghc-options:
     -threaded
+
+test-suite pughs-examples
+  import: common-extensions, common-options, common-dependencies
+  build-depends:
+    , hspec
+    , pughs
+    , filepath
+    , Glob
+    , lens
+    , pretty-simple
+    , QuickCheck
+    , tasty
+    , tasty-silver
+    , text
+  other-modules:
+    Pughs.Runner
+  type: exitcode-stdio-1.0
+  main-is: run-examples.hs
+  hs-source-dirs:
+      tests

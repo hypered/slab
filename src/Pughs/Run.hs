@@ -11,10 +11,15 @@ import Text.Megaparsec hiding (parse)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
-run Command.Render = do
-  pugContent <- T.readFile "example.pug"
+run (Command.Render path) = do
+  mrenderedHtml <- render path
+  either T.putStrLn T.putStrLn mrenderedHtml
+
+render :: FilePath -> IO (Either Text Text)
+render path = do
+  pugContent <- T.readFile path
   let parsedHtml = parse pugContent
-  either T.putStrLn putStrLn $ fmap Render.renderHtmls parsedHtml
+  pure $ fmap Render.renderHtmls parsedHtml
 
 --------------------------------------------------------------------------------
 parse :: Text -> Either Text [H.Html]
