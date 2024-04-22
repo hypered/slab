@@ -9,17 +9,22 @@ import Data.Text (Text)
 import Data.Void (Void)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Options.Applicative ((<**>))
+import Options.Applicative qualified as A
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Html.Renderer.Pretty (renderHtml)
 import Text.Megaparsec hiding (parse)
 import Text.Megaparsec.Char
-import Text.Megaparsec.Char.Lexer (indentBlock, nonIndented, IndentOpt(..))
 import qualified Text.Megaparsec.Char.Lexer as L
 
+--------------------------------------------------------------------------------
 main :: IO ()
-main = do
+main = A.execParser parserInfo >>= run
+
+run :: Command -> IO ()
+run Render = do
   pugContent <- T.readFile "example.pug"
   let parsedHtml = parse pugContent
   either T.putStrLn putStrLn $ fmap renderHtmls parsedHtml
@@ -27,6 +32,35 @@ main = do
 parse :: Text -> Either Text [H.Html]
 parse input =
   either (Left . T.pack . errorBundlePretty) (Right . pugNodesToHtml) $ parsePug input
+
+--------------------------------------------------------------------------------
+data Command
+  = Render
+
+--------------------------------------------------------------------------------
+parserInfo :: A.ParserInfo Command
+parserInfo =
+  A.info (parser <**> A.helper) $
+    A.fullDesc
+      <> A.header "pughs - parses the Pug syntax"
+      <> A.progDesc
+        "pughs tries to implement the Pug syntax."
+
+--------------------------------------------------------------------------------
+parser :: A.Parser Command
+parser =
+  A.subparser
+    ( A.command
+        "render"
+        ( A.info (parserRender <**> A.helper) $
+            A.progDesc
+              "Render a Pug template to HTML"
+        )
+    )
+
+--------------------------------------------------------------------------------
+parserRender :: A.Parser Command
+parserRender = pure Render
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
