@@ -38,6 +38,11 @@ library
       blaze-html
     , blaze-markup
     , megaparsec
+  exposed-modules:
+    Pughs.Command
+    Pughs.Parse
+    Pughs.Render
+    Pughs.Run
 
 executable pughs
   import: common-extensions, common-options, common-dependencies

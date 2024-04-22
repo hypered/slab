@@ -3,6 +3,7 @@
 
 ghc \
   --interactive \
+  -isrc \
   -XImportQualifiedPost \
   -Wall \
   bin/pughs.hs
