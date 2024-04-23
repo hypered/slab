@@ -12,8 +12,15 @@ import qualified Text.Megaparsec.Char.Lexer as L
 type Parser = Parsec Void Text
 
 data PugNode
-  = PugDiv [Attr] [PugNode]
+  = PugElem Elem [Attr] [PugNode]
   | PugText Text
+  deriving (Show, Eq)
+
+data Elem
+  = Div
+  | Span
+  | A
+  | P
   deriving (Show, Eq)
 
 data Attr = AttrList [(Text, Text)] | Class Text
@@ -37,19 +44,32 @@ pugElement = L.indentBlock scn p
 -- E.g. div, div.a, .a
 pugDiv :: Parser ([PugNode] -> PugNode)
 pugDiv =
-  pugDivWithAttrs <|> pugAttrs
+  pugElemWithAttrs <|> pugAttrs
 
 -- E.g. div, div.a, div()
-pugDivWithAttrs :: Parser ([PugNode] -> PugNode)
-pugDivWithAttrs = do
-  attrs <- lexeme (string "div" *> many (pugClass <|> pugAttrList)) <?> "div tag"
-  pure $ PugDiv attrs
+pugElemWithAttrs :: Parser ([PugNode] -> PugNode)
+pugElemWithAttrs = do
+  (name, attrs) <- lexeme
+    ( do
+        a <- pugElem
+        b <- many (pugClass <|> pugAttrList)
+        pure (a, b)
+    ) <?> "div tag"
+  pure $ PugElem name attrs
+
+pugElem :: Parser Elem
+pugElem = choice
+  [ string "div" *> pure Div
+  , string "span" *> pure Span
+  , string "a" *> pure A
+  , string "p" *> pure P
+  ]
 
 -- E.g. .a, ()
 pugAttrs :: Parser ([PugNode] -> PugNode)
 pugAttrs = do
   attrs <- lexeme (some (pugClass <|> pugAttrList)) <?> "attributes"
-  pure $ PugDiv attrs
+  pure $ PugElem Div attrs
 
 -- E.g. .a
 pugClass :: Parser Attr

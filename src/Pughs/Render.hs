@@ -16,8 +16,8 @@ pugNodesToHtml :: [Parse.PugNode] -> [H.Html]
 pugNodesToHtml = map pugNodeToHtml
 
 pugNodeToHtml :: Parse.PugNode -> H.Html
-pugNodeToHtml (Parse.PugDiv attrs children) =
-  mAddClass $ H.div $ mconcat $ map pugNodeToHtml children
+pugNodeToHtml (Parse.PugElem name attrs children) =
+  mAddClass $ pugElemToHtml name $ mconcat $ map pugNodeToHtml children
  where
   mAddClass :: H.Html -> H.Html
   mAddClass e =
@@ -37,3 +37,10 @@ pugNodeToHtml (Parse.PugDiv attrs children) =
   classNames' = T.intercalate " " classNames
 
 pugNodeToHtml (Parse.PugText s) = H.text s
+
+pugElemToHtml :: Parse.Elem -> Html -> Html
+pugElemToHtml = \case
+  Parse.Div -> H.div
+  Parse.Span -> H.span
+  Parse.A -> H.a
+  Parse.P -> H.p
