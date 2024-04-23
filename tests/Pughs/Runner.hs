@@ -35,7 +35,7 @@ mkGoldenTest path = do
  where
   action :: IO Text
   action = do
-    mrenderedHtml <- Run.render path
+    mrenderedHtml <- Run.renderPretty path
     either pure pure mrenderedHtml
 
   convert = id

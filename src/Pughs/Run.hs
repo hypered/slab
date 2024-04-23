@@ -13,8 +13,13 @@ import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
-run (Command.Render path) = do
-  mrenderedHtml <- render path
+run (Command.Render Command.RenderNormal path) = do
+  pugContent <- T.readFile path
+  let parsedHtml = parse pugContent
+      mrenderedHtml = fmap Render.renderHtmls parsedHtml
+  either T.putStrLn TL.putStrLn mrenderedHtml
+run (Command.Render Command.RenderPretty path) = do
+  mrenderedHtml <- renderPretty path
   either T.putStrLn T.putStrLn mrenderedHtml
 run (Command.Parse path) = do
   pugContent <- T.readFile path
@@ -22,11 +27,11 @@ run (Command.Parse path) = do
   TL.putStrLn $ pShowNoColor parsed
 
 --------------------------------------------------------------------------------
-render :: FilePath -> IO (Either Text Text)
-render path = do
+renderPretty :: FilePath -> IO (Either Text Text)
+renderPretty path = do
   pugContent <- T.readFile path
   let parsedHtml = parse pugContent
-  pure $ fmap Render.renderHtmls parsedHtml
+  pure $ fmap Render.prettyHtmls parsedHtml
 
 parse :: Text -> Either Text [H.Html]
 parse =

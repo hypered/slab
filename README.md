@@ -5,4 +5,5 @@ expressions. Another possibility would be to generate Haskell code (which use
 ```
 $ scripts/ghci.sh
 ghci> :main render examples/a.pug
+ghci> :main render --pretty examples/a.pug
 ```

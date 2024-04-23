@@ -7,8 +7,10 @@ import Options.Applicative qualified as A
 
 --------------------------------------------------------------------------------
 data Command
-  = Render FilePath
+  = Render RenderMode FilePath
   | Parse FilePath
+
+data RenderMode = RenderNormal | RenderPretty
 
 --------------------------------------------------------------------------------
 parserInfo :: A.ParserInfo Command
@@ -40,11 +42,14 @@ parser =
 --------------------------------------------------------------------------------
 parserRender :: A.Parser Command
 parserRender = do
+  mode <- A.flag RenderNormal RenderPretty
+    ( A.long "pretty" <> A.help "Use pretty-printing"
+    )
   path <-
     A.argument
       A.str
       (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to render.")
-  pure $ Render path
+  pure $ Render mode path
 
 parserParse :: A.Parser Command
 parserParse = do
