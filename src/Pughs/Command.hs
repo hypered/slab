@@ -8,6 +8,7 @@ import Options.Applicative qualified as A
 --------------------------------------------------------------------------------
 data Command
   = Render FilePath
+  | Parse FilePath
 
 --------------------------------------------------------------------------------
 parserInfo :: A.ParserInfo Command
@@ -28,6 +29,12 @@ parser =
             A.progDesc
               "Render a Pug template to HTML"
         )
+    <>  A.command
+        "parse"
+        ( A.info (parserParse <**> A.helper) $
+            A.progDesc
+              "Parse a Pug template to AST"
+        )
     )
 
 --------------------------------------------------------------------------------
@@ -38,3 +45,11 @@ parserRender = do
       A.str
       (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to render.")
   pure $ Render path
+
+parserParse :: A.Parser Command
+parserParse = do
+  path <-
+    A.argument
+      A.str
+      (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to parse.")
+  pure $ Parse path
