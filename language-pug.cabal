@@ -1,5 +1,5 @@
 cabal-version:      2.2
-name:               pughs
+name:               language-pug
 version:            0.1.0.0
 category:           web
 
@@ -50,7 +50,7 @@ executable pughs
   main-is: pughs.hs
   hs-source-dirs: bin
   build-depends:
-    pughs
+    language-pug
   ghc-options:
     -threaded
 
@@ -58,7 +58,7 @@ test-suite pughs-examples
   import: common-extensions, common-options, common-dependencies
   build-depends:
     , hspec
-    , pughs
+    , language-pug
     , filepath
     , Glob
     , lens

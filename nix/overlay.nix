@@ -17,7 +17,7 @@ let
   # from 2m40s to 1m40s.
   theseOverrides = self: superh: rec {
     mkDerivation = args: superh.mkDerivation (
-      if args.pname == "pughs"
+      if args.pname == "language-pug"
       then args // {
         doCheck = false;
         doHaddock = false;

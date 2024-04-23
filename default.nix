@@ -5,5 +5,5 @@ let
 in rec
   {
     # Build with nix-build -A <attr>
-    binaries = nixpkgs.haskellPackages.pughs;
+    binaries = nixpkgs.haskellPackages.language-pug;
   }

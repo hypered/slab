@@ -13,10 +13,10 @@ in {
   # The used directory should be the path of the directory relative to the root
   # of the project.
   pkgList = {
-    pughs = nix-filter {
+    language-pug = nix-filter {
       root = ../.;
       include = with nix-filter; [
-        "pughs.cabal"
+        "language-pug.cabal"
         (and "bin" (or_ (matchExt "hs") isDirectory))
         (and "src" (or_ (matchExt "hs") isDirectory))
         (and "tests" (or_ (matchExt "hs") isDirectory))
