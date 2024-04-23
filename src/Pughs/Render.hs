@@ -1,5 +1,6 @@
 module Pughs.Render where
 
+import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Pughs.Parse qualified as Parse
@@ -16,7 +17,7 @@ pugNodesToHtml :: [Parse.PugNode] -> [H.Html]
 pugNodesToHtml = map pugNodeToHtml
 
 pugNodeToHtml :: Parse.PugNode -> H.Html
-pugNodeToHtml (Parse.PugDiv classNames children) =
+pugNodeToHtml (Parse.PugDiv attrs children) =
   mAddClass $ H.div $ mconcat $ map pugNodeToHtml children
  where
   mAddClass :: H.Html -> H.Html
@@ -24,6 +25,7 @@ pugNodeToHtml (Parse.PugDiv classNames children) =
     if classNames == []
     then e
     else e ! A.class_ (H.toValue classNames')
+  classNames = mapMaybe (\case { Parse.Class c -> Just c ; _ -> Nothing }) attrs
   classNames' :: Text
   classNames' = T.intercalate " " classNames
 

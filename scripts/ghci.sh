@@ -9,6 +9,7 @@ ghc \
   -itests/ \
   -fhide-source-paths \
   -XImportQualifiedPost \
+  -XLambdaCase \
   -XOverloadedStrings \
   -Wall \
   -ghci-script scripts/ghci.conf
