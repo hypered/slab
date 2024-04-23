@@ -8,7 +8,6 @@ common common-extensions
   default-extensions:
     ImportQualifiedPost
     LambdaCase
-    NoImplicitPrelude
     OverloadedStrings
     RecordWildCards
     StrictData
@@ -27,7 +26,7 @@ common common-options
 --     nix-shell --run 'cabal freeze'
 common common-dependencies
   build-depends:
-      base-noprelude >=4.7 && <5
+      base >=4.7 && <5
     , optparse-applicative
     , protolude
 
@@ -38,6 +37,8 @@ library
       blaze-html
     , blaze-markup
     , megaparsec
+    , pretty-simple
+    , text
   exposed-modules:
     Pughs.Command
     Pughs.Parse

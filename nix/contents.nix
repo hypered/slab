@@ -13,7 +13,7 @@ in {
   # The used directory should be the path of the directory relative to the root
   # of the project.
   pkgList = {
-    catalog = nix-filter {
+    pughs = nix-filter {
       root = ../.;
       include = with nix-filter; [
         "pughs.cabal"
