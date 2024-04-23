@@ -43,7 +43,7 @@ pugNodeToHtml (Parse.PugElem name attrs children) =
   classNames' = T.intercalate " " classNames
 
 pugNodeToHtml (Parse.PugText _ s) | s == T.empty = mempty
-                                  | otherwise = H.text s
+                                  | otherwise = H.preEscapedText s -- TODO
 
 pugElemToHtml :: Parse.Elem -> Html -> Html
 pugElemToHtml = \case
@@ -56,3 +56,6 @@ pugElemToHtml = \case
   Parse.P -> H.p
   Parse.Ul -> H.ul
   Parse.Li -> H.li
+  Parse.Figure -> H.figure
+  Parse.Blockquote -> H.blockquote
+  Parse.Figcaption -> H.figcaption

@@ -26,6 +26,9 @@ data Elem
   | P
   | Ul
   | Li
+  | Figure
+  | Blockquote
+  | Figcaption
   deriving (Show, Eq)
 
 data Attr = AttrList [(Text, Text)] | Class Text
@@ -83,6 +86,9 @@ pugElem = choice
   , string "p" *> pure P
   , string "ul" *> pure Ul
   , string "li" *> pure Li
+  , string "figure" *> pure Figure
+  , string "blockquote" *> pure Blockquote
+  , string "figcaption" *> pure Figcaption
   ]
 
 -- E.g. .a, ()
