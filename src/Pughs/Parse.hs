@@ -20,8 +20,17 @@ pugElement :: Parser PugNode
 pugElement = L.indentBlock scn p
   where
     p = do
-      header <- pugClass
-      return (L.IndentMany Nothing (return . PugDiv header) pugElement)
+      header <- pugDiv
+      return (L.IndentMany Nothing (return . header) pugElement)
+
+pugDiv :: Parser ([PugNode] -> PugNode)
+pugDiv = do
+  pugDiv' <|> (PugDiv <$> pugClass)
+
+pugDiv' :: Parser ([PugNode] -> PugNode)
+pugDiv' = do
+  _ <- lexeme (string "div") <?> "div tag"
+  pure $ PugDiv ""
 
 pugClass :: Parser String
 pugClass = lexeme (char '.' *> some (alphaNumChar <|> char '-')) <?> "class name"

@@ -6,5 +6,6 @@ ghc \
   -isrc \
   -itests \
   -XImportQualifiedPost \
+  -XOverloadedStrings \
   -Wall \
   tests/run-examples.hs

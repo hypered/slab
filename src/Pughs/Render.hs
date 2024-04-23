@@ -17,4 +17,10 @@ pugNodesToHtml = map pugNodeToHtml
 
 pugNodeToHtml :: Parse.PugNode -> H.Html
 pugNodeToHtml (Parse.PugDiv className children) =
-  H.div ! A.class_ (H.toValue className) $ mconcat $ map pugNodeToHtml children
+  mAddClass $ H.div $ mconcat $ map pugNodeToHtml children
+ where
+  mAddClass :: H.Html -> H.Html
+  mAddClass e =
+    if className == ""
+    then e
+    else e ! A.class_ (H.toValue className)
