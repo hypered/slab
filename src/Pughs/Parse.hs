@@ -29,9 +29,11 @@ data Elem
   | Figure
   | Blockquote
   | Figcaption
+  | Audio
+  | Source
   deriving (Show, Eq)
 
-data Attr = AttrList [(Text, Text)] | Class Text
+data Attr = AttrList [(Text, Maybe Text)] | Class Text
   deriving (Show, Eq)
 
 -- Tracks the syntax used to enter the text.
@@ -82,6 +84,7 @@ pugElem = choice
   , string "div" *> pure Div
   , string "span" *> pure Span
   , string "h1" *> pure H1
+  , string "audio" *> pure Audio
   , string "a" *> pure A
   , string "p" *> pure P
   , string "ul" *> pure Ul
@@ -89,6 +92,7 @@ pugElem = choice
   , string "figure" *> pure Figure
   , string "blockquote" *> pure Blockquote
   , string "figcaption" *> pure Figcaption
+  , string "source" *> pure Source
   ]
 
 -- E.g. .a, ()
@@ -110,13 +114,15 @@ pugAttrList = (<?> "attribute") $ do
   _ <- string ")"
   pure $ AttrList pairs
 
-pugPair :: Parser (Text, Text)
+pugPair :: Parser (Text, Maybe Text)
 pugPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
-  _ <- string "="
-  b <- lexeme pugString
+  mb <- optional $ do
+    _ <- string "="
+    b <- lexeme pugString
+    pure b
   _ <- optional (lexeme $ string ",")
-  pure (a, b)
+  pure (a, mb)
 
 pugString :: Parser Text
 pugString = do

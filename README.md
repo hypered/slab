@@ -9,4 +9,6 @@ ghci> :main render --pretty examples/a.pug
 ```
 
 The test cases in `examples/cases/` come from the [original test
-suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases).
+suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases).  The
+expected HTML is not exactly the same: we pretty print it differently, and some
+tags are explicitely closed in Pug.js (e.g. `<source>` vs. `<source/>`.

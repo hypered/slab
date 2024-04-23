@@ -1,5 +1,6 @@
 module Pughs.Render where
 
+import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
@@ -23,7 +24,7 @@ pugNodesToHtml = map pugNodeToHtml
 
 pugNodeToHtml :: Parse.PugNode -> H.Html
 pugNodeToHtml (Parse.PugElem name attrs children) =
-  mAddClass $ pugElemToHtml name $ mconcat $ map pugNodeToHtml children
+  mAddAttr $ mAddClass $ pugElemToHtml name $ mconcat $ map pugNodeToHtml children
  where
   mAddClass :: H.Html -> H.Html
   mAddClass e =
@@ -34,13 +35,27 @@ pugNodeToHtml (Parse.PugElem name attrs children) =
     concatMap
       ( \case
           Parse.Class c -> [c]
-          Parse.AttrList pairs -> concatMap (f) pairs
+          Parse.AttrList pairs -> concatMap f pairs
       )
       attrs
-  f ("class", x) = [x]
+  f ("class", Just x) = [x]
   f _ = []
   classNames' :: Text
   classNames' = T.intercalate " " classNames
+
+  mAddAttr :: H.Html -> H.Html
+  mAddAttr =
+    flip (foldl (\e (a, b) -> e ! H.customAttribute (fromString a) (H.toValue b))) attrs'
+  attrs' =
+    concatMap
+      ( \case
+          Parse.Class _ -> []
+          Parse.AttrList pairs -> concatMap g pairs
+      )
+      attrs
+  g ("class", _) = []
+  g (a, Just b) = [(T.unpack a, b)]
+  g (a, Nothing) = [(T.unpack a, a)]
 
 pugNodeToHtml (Parse.PugText _ s) | s == T.empty = mempty
                                   | otherwise = H.preEscapedText s -- TODO
@@ -59,3 +74,5 @@ pugElemToHtml = \case
   Parse.Figure -> H.figure
   Parse.Blockquote -> H.blockquote
   Parse.Figcaption -> H.figcaption
+  Parse.Audio -> H.audio
+  Parse.Source -> const H.source
