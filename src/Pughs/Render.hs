@@ -47,7 +47,10 @@ pugNodeToHtml (Parse.PugText _ s) | s == T.empty = mempty
 
 pugElemToHtml :: Parse.Elem -> Html -> Html
 pugElemToHtml = \case
+  Parse.Html -> H.html
+  Parse.Body -> H.body
   Parse.Div -> H.div
   Parse.Span -> H.span
+  Parse.H1 -> H.h1
   Parse.A -> H.a
   Parse.P -> H.p

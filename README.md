@@ -7,3 +7,6 @@ $ scripts/ghci.sh
 ghci> :main render examples/a.pug
 ghci> :main render --pretty examples/a.pug
 ```
+
+The test cases in `examples/cases/` come from the [original test
+suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases).

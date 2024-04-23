@@ -15,7 +15,14 @@ runExamples :: IO ()
 runExamples = do
   -- List all examples, comparing them to their corresponding golden files.
   goldens <- listExamples "examples/" >>= mapM mkGoldenTest
-  defaultMain $ testGroup "Tests" goldens
+  -- Examples coming from
+  -- https://github.com/pugjs/pug/tree/master/packages/pug/test/cases.
+  cases <- listExamples "examples/cases/" >>= mapM mkGoldenTest
+  defaultMain $
+    testGroup "Test suite"
+      [ testGroup "Examples" goldens
+      , testGroup "Cases" cases
+      ]
 
 --------------------------------------------------------------------------------
 listExamples :: FilePath -> IO [FilePath]

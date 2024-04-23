@@ -17,8 +17,11 @@ data PugNode
   deriving (Show, Eq)
 
 data Elem
-  = Div
+  = Html
+  | Body
+  | Div
   | Span
+  | H1
   | A
   | P
   deriving (Show, Eq)
@@ -69,8 +72,11 @@ pugElemWithAttrs = do
 
 pugElem :: Parser Elem
 pugElem = choice
-  [ string "div" *> pure Div
+  [ string "html" *> pure Html
+  , string "body" *> pure Body
+  , string "div" *> pure Div
   , string "span" *> pure Span
+  , string "h1" *> pure H1
   , string "a" *> pure A
   , string "p" *> pure P
   ]
