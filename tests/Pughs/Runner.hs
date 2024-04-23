@@ -35,9 +35,9 @@ mkGoldenTest :: FilePath -> IO TestTree
 mkGoldenTest path = do
   -- `path` looks like @examples/a.pug@.
   -- `testName` looks like @a@.
-  -- `goldenPath` looks like @examples/a.golden@.
+  -- `goldenPath` looks like @examples/a.html@.
   let testName = takeBaseName path
-      goldenPath = replaceExtension path ".golden"
+      goldenPath = replaceExtension path ".html"
   pure $ Silver.goldenVsAction testName goldenPath action convert
  where
   action :: IO Text
