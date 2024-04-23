@@ -1,6 +1,5 @@
 module Pughs.Render where
 
-import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Pughs.Parse qualified as Parse
@@ -25,7 +24,15 @@ pugNodeToHtml (Parse.PugDiv attrs children) =
     if classNames == []
     then e
     else e ! A.class_ (H.toValue classNames')
-  classNames = mapMaybe (\case { Parse.Class c -> Just c ; _ -> Nothing }) attrs
+  classNames =
+    concatMap
+      ( \case
+          Parse.Class c -> [c]
+          Parse.AttrList pairs -> concatMap (f) pairs
+      )
+      attrs
+  f ("class", x) = [x]
+  f _ = []
   classNames' :: Text
   classNames' = T.intercalate " " classNames
 

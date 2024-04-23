@@ -56,12 +56,28 @@ pugClass :: Parser Attr
 pugClass = Class . T.pack <$>
   (char '.' *> some (alphaNumChar <|> char '-')) <?> "class name"
 
--- E.g. ()
+-- E.g. (), (class='a')
 pugAttrList :: Parser Attr
 pugAttrList = (<?> "attribute") $ do
   _ <- string "("
+  pairs <- many pugPair
   _ <- string ")"
-  pure $ AttrList []
+  pure $ AttrList pairs
+
+pugPair :: Parser (Text, Text)
+pugPair = do
+  a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
+  _ <- string "="
+  b <- lexeme pugString
+  _ <- optional (lexeme $ string ",")
+  pure (a, b)
+
+pugString :: Parser Text
+pugString = do
+  _ <- string "'"
+  s <- T.pack <$> (some (noneOf ("'\n" :: String))) <?> "string"
+  _ <- string "'"
+  pure s
 
 pugText :: Parser PugNode
 pugText = PugText . T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
