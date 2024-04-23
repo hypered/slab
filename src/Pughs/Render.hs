@@ -26,3 +26,5 @@ pugNodeToHtml (Parse.PugDiv classNames children) =
     else e ! A.class_ (H.toValue classNames')
   classNames' :: Text
   classNames' = T.intercalate " " classNames
+
+pugNodeToHtml (Parse.PugText s) = H.text s

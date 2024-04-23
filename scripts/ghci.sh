@@ -5,5 +5,6 @@ ghc \
   --interactive \
   -isrc \
   -XImportQualifiedPost \
+  -XOverloadedStrings \
   -Wall \
   bin/pughs.hs
