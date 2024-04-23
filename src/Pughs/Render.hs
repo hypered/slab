@@ -16,11 +16,13 @@ pugNodesToHtml :: [Parse.PugNode] -> [H.Html]
 pugNodesToHtml = map pugNodeToHtml
 
 pugNodeToHtml :: Parse.PugNode -> H.Html
-pugNodeToHtml (Parse.PugDiv className children) =
+pugNodeToHtml (Parse.PugDiv classNames children) =
   mAddClass $ H.div $ mconcat $ map pugNodeToHtml children
  where
   mAddClass :: H.Html -> H.Html
   mAddClass e =
-    if className == ""
+    if classNames == []
     then e
-    else e ! A.class_ (H.toValue className)
+    else e ! A.class_ (H.toValue classNames')
+  classNames' :: Text
+  classNames' = T.intercalate " " classNames
