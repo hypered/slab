@@ -54,3 +54,5 @@ pugElemToHtml = \case
   Parse.H1 -> H.h1
   Parse.A -> H.a
   Parse.P -> H.p
+  Parse.Ul -> H.ul
+  Parse.Li -> H.li

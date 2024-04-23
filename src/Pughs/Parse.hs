@@ -24,6 +24,8 @@ data Elem
   | H1
   | A
   | P
+  | Ul
+  | Li
   deriving (Show, Eq)
 
 data Attr = AttrList [(Text, Text)] | Class Text
@@ -79,6 +81,8 @@ pugElem = choice
   , string "h1" *> pure H1
   , string "a" *> pure A
   , string "p" *> pure P
+  , string "ul" *> pure Ul
+  , string "li" *> pure Li
   ]
 
 -- E.g. .a, ()
