@@ -1,0 +1,14 @@
+
+Welcome to Pughs's GHCi environment.
+
+Type :about to see this help text.
+
+Other interesting commands and expressions include:
+
+    :main --help
+    runExamples
+
+Discover the code base with e.g.:
+
+    :i about
+    :e tests/Pughs/GHCi.hs

@@ -13,7 +13,7 @@ let
 
     in mapAttrs callCabalOn contents.pkgList;
 
-  # Don't build profiling version for Refli. This reduces the build time
+  # Don't build profiling version for Pughs. This reduces the build time
   # from 2m40s to 1m40s.
   theseOverrides = self: superh: rec {
     mkDerivation = args: superh.mkDerivation (

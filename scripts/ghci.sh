@@ -3,8 +3,12 @@
 
 ghc \
   --interactive \
-  -isrc \
+  -haddock \
+  -v0 \
+  -isrc/ \
+  -itests/ \
+  -fhide-source-paths \
   -XImportQualifiedPost \
   -XOverloadedStrings \
   -Wall \
-  bin/pughs.hs
+  -ghci-script scripts/ghci.conf
