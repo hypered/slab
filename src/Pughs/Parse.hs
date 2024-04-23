@@ -13,7 +13,7 @@ type Parser = Parsec Void Text
 
 data PugNode
   = PugElem Elem [Attr] [PugNode]
-  | PugText Text
+  | PugText Pipe Text
   deriving (Show, Eq)
 
 data Elem
@@ -26,11 +26,17 @@ data Elem
 data Attr = AttrList [(Text, Text)] | Class Text
   deriving (Show, Eq)
 
+-- Tracks the syntax used to enter the text.
+data Pipe
+  = Normal -- ^ The text follows an element on the same line.
+  | Pipe -- ^ The text follows a pipe character.
+  deriving (Show, Eq)
+
 parsePug :: Text -> Either (ParseErrorBundle Text Void) [PugNode]
 parsePug = runParser (many pugElement <* eof) ""
 
 pugElement :: Parser PugNode
-pugElement = L.indentBlock scn p
+pugElement = L.indentBlock scn (p <|> p')
   where
     p = do
       header <- pugDiv
@@ -39,7 +45,11 @@ pugElement = L.indentBlock scn p
         Nothing ->
           pure (L.IndentMany Nothing (return . header) pugElement)
         Just content ->
-          pure $ L.IndentNone $ header [content]
+          pure $ L.IndentNone $ header [PugText Normal content]
+    p' = do
+      _ <- lexeme $ string "|"
+      mcontent <- optional pugText
+      pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
 
 -- E.g. div, div.a, .a
 pugDiv :: Parser ([PugNode] -> PugNode)
@@ -99,8 +109,8 @@ pugString = do
   _ <- string "'"
   pure s
 
-pugText :: Parser PugNode
-pugText = PugText . T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
+pugText :: Parser Text
+pugText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
 scn :: Parser ()
 scn = L.space space1 empty empty
