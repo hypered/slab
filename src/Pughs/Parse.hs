@@ -12,9 +12,13 @@ import qualified Text.Megaparsec.Char.Lexer as L
 type Parser = Parsec Void Text
 
 data PugNode
-  = PugElem Elem [Attr] [PugNode]
+  = PugElem Elem TrailingDot [Attr] [PugNode]
   | PugText Pipe Text
   deriving (Show, Eq)
+
+hasTrailingDot :: PugNode -> Bool
+hasTrailingDot (PugElem _ HasDot _ _) = True
+hasTrailingDot _ = False
 
 data Elem
   = Html
@@ -31,6 +35,11 @@ data Elem
   | Figcaption
   | Audio
   | Source
+  | Pre
+  | Code
+  deriving (Show, Eq)
+
+data TrailingDot = HasDot | NoDot
   deriving (Show, Eq)
 
 data Attr = AttrList [(Text, Maybe Text)] | Class Text
@@ -40,6 +49,7 @@ data Attr = AttrList [(Text, Maybe Text)] | Class Text
 data Pipe
   = Normal -- ^ The text follows an element on the same line.
   | Pipe -- ^ The text follows a pipe character.
+  | Dot -- ^ The text is part of a text block following a trailing dot.
   deriving (Show, Eq)
 
 parsePug :: Text -> Either (ParseErrorBundle Text Void) [PugNode]
@@ -53,13 +63,20 @@ pugElement = L.indentBlock scn (p <|> p')
       mcontent <- optional pugText
       case mcontent of
         Nothing ->
-          pure (L.IndentMany Nothing (return . header) pugElement)
+          if hasTrailingDot $ header []
+          then
+            pure $ L.IndentMany Nothing (pure . header) pugTexts
+          else
+            pure $ L.IndentMany Nothing (pure . header) pugElement
         Just content ->
           pure $ L.IndentNone $ header [PugText Normal content]
     p' = do
       _ <- lexeme $ string "|"
       mcontent <- optional pugText
       pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
+
+pugTexts :: Parser PugNode
+pugTexts = PugText Dot <$> pugText
 
 -- E.g. div, div.a, .a
 pugDiv :: Parser ([PugNode] -> PugNode)
@@ -69,13 +86,16 @@ pugDiv =
 -- E.g. div, div.a, div()
 pugElemWithAttrs :: Parser ([PugNode] -> PugNode)
 pugElemWithAttrs = do
-  (name, attrs) <- lexeme
+  (name, attrs, mdot) <- lexeme
     ( do
         a <- pugElem
-        b <- many (pugClass <|> pugAttrList)
-        pure (a, b)
+        -- `try` because we want to backtrack if there is a dot
+        -- not followed by a class name, for mdot to succeed.
+        b <- many (try pugClass <|> pugAttrList)
+        mdot <- optional (string ".")
+        pure (a, b, maybe NoDot (const HasDot) mdot)
     ) <?> "div tag"
-  pure $ PugElem name attrs
+  pure $ PugElem name mdot attrs
 
 pugElem :: Parser Elem
 pugElem = choice
@@ -86,6 +106,8 @@ pugElem = choice
   , string "h1" *> pure H1
   , string "audio" *> pure Audio
   , string "a" *> pure A
+  , string "code" *> pure Code
+  , string "pre" *> pure Pre
   , string "p" *> pure P
   , string "ul" *> pure Ul
   , string "li" *> pure Li
@@ -98,8 +120,13 @@ pugElem = choice
 -- E.g. .a, ()
 pugAttrs :: Parser ([PugNode] -> PugNode)
 pugAttrs = do
-  attrs <- lexeme (some (pugClass <|> pugAttrList)) <?> "attributes"
-  pure $ PugElem Div attrs
+  (attrs, mdot) <- lexeme
+    ( do
+        attrs <- some (pugClass <|> pugAttrList)
+        mdot <- optional (string ".")
+        pure (attrs, maybe NoDot (const HasDot) mdot)
+    ) <?> "attributes"
+  pure $ PugElem Div mdot attrs
 
 -- E.g. .a
 pugClass :: Parser Attr

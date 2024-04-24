@@ -23,8 +23,13 @@ pugNodesToHtml :: [Parse.PugNode] -> [H.Html]
 pugNodesToHtml = map pugNodeToHtml
 
 pugNodeToHtml :: Parse.PugNode -> H.Html
-pugNodeToHtml (Parse.PugElem name attrs children) =
-  mAddAttr $ mAddClass $ pugElemToHtml name $ mconcat $ map pugNodeToHtml children
+pugNodeToHtml (Parse.PugElem name mdot attrs children) =
+  mAddAttr $ mAddClass $ pugElemToHtml name $ mconcat $
+    if mdot == Parse.HasDot
+    then
+      [pugTextsToHtml children]
+    else
+      map pugNodeToHtml children
  where
   mAddClass :: H.Html -> H.Html
   mAddClass e =
@@ -60,6 +65,13 @@ pugNodeToHtml (Parse.PugElem name attrs children) =
 pugNodeToHtml (Parse.PugText _ s) | s == T.empty = mempty
                                   | otherwise = H.preEscapedText s -- TODO
 
+pugTextsToHtml :: [Parse.PugNode] -> H.Markup
+pugTextsToHtml xs = H.preEscapedText xs'
+ where
+  xs' = T.intercalate "\n" $ map f xs
+  f (Parse.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
+  f (Parse.PugText _ s) = s
+
 pugElemToHtml :: Parse.Elem -> Html -> Html
 pugElemToHtml = \case
   Parse.Html -> H.html
@@ -76,3 +88,5 @@ pugElemToHtml = \case
   Parse.Figcaption -> H.figcaption
   Parse.Audio -> H.audio
   Parse.Source -> const H.source
+  Parse.Pre -> H.pre
+  Parse.Code -> H.code
