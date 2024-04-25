@@ -28,6 +28,9 @@ data Elem
   | Div
   | Span
   | H1
+  | Head
+  | Meta
+  | Link
   | A
   | P
   | Ul
@@ -39,6 +42,7 @@ data Elem
   | Source
   | Pre
   | Code
+  | Img
   deriving (Show, Eq)
 
 data TrailingDot = HasDot | NoDot
@@ -127,12 +131,16 @@ pugElem = choice
   , string "div" *> pure Div
   , string "span" *> pure Span
   , string "h1" *> pure H1
+  , string "head" *> pure Head
+  , string "meta" *> pure Meta
   , string "audio" *> pure Audio
   , string "a" *> pure A
   , string "code" *> pure Code
+  , string "img" *> pure Img
   , string "pre" *> pure Pre
   , string "p" *> pure P
   , string "ul" *> pure Ul
+  , string "link" *> pure Link
   , string "li" *> pure Li
   , string "figure" *> pure Figure
   , string "blockquote" *> pure Blockquote
