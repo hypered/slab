@@ -169,16 +169,23 @@ pugPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
   mb <- optional $ do
     _ <- string "="
-    b <- lexeme pugString
+    b <- lexeme (pugSingleQuoteString <|> pugDoubleQuoteString)
     pure b
   _ <- optional (lexeme $ string ",")
   pure (a, mb)
 
-pugString :: Parser Text
-pugString = do
+pugSingleQuoteString :: Parser Text
+pugSingleQuoteString = do
   _ <- string "'"
   s <- T.pack <$> (some (noneOf ("'\n" :: String))) <?> "string"
   _ <- string "'"
+  pure s
+
+pugDoubleQuoteString :: Parser Text
+pugDoubleQuoteString = do
+  _ <- string "\""
+  s <- T.pack <$> (some (noneOf ("\"\n" :: String))) <?> "string"
+  _ <- string "\""
   pure s
 
 pugText :: Parser Text
