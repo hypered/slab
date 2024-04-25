@@ -13,7 +13,8 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 --------------------------------------------------------------------------------
 data PugNode
-  = PugElem Elem TrailingDot [Attr] [PugNode]
+  = PugDoctype -- ^ Only @doctype html@ for now.
+  | PugElem Elem TrailingDot [Attr] [PugNode]
   | PugText Pipe Text
   deriving (Show, Eq)
 
@@ -56,6 +57,7 @@ data Pipe
 extractClasses :: [PugNode] -> [Text]
 extractClasses = nub . sort . concatMap f
  where
+  f PugDoctype = []
   f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (PugText _ _) = []
   g (AttrList xs) = concatMap h xs
@@ -71,7 +73,7 @@ parsePug fn = runParser (many pugElement <* eof) fn
 type Parser = Parsec Void Text
 
 pugElement :: Parser PugNode
-pugElement = L.indentBlock scn (p <|> p')
+pugElement = L.indentBlock scn (pugDoctype <|> p <|> p')
   where
     p = do
       header <- pugDiv
@@ -89,6 +91,12 @@ pugElement = L.indentBlock scn (p <|> p')
       _ <- lexeme $ string "|"
       mcontent <- optional pugText
       pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
+
+pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugDoctype = do
+  _ <- lexeme (string "doctype")
+  _ <- lexeme (string "html")
+  pure $ L.IndentNone PugDoctype
 
 pugTexts :: Parser PugNode
 pugTexts = PugText Dot <$> pugText

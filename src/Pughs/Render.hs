@@ -23,6 +23,8 @@ pugNodesToHtml :: [Parse.PugNode] -> [H.Html]
 pugNodesToHtml = map pugNodeToHtml
 
 pugNodeToHtml :: Parse.PugNode -> H.Html
+pugNodeToHtml Parse.PugDoctype = H.docType
+
 pugNodeToHtml (Parse.PugElem name mdot attrs children) =
   mAddAttr $ mAddClass $ pugElemToHtml name $ mconcat $
     if mdot == Parse.HasDot
@@ -69,6 +71,7 @@ pugTextsToHtml :: [Parse.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
  where
   xs' = T.intercalate "\n" $ map f xs
+  f Parse.PugDoctype = error "pugTextsToHtml called on a PugDoctype"
   f (Parse.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
   f (Parse.PugText _ s) = s
 
