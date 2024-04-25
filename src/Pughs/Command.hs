@@ -9,6 +9,7 @@ import Options.Applicative qualified as A
 data Command
   = Render RenderMode FilePath
   | Parse FilePath
+  | Classes FilePath -- ^ List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes/mixins.
 
 data RenderMode = RenderNormal | RenderPretty
 
@@ -37,6 +38,12 @@ parser =
             A.progDesc
               "Parse a Pug template to AST"
         )
+    <>  A.command
+        "classes"
+        ( A.info (parserClasses <**> A.helper) $
+            A.progDesc
+              "Parse a Pug template and report its CSS classes"
+        )
     )
 
 --------------------------------------------------------------------------------
@@ -58,3 +65,11 @@ parserParse = do
       A.str
       (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to parse.")
   pure $ Parse path
+
+parserClasses :: A.Parser Command
+parserClasses = do
+  path <-
+    A.argument
+      A.str
+      (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to parse.")
+  pure $ Classes path

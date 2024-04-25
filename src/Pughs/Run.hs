@@ -25,6 +25,12 @@ run (Command.Parse path) = do
   pugContent <- T.readFile path
   let parsed = Parse.parsePug pugContent
   TL.putStrLn $ pShowNoColor parsed
+run (Command.Classes path) = do
+  pugContent <- T.readFile path
+  let parsed = Parse.parsePug pugContent
+  case parsed of
+    Left err -> TL.putStrLn $ pShowNoColor err
+    Right nodes -> mapM_ T.putStrLn $ Parse.extractClasses nodes
 
 --------------------------------------------------------------------------------
 renderPretty :: FilePath -> IO (Either Text Text)

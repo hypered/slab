@@ -1,6 +1,7 @@
 module Pughs.Parse where
 
 import Control.Monad (void)
+import Data.List (nub, sort)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void (Void)
@@ -9,8 +10,6 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
 --------------------------------------------------------------------------------
-type Parser = Parsec Void Text
-
 data PugNode
   = PugElem Elem TrailingDot [Attr] [PugNode]
   | PugText Pipe Text
@@ -52,8 +51,22 @@ data Pipe
   | Dot -- ^ The text is part of a text block following a trailing dot.
   deriving (Show, Eq)
 
+extractClasses :: [PugNode] -> [Text]
+extractClasses = nub . sort . concatMap f
+ where
+  f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
+  f (PugText _ _) = []
+  g (AttrList xs) = concatMap h xs
+  g (Class c) = [c]
+  h ("class", Just c) = [c]
+  h _ = []
+
+--------------------------------------------------------------------------------
 parsePug :: Text -> Either (ParseErrorBundle Text Void) [PugNode]
 parsePug = runParser (many pugElement <* eof) ""
+
+--------------------------------------------------------------------------------
+type Parser = Parsec Void Text
 
 pugElement :: Parser PugNode
 pugElement = L.indentBlock scn (p <|> p')
