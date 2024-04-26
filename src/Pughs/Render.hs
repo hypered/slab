@@ -67,6 +67,8 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
 pugNodeToHtml (Parse.PugText _ s) | s == T.empty = mempty
                                   | otherwise = H.preEscapedText s -- TODO
 
+pugNodeToHtml (Parse.PugInclude path) = H.stringComment $ "TODO include " <> path
+
 pugTextsToHtml :: [Parse.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
  where
@@ -74,6 +76,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f Parse.PugDoctype = error "pugTextsToHtml called on a PugDoctype"
   f (Parse.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
   f (Parse.PugText _ s) = s
+  f (Parse.PugInclude _) = error "pugTextsToHtml called on a PugInclude"
 
 pugElemToHtml :: Parse.Elem -> Html -> Html
 pugElemToHtml = \case

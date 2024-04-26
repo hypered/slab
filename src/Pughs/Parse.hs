@@ -16,6 +16,7 @@ data PugNode
   = PugDoctype -- ^ Only @doctype html@ for now.
   | PugElem Elem TrailingDot [Attr] [PugNode]
   | PugText Pipe Text
+  | PugInclude FilePath
   deriving (Show, Eq)
 
 hasTrailingDot :: PugNode -> Bool
@@ -64,6 +65,7 @@ extractClasses = nub . sort . concatMap f
   f PugDoctype = []
   f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (PugText _ _) = []
+  f (PugInclude _) = []
   g (AttrList xs) = concatMap h xs
   g (Class c) = [c]
   h ("class", Just c) = [c]
@@ -77,7 +79,7 @@ parsePug fn = runParser (many pugElement <* eof) fn
 type Parser = Parsec Void Text
 
 pugElement :: Parser PugNode
-pugElement = L.indentBlock scn (pugDoctype <|> p <|> p')
+pugElement = L.indentBlock scn (pugDoctype <|> p <|> p' <|> pugInclude)
   where
     p = do
       header <- pugDiv
@@ -96,12 +98,14 @@ pugElement = L.indentBlock scn (pugDoctype <|> p <|> p')
       mcontent <- optional pugText
       pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
 
+--------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugDoctype = do
   _ <- lexeme (string "doctype")
   _ <- lexeme (string "html")
   pure $ L.IndentNone PugDoctype
 
+--------------------------------------------------------------------------------
 pugTexts :: Parser PugNode
 pugTexts = PugText Dot <$> pugText
 
@@ -199,6 +203,17 @@ pugDoubleQuoteString = do
 pugText :: Parser Text
 pugText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
+--------------------------------------------------------------------------------
+pugInclude :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugInclude = do
+  _ <- lexeme (string "include")
+  path <- pugPath
+  pure $ L.IndentNone $ PugInclude path
+
+pugPath :: Parser FilePath
+pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
+
+--------------------------------------------------------------------------------
 scn :: Parser ()
 scn = L.space space1 empty empty
 
