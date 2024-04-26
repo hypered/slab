@@ -70,6 +70,8 @@ pugNodeToHtml (Parse.PugText _ s) | s == T.empty = mempty
 pugNodeToHtml (Parse.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Parse.PugInclude path Nothing) = H.stringComment $ "include " <> path
 
+pugNodeToHtml (Parse.PugComment _) = mempty -- TODO Should it appear in the HTML ?
+
 pugTextsToHtml :: [Parse.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
  where
@@ -78,6 +80,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Parse.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
   f (Parse.PugText _ s) = s
   f (Parse.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
+  f (Parse.PugComment _) = error "pugTextsToHtml called on a PugComment"
 
 pugElemToHtml :: Parse.Elem -> Html -> Html
 pugElemToHtml = \case
@@ -102,3 +105,4 @@ pugElemToHtml = \case
   Parse.Pre -> H.pre
   Parse.Code -> H.code
   Parse.Img -> const H.img
+  Parse.I -> H.i

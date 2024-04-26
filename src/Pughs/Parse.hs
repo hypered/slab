@@ -24,6 +24,7 @@ data PugNode
   | PugInclude FilePath (Maybe [PugNode])
     -- ^ @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
+  | PugComment Text
   deriving (Show, Eq)
 
 hasTrailingDot :: PugNode -> Bool
@@ -52,6 +53,7 @@ data Elem
   | Pre
   | Code
   | Img
+  | I
   deriving (Show, Eq)
 
 data TrailingDot = HasDot | NoDot
@@ -74,6 +76,7 @@ extractClasses = nub . sort . concatMap f
   f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (PugText _ _) = []
   f (PugInclude _ children) = maybe [] extractClasses children
+  f (PugComment _) = []
   g (AttrList xs) = concatMap h xs
   g (Class c) = [c]
   h ("class", Just c) = [c]
@@ -111,6 +114,7 @@ preProcessNodeE startPath = \case
   PugInclude path _ -> do
     nodes' <- preProcessPugFileE $ takeDirectory startPath </> (path <> ".pug")
     pure $ PugInclude path (Just nodes')
+  node@(PugComment _) -> pure node
 
 --------------------------------------------------------------------------------
 parsePugFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [PugNode])
@@ -125,7 +129,14 @@ parsePug fn = runParser (many pugElement <* eof) fn
 type Parser = Parsec Void Text
 
 pugElement :: Parser PugNode
-pugElement = L.indentBlock scn (pugDoctype <|> p <|> p' <|> pugInclude)
+pugElement = L.indentBlock scn $
+  choice
+    [ pugDoctype
+    , try pugInclude
+    , p
+    , p'
+    , pugComment
+    ]
   where
     p = do
       header <- pugDiv
@@ -188,6 +199,7 @@ pugElem = choice
   , string "a" *> pure A
   , string "code" *> pure Code
   , string "img" *> pure Img
+  , string "i" *> pure I
   , string "pre" *> pure Pre
   , string "p" *> pure P
   , string "ul" *> pure Ul
@@ -259,6 +271,13 @@ pugInclude = do
 
 pugPath :: Parser FilePath
 pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
+
+--------------------------------------------------------------------------------
+pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugComment = do
+  _ <- lexeme (string "//")
+  content <- pugText
+  pure $ L.IndentNone $ PugComment content
 
 --------------------------------------------------------------------------------
 scn :: Parser ()
