@@ -11,6 +11,7 @@ import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Void (Void)
+import System.Directory (doesFileExist)
 import System.FilePath (takeDirectory, (</>))
 import Text.Megaparsec hiding (label, parse, unexpected)
 import Text.Megaparsec.Char
@@ -67,6 +68,7 @@ data TextSyntax
   = Normal -- ^ The text follows an element on the same line.
   | Pipe -- ^ The text follows a pipe character.
   | Dot -- ^ The text is part of a text block following a trailing dot.
+  | Include -- ^ The text is the content of an include statement without a .pug extension.
   deriving (Show, Eq)
 
 extractClasses :: [PugNode] -> [Text]
@@ -112,8 +114,16 @@ preProcessNodeE startPath = \case
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
   PugInclude path _ -> do
-    nodes' <- preProcessPugFileE $ takeDirectory startPath </> (path <> ".pug")
-    pure $ PugInclude path (Just nodes')
+    let includedPath = takeDirectory startPath </> path
+    exists <- liftIO $ doesFileExist includedPath
+    if exists
+      then do
+        content <- liftIO $ T.readFile includedPath
+        let nodes' = map (PugText Include) $ T.lines content
+        pure $ PugInclude path (Just nodes')
+      else do
+        nodes' <- preProcessPugFileE $ includedPath <> ".pug"
+        pure $ PugInclude path (Just nodes')
   node@(PugComment _) -> pure node
 
 --------------------------------------------------------------------------------
