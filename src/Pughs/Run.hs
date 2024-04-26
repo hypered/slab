@@ -13,26 +13,26 @@ import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
-run (Command.Render Command.RenderNormal path) = do
+run (Command.CommandWithPath path (Command.Render Command.RenderNormal)) = do
   parsed <- Parse.preProcessPugFile path
   case parsed of
     Left (Parse.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> TL.putStrLn . Render.renderHtmls $ Render.pugNodesToHtml nodes
-run (Command.Render Command.RenderPretty path) = do
+run (Command.CommandWithPath path (Command.Render Command.RenderPretty)) = do
   parsed <- Parse.preProcessPugFile path
   case parsed of
     Left (Parse.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> T.putStrLn . Render.prettyHtmls $ Render.pugNodesToHtml nodes
-run (Command.Parse path) = do
+run (Command.CommandWithPath path Command.Parse) = do
   parsed <- Parse.parsePugFile path
   case parsed of
     Left err -> do
       TL.putStrLn $ pShowNoColor err
       T.putStrLn $ Parse.parseErrorPretty err
     Right nodes -> TL.putStrLn $ pShowNoColor nodes
-run (Command.Classes path) = do
+run (Command.CommandWithPath path Command.Classes) = do
   parsed <- Parse.parsePugFile path
   case parsed of
     Left err -> TL.putStrLn $ pShowNoColor err

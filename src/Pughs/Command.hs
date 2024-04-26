@@ -7,9 +7,13 @@ import Options.Applicative qualified as A
 
 --------------------------------------------------------------------------------
 data Command
-  = Render RenderMode FilePath
-  | Parse FilePath
-  | Classes FilePath -- ^ List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes/mixins.
+  = CommandWithPath FilePath CommandWithPath
+
+-- | Commands operating on a path.
+data CommandWithPath
+  = Render RenderMode
+  | Parse
+  | Classes -- ^ List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes/mixins.
 
 data RenderMode = RenderNormal | RenderPretty
 
@@ -52,24 +56,22 @@ parserRender = do
   mode <- A.flag RenderNormal RenderPretty
     ( A.long "pretty" <> A.help "Use pretty-printing"
     )
-  path <-
-    A.argument
-      A.str
-      (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to render.")
-  pure $ Render mode path
+  path <- parserTemplatePath
+  pure $ CommandWithPath path $ Render mode
 
 parserParse :: A.Parser Command
 parserParse = do
-  path <-
-    A.argument
-      A.str
-      (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to parse.")
-  pure $ Parse path
+  path <- parserTemplatePath
+  pure $ CommandWithPath path Parse
 
 parserClasses :: A.Parser Command
 parserClasses = do
-  path <-
-    A.argument
-      A.str
-      (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to parse.")
-  pure $ Classes path
+  path <- parserTemplatePath
+  pure $ CommandWithPath path Classes
+
+--------------------------------------------------------------------------------
+parserTemplatePath :: A.Parser FilePath
+parserTemplatePath =
+  A.argument
+    A.str
+    (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to parse.")
