@@ -47,6 +47,7 @@ data Elem
   | P
   | Ul
   | Li
+  | Footer
   | Figure
   | Blockquote
   | Figcaption
@@ -217,6 +218,7 @@ pugElem = choice
   , string "ul" *> pure Ul
   , string "link" *> pure Link
   , string "li" *> pure Li
+  , string "footer" *> pure Footer
   , string "figure" *> pure Figure
   , string "blockquote" *> pure Blockquote
   , string "figcaption" *> pure Figcaption
