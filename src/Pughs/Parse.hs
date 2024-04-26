@@ -1,22 +1,28 @@
 module Pughs.Parse where
 
 import Control.Monad (void)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, except)
+import Control.Monad.IO.Class (liftIO)
+import Data.Bifunctor (first)
 import Data.List (nub, sort)
 import Data.List.NonEmpty qualified as NE (toList)
 import Data.Set qualified as S (toList)
 import Data.Text (Text)
 import Data.Text qualified as T
+import Data.Text.IO qualified as T
 import Data.Void (Void)
 import Text.Megaparsec hiding (label, parse, unexpected)
 import Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec.Char.Lexer qualified as L
 
 --------------------------------------------------------------------------------
 data PugNode
   = PugDoctype -- ^ Only @doctype html@ for now.
   | PugElem Elem TrailingDot [Attr] [PugNode]
   | PugText Pipe Text
-  | PugInclude FilePath
+  | PugInclude FilePath (Maybe [PugNode])
+    -- ^ @Nothing@ when the template is parsed, then @Just nodes@ after
+    -- preprocessing (i.e. actually running the include statement).
   deriving (Show, Eq)
 
 hasTrailingDot :: PugNode -> Bool
@@ -66,13 +72,51 @@ extractClasses = nub . sort . concatMap f
   f PugDoctype = []
   f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (PugText _ _) = []
-  f (PugInclude _) = []
+  f (PugInclude _ children) = maybe [] extractClasses children
   g (AttrList xs) = concatMap h xs
   g (Class c) = [c]
   h ("class", Just c) = [c]
   h _ = []
 
 --------------------------------------------------------------------------------
+data PreProcessError
+  = PreProcessParseError (ParseErrorBundle Text Void)
+  | PreProcessError Text -- TODO Add specific variants instead of using Text.
+  deriving (Show, Eq)
+
+-- Similarly to `parsePugFile` but pre-process the include statements.
+preProcessPugFile :: FilePath -> IO (Either PreProcessError [PugNode])
+preProcessPugFile = runExceptT . preProcessPugFileE
+
+preProcessPugFileE :: FilePath -> ExceptT PreProcessError IO [PugNode]
+preProcessPugFileE path = do
+  pugContent <- liftIO $ T.readFile path
+  let mnodes = first PreProcessParseError $ parsePug path pugContent
+  nodes <- except mnodes
+  preProcessNodesE nodes
+
+-- Process include statements (i.e. read the given path and parse its content
+-- recursively).
+preProcessNodesE :: [PugNode] -> ExceptT PreProcessError IO [PugNode]
+preProcessNodesE nodes = mapM preProcessNodeE nodes
+
+preProcessNodeE :: PugNode -> ExceptT PreProcessError IO PugNode
+preProcessNodeE = \case
+  node@PugDoctype -> pure node
+  PugElem name mdot attrs nodes -> do
+    nodes' <- preProcessNodesE nodes
+    pure $ PugElem name mdot attrs nodes'
+  node@(PugText _ _) -> pure node
+  PugInclude path _ -> do
+    nodes' <- preProcessPugFileE $ path <> ".pug"
+    pure $ PugInclude path (Just nodes')
+
+--------------------------------------------------------------------------------
+parsePugFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [PugNode])
+parsePugFile path = do
+  pugContent <- T.readFile path
+  pure $ parsePug path pugContent
+
 parsePug :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [PugNode]
 parsePug fn = runParser (many pugElement <* eof) fn
 
@@ -210,7 +254,7 @@ pugInclude :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugInclude = do
   _ <- lexeme (string "include")
   path <- pugPath
-  pure $ L.IndentNone $ PugInclude path
+  pure $ L.IndentNone $ PugInclude path Nothing
 
 pugPath :: Parser FilePath
 pugPath = lexeme (some (noneOf ['\n'])) <?> "path"

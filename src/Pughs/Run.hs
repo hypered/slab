@@ -14,24 +14,26 @@ import Text.Pretty.Simple (pShowNoColor)
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
 run (Command.Render Command.RenderNormal path) = do
-  pugContent <- T.readFile path
-  let parsedHtml = parse path pugContent
-      mrenderedHtml = fmap Render.renderHtmls parsedHtml
-  either T.putStrLn TL.putStrLn mrenderedHtml
+  parsed <- Parse.preProcessPugFile path
+  case parsed of
+    Left (Parse.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
+    Left err -> TL.putStrLn $ pShowNoColor err
+    Right nodes -> TL.putStrLn . Render.renderHtmls $ Render.pugNodesToHtml nodes
 run (Command.Render Command.RenderPretty path) = do
-  mrenderedHtml <- renderPretty path
-  either T.putStrLn T.putStrLn mrenderedHtml
+  parsed <- Parse.preProcessPugFile path
+  case parsed of
+    Left (Parse.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
+    Left err -> TL.putStrLn $ pShowNoColor err
+    Right nodes -> T.putStrLn . Render.prettyHtmls $ Render.pugNodesToHtml nodes
 run (Command.Parse path) = do
-  pugContent <- T.readFile path
-  let parsed = Parse.parsePug path pugContent
+  parsed <- Parse.parsePugFile path
   case parsed of
     Left err -> do
       TL.putStrLn $ pShowNoColor err
       T.putStrLn $ Parse.parseErrorPretty err
     Right nodes -> TL.putStrLn $ pShowNoColor nodes
 run (Command.Classes path) = do
-  pugContent <- T.readFile path
-  let parsed = Parse.parsePug path pugContent
+  parsed <- Parse.parsePugFile path
   case parsed of
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> mapM_ T.putStrLn $ Parse.extractClasses nodes
