@@ -88,6 +88,7 @@ pugElemToHtml = \case
   Parse.Body -> H.body
   Parse.Div -> H.div
   Parse.Span -> H.span
+  Parse.Hr -> const H.hr
   Parse.H1 -> H.h1
   Parse.Header -> H.header
   Parse.Head -> H.head

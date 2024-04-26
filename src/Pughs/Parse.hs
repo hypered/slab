@@ -37,6 +37,7 @@ data Elem
   | Body
   | Div
   | Span
+  | Hr
   | H1
   | Header
   | Head
@@ -201,6 +202,7 @@ pugElem = choice
   , string "body" *> pure Body
   , string "div" *> pure Div
   , string "span" *> pure Span
+  , string "hr" *> pure Hr
   , string "h1" *> pure H1
   , string "header" *> pure Header
   , string "head" *> pure Head
