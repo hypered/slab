@@ -1,5 +1,6 @@
 module Pughs.Run where
 
+import Data.Bifunctor (first)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -13,30 +14,39 @@ import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
-run (Command.CommandWithPath path (Command.Render Command.RenderNormal)) = do
-  parsed <- Parse.preProcessPugFile path
+run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
+  parsed <- parseWithMode path pmode
   case parsed of
     Left (Parse.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> TL.putStrLn . Render.renderHtmls $ Render.pugNodesToHtml nodes
-run (Command.CommandWithPath path (Command.Render Command.RenderPretty)) = do
-  parsed <- Parse.preProcessPugFile path
+run (Command.CommandWithPath path pmode (Command.Render Command.RenderPretty)) = do
+  parsed <- parseWithMode path pmode
   case parsed of
     Left (Parse.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> T.putStrLn . Render.prettyHtmls $ Render.pugNodesToHtml nodes
-run (Command.CommandWithPath path Command.Parse) = do
-  parsed <- Parse.parsePugFile path
+run (Command.CommandWithPath path pmode Command.Parse) = do
+  parsed <- parseWithMode path pmode
   case parsed of
-    Left err -> do
-      TL.putStrLn $ pShowNoColor err
-      T.putStrLn $ Parse.parseErrorPretty err
+    Left (Parse.PreProcessParseError err) ->
+      T.putStrLn . Parse.parseErrorPretty $ err
+    Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> TL.putStrLn $ pShowNoColor nodes
-run (Command.CommandWithPath path Command.Classes) = do
-  parsed <- Parse.parsePugFile path
+run (Command.CommandWithPath path pmode Command.Classes) = do
+  parsed <- parseWithMode path pmode
   case parsed of
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> mapM_ T.putStrLn $ Parse.extractClasses nodes
+
+--------------------------------------------------------------------------------
+parseWithMode :: FilePath
+              -> Command.ParseMode
+              -> IO (Either Parse.PreProcessError [Parse.PugNode])
+parseWithMode path pmode =
+  case pmode of
+    Command.ParseShallow -> first Parse.PreProcessParseError <$> Parse.parsePugFile path
+    Command.ParseDeep -> Parse.preProcessPugFile path
 
 --------------------------------------------------------------------------------
 renderPretty :: FilePath -> IO (Either Text Text)

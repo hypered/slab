@@ -7,7 +7,7 @@ import Options.Applicative qualified as A
 
 --------------------------------------------------------------------------------
 data Command
-  = CommandWithPath FilePath CommandWithPath
+  = CommandWithPath FilePath ParseMode CommandWithPath
 
 -- | Commands operating on a path.
 data CommandWithPath
@@ -16,6 +16,10 @@ data CommandWithPath
   | Classes -- ^ List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes/mixins.
 
 data RenderMode = RenderNormal | RenderPretty
+
+data ParseMode
+  = ParseShallow -- ^ Don't process include statements.
+  | ParseDeep -- ^ Process the include statements, creating a complete template.
 
 --------------------------------------------------------------------------------
 parserInfo :: A.ParserInfo Command
@@ -56,22 +60,31 @@ parserRender = do
   mode <- A.flag RenderNormal RenderPretty
     ( A.long "pretty" <> A.help "Use pretty-printing"
     )
-  path <- parserTemplatePath
-  pure $ CommandWithPath path $ Render mode
+  pathAndmode <- parserWithPath
+  pure $ uncurry CommandWithPath pathAndmode $ Render mode
 
 parserParse :: A.Parser Command
 parserParse = do
-  path <- parserTemplatePath
-  pure $ CommandWithPath path Parse
+  pathAndmode <- parserWithPath
+  pure $ uncurry CommandWithPath pathAndmode Parse
 
 parserClasses :: A.Parser Command
 parserClasses = do
-  path <- parserTemplatePath
-  pure $ CommandWithPath path Classes
+  pathAndmode <- parserWithPath
+  pure $ uncurry CommandWithPath pathAndmode Classes
 
 --------------------------------------------------------------------------------
+parserWithPath :: A.Parser (FilePath, ParseMode)
+parserWithPath = (,) <$> parserTemplatePath <*> parserShallowFlag
+
 parserTemplatePath :: A.Parser FilePath
 parserTemplatePath =
   A.argument
     A.str
     (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to parse.")
+
+parserShallowFlag :: A.Parser ParseMode
+parserShallowFlag =
+  A.flag ParseDeep ParseShallow
+    ( A.long "shallow" <> A.help "Don't parse recursively the included Pug files"
+    )

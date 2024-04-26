@@ -36,9 +36,12 @@ library
   build-depends:
       blaze-html
     , blaze-markup
+    , containers
+    , filepath
     , megaparsec
     , pretty-simple
     , text
+    , transformers
   exposed-modules:
     Pughs.Command
     Pughs.Parse
