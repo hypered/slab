@@ -29,6 +29,7 @@ data Elem
   | Div
   | Span
   | H1
+  | Header
   | Head
   | Meta
   | Link
@@ -135,6 +136,7 @@ pugElem = choice
   , string "div" *> pure Div
   , string "span" *> pure Span
   , string "h1" *> pure H1
+  , string "header" *> pure Header
   , string "head" *> pure Head
   , string "meta" *> pure Meta
   , string "audio" *> pure Audio
