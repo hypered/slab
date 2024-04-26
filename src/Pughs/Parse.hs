@@ -39,6 +39,11 @@ data Elem
   | Span
   | Hr
   | H1
+  | H2
+  | H3
+  | H4
+  | H5
+  | H6
   | Header
   | Head
   | Meta
@@ -53,6 +58,7 @@ data Elem
   | Blockquote
   | Figcaption
   | Audio
+  | Small
   | Source
   | Pre
   | Code
@@ -206,6 +212,11 @@ pugElem = choice
   , string "span" *> pure Span
   , string "hr" *> pure Hr
   , string "h1" *> pure H1
+  , string "h2" *> pure H2
+  , string "h3" *> pure H3
+  , string "h4" *> pure H4
+  , string "h5" *> pure H5
+  , string "h6" *> pure H6
   , string "header" *> pure Header
   , string "head" *> pure Head
   , string "meta" *> pure Meta
@@ -224,6 +235,7 @@ pugElem = choice
   , string "figure" *> pure Figure
   , string "blockquote" *> pure Blockquote
   , string "figcaption" *> pure Figcaption
+  , string "small" *> pure Small
   , string "source" *> pure Source
   ]
 
