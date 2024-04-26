@@ -42,6 +42,7 @@ data Elem
   | Header
   | Head
   | Meta
+  | Main
   | Link
   | A
   | P
@@ -208,6 +209,7 @@ pugElem = choice
   , string "header" *> pure Header
   , string "head" *> pure Head
   , string "meta" *> pure Meta
+  , string "main" *> pure Main
   , string "audio" *> pure Audio
   , string "a" *> pure A
   , string "code" *> pure Code
