@@ -168,7 +168,7 @@ pugAttrs = do
 -- E.g. .a
 pugClass :: Parser Attr
 pugClass = Class . T.pack <$>
-  (char '.' *> some (alphaNumChar <|> char '-')) <?> "class name"
+  (char '.' *> some (alphaNumChar <|> oneOf ("-_" :: String))) <?> "class name"
 
 -- E.g. (), (class='a')
 pugAttrList :: Parser Attr
