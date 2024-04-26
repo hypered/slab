@@ -20,7 +20,7 @@ import Text.Megaparsec.Char.Lexer qualified as L
 data PugNode
   = PugDoctype -- ^ Only @doctype html@ for now.
   | PugElem Elem TrailingDot [Attr] [PugNode]
-  | PugText Pipe Text
+  | PugText TextSyntax Text
   | PugInclude FilePath (Maybe [PugNode])
     -- ^ @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
@@ -63,7 +63,7 @@ data Attr = AttrList [(Text, Maybe Text)] | Class Text
   deriving (Show, Eq)
 
 -- Tracks the syntax used to enter the text.
-data Pipe
+data TextSyntax
   = Normal -- ^ The text follows an element on the same line.
   | Pipe -- ^ The text follows a pipe character.
   | Dot -- ^ The text is part of a text block following a trailing dot.
