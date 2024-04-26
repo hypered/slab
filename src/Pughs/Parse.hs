@@ -11,6 +11,7 @@ import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Void (Void)
+import System.FilePath (takeDirectory, (</>))
 import Text.Megaparsec hiding (label, parse, unexpected)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
@@ -93,22 +94,22 @@ preProcessPugFileE path = do
   pugContent <- liftIO $ T.readFile path
   let mnodes = first PreProcessParseError $ parsePug path pugContent
   nodes <- except mnodes
-  preProcessNodesE nodes
+  preProcessNodesE path nodes
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
-preProcessNodesE :: [PugNode] -> ExceptT PreProcessError IO [PugNode]
-preProcessNodesE nodes = mapM preProcessNodeE nodes
+preProcessNodesE :: FilePath -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
+preProcessNodesE startPath nodes = mapM (preProcessNodeE startPath) nodes
 
-preProcessNodeE :: PugNode -> ExceptT PreProcessError IO PugNode
-preProcessNodeE = \case
+preProcessNodeE :: FilePath -> PugNode -> ExceptT PreProcessError IO PugNode
+preProcessNodeE startPath = \case
   node@PugDoctype -> pure node
   PugElem name mdot attrs nodes -> do
-    nodes' <- preProcessNodesE nodes
+    nodes' <- preProcessNodesE startPath nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
   PugInclude path _ -> do
-    nodes' <- preProcessPugFileE $ path <> ".pug"
+    nodes' <- preProcessPugFileE $ takeDirectory startPath </> (path <> ".pug")
     pure $ PugInclude path (Just nodes')
 
 --------------------------------------------------------------------------------
