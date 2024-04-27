@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 module Pughs.Parse where
 
 import Control.Monad (void)
@@ -6,16 +7,19 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (first)
 import Data.List (nub, sort)
 import Data.List.NonEmpty qualified as NE (toList)
+import Data.Maybe (isJust)
 import Data.Set qualified as S (toList)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
+import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
 import System.Directory (doesFileExist)
 import System.FilePath (takeDirectory, (</>))
 import Text.Megaparsec hiding (label, parse, unexpected)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
+import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 data PugNode
@@ -160,17 +164,43 @@ pugNode = L.indentBlock scn $
 
 pugElement :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugElement = do
+  ref <- L.indentLevel
   header <- pugDiv
   mcontent <- optional pugText
   case mcontent of
     Nothing ->
       if hasTrailingDot $ header []
-      then
-        pure $ L.IndentMany Nothing (pure . header) pugTexts
+      then do
+        scn
+        lvl <- L.indentLevel
+        items <- textBlock ref lvl pugText
+        pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items]
       else
         pure $ L.IndentMany Nothing (pure . header) pugNode
     Just content ->
       pure $ L.IndentNone $ header [PugText Normal content]
+
+-- | Parse lines of text, at least as indented as `lvl`, keeping the white
+-- space in front of those indented more than `lvl.
+-- E.g.:
+--     a
+--       b
+--     c
+-- will return ["a", "  b", "c"].
+textBlock :: Pos -> Pos -> Parser Text -> Parser [Text]
+textBlock ref lvl p = go
+  where
+    go = do
+      scn
+      pos <- L.indentLevel
+      done <- isJust <$> optional eof
+      if done
+        then return []
+        else
+          if
+            | pos <= ref -> return []
+            | pos >= lvl -> ((:) . (T.replicate (unPos pos - unPos lvl) " " <>)) <$> p <*> go
+            | otherwise -> L.incorrectIndent GT lvl pos
 
 pugPipe :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugPipe = do
@@ -346,7 +376,7 @@ parseErrorPretty (ParseErrorBundle errors posState) =
             [ "Error at", errorPos, "-", unexpectedMsg
             , if T.null expectedMsg then "." else expectedMsg
             ]
-      FancyError offset _ -> "Complex error at position " <> T.pack (show offset)
+      FancyError offset err -> "Complex error at position " <> T.pack (show offset) <> ": " <> TL.toStrict (pShowNoColor err)
 
 errorItemPretty :: ErrorItem Char -> Text
 errorItemPretty = \case
