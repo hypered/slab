@@ -109,6 +109,7 @@ pugElemToHtml = \case
   Parse.Blockquote -> H.blockquote
   Parse.Figcaption -> H.figcaption
   Parse.Audio -> H.audio
+  Parse.Script -> H.script
   Parse.Small -> H.small
   Parse.Source -> const H.source
   Parse.Pre -> H.pre

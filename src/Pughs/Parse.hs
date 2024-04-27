@@ -58,6 +58,7 @@ data Elem
   | Blockquote
   | Figcaption
   | Audio
+  | Script
   | Small
   | Source
   | Pre
@@ -235,6 +236,7 @@ pugElem = choice
   , string "figure" *> pure Figure
   , string "blockquote" *> pure Blockquote
   , string "figcaption" *> pure Figcaption
+  , string "script" *> pure Script
   , string "small" *> pure Small
   , string "source" *> pure Source
   ]
