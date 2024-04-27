@@ -143,37 +143,40 @@ parsePugFile path = do
   pure $ parsePug path pugContent
 
 parsePug :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [PugNode]
-parsePug fn = runParser (many pugElement <* eof) fn
+parsePug fn = runParser (many pugNode <* eof) fn
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
 
-pugElement :: Parser PugNode
-pugElement = L.indentBlock scn $
+pugNode :: Parser PugNode
+pugNode = L.indentBlock scn $
   choice
     [ pugDoctype
     , try pugInclude
-    , p
-    , p'
+    , pugElement
+    , pugPipe
     , pugComment
     ]
-  where
-    p = do
-      header <- pugDiv
-      mcontent <- optional pugText
-      case mcontent of
-        Nothing ->
-          if hasTrailingDot $ header []
-          then
-            pure $ L.IndentMany Nothing (pure . header) pugTexts
-          else
-            pure $ L.IndentMany Nothing (pure . header) pugElement
-        Just content ->
-          pure $ L.IndentNone $ header [PugText Normal content]
-    p' = do
-      _ <- lexeme $ string "|"
-      mcontent <- optional pugText
-      pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
+
+pugElement :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugElement = do
+  header <- pugDiv
+  mcontent <- optional pugText
+  case mcontent of
+    Nothing ->
+      if hasTrailingDot $ header []
+      then
+        pure $ L.IndentMany Nothing (pure . header) pugTexts
+      else
+        pure $ L.IndentMany Nothing (pure . header) pugNode
+    Just content ->
+      pure $ L.IndentNone $ header [PugText Normal content]
+
+pugPipe :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugPipe = do
+  _ <- lexeme $ string "|"
+  mcontent <- optional pugText
+  pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
 
 --------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
