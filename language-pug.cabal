@@ -36,6 +36,7 @@ library
   build-depends:
       blaze-html
     , blaze-markup
+    , blaze-svg
     , containers
     , filepath
     , megaparsec

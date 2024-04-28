@@ -15,7 +15,7 @@ import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
 import System.Directory (doesFileExist)
-import System.FilePath (takeDirectory, (</>))
+import System.FilePath (takeDirectory, takeExtension, (<.>), (</>))
 import Text.Megaparsec hiding (label, parse, unexpected)
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
@@ -29,6 +29,9 @@ data PugNode
   | PugInclude FilePath (Maybe [PugNode])
     -- ^ @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
+  | PugMixinDef Text [PugNode]
+  | PugMixinCall Text (Maybe [PugNode])
+    -- ^ The Maybe works similarly to `PugInclude`.
   | PugComment Text
   | PugRawElem Text [PugNode]
   deriving (Show, Eq)
@@ -61,6 +64,7 @@ data Elem
   | Footer
   | Figure
   | Blockquote
+  | Button
   | Figcaption
   | Audio
   | Script
@@ -70,6 +74,7 @@ data Elem
   | Code
   | Img
   | I
+  | Svg
   deriving (Show, Eq)
 
 data TrailingDot = HasDot | NoDot
@@ -93,6 +98,8 @@ extractClasses = nub . sort . concatMap f
   f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (PugText _ _) = []
   f (PugInclude _ children) = maybe [] extractClasses children
+  f (PugMixinDef _ _) = [] -- We extract them in PugMixinCall instead.
+  f (PugMixinCall _ children) = maybe [] extractClasses children
   f (PugComment _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
@@ -132,15 +139,24 @@ preProcessNodeE startPath = \case
   node@(PugText _ _) -> pure node
   PugInclude path _ -> do
     let includedPath = takeDirectory startPath </> path
+        pugExt = takeExtension includedPath == ".pug"
     exists <- liftIO $ doesFileExist includedPath
-    if exists
+    if exists && not pugExt
       then do
+        -- Include the file content as-is.
         content <- liftIO $ T.readFile includedPath
         let nodes' = map (PugText Include) $ T.lines content
         pure $ PugInclude path (Just nodes')
       else do
-        nodes' <- preProcessPugFileE $ includedPath <> ".pug"
+        -- Parse and process the .pug file.
+        let includedPath' = if pugExt then includedPath else includedPath <.> ".pug"
+        nodes' <- preProcessPugFileE includedPath'
         pure $ PugInclude path (Just nodes')
+  PugMixinDef name nodes -> do
+    nodes' <- preProcessNodesE startPath nodes
+    pure $ PugMixinDef name nodes'
+  PugMixinCall name _ -> do
+    pure $ PugMixinCall name (Just [PugComment "TODO process mixin"])
   node@(PugComment _) -> pure node
   node@(PugRawElem _ _) -> pure node
 
@@ -163,6 +179,8 @@ pugNode = L.indentBlock scn $
     , try pugInclude
     , pugElement
     , pugPipe
+    , pugMixinDef
+    , pugMixinCall
     , pugComment
     , pugRawElement
     ]
@@ -273,10 +291,12 @@ pugElem = choice
   , string "footer" *> pure Footer
   , string "figure" *> pure Figure
   , string "blockquote" *> pure Blockquote
+  , string "button" *> pure Button
   , string "figcaption" *> pure Figcaption
   , string "script" *> pure Script
   , string "small" *> pure Small
   , string "source" *> pure Source
+  , string "svg" *> pure Svg
   ]
 
 -- E.g. .a, ()
@@ -339,6 +359,19 @@ pugInclude = do
 
 pugPath :: Parser FilePath
 pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
+
+--------------------------------------------------------------------------------
+pugMixinDef:: Parser (L.IndentOpt Parser PugNode PugNode)
+pugMixinDef = do
+  _ <- lexeme (string "mixin")
+  name <- pugText
+  pure $ L.IndentMany Nothing (pure . PugMixinDef name) pugNode
+
+--------------------------------------------------------------------------------
+pugMixinCall :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugMixinCall = do
+  name <- lexeme (char '+' *> pugText)
+  pure $ L.IndentNone $ PugMixinCall name Nothing
 
 --------------------------------------------------------------------------------
 pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)

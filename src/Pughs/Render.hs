@@ -8,6 +8,7 @@ import Pughs.Parse qualified as Parse
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Svg11 as S
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Text.Blaze.Html.Renderer.Pretty qualified as Pretty (renderHtml)
 
@@ -70,6 +71,11 @@ pugNodeToHtml (Parse.PugText _ s) | s == T.empty = mempty
 pugNodeToHtml (Parse.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Parse.PugInclude path Nothing) = H.stringComment $ "include " <> path
 
+pugNodeToHtml (Parse.PugMixinDef _ _) = mempty
+
+pugNodeToHtml (Parse.PugMixinCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Parse.PugMixinCall name Nothing) = H.textComment $ "+" <> name
+
 pugNodeToHtml (Parse.PugComment _) = mempty -- TODO Should it appear in the HTML ?
 pugNodeToHtml (Parse.PugRawElem content children) = do
   H.preEscapedText content -- TODO Construct a proper tag ?
@@ -83,6 +89,8 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Parse.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
   f (Parse.PugText _ s) = s
   f (Parse.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
+  f (Parse.PugMixinDef _ _) = error "pugTextsToHtml called on a PugMixinDef"
+  f (Parse.PugMixinCall _ _) = error "pugTextsToHtml called on a PugMixinCall"
   f (Parse.PugComment _) = error "pugTextsToHtml called on a PugComment"
   f (Parse.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
 
@@ -111,6 +119,7 @@ pugElemToHtml = \case
   Parse.Footer -> H.footer
   Parse.Figure -> H.figure
   Parse.Blockquote -> H.blockquote
+  Parse.Button -> H.button
   Parse.Figcaption -> H.figcaption
   Parse.Audio -> H.audio
   Parse.Script -> H.script
@@ -120,3 +129,4 @@ pugElemToHtml = \case
   Parse.Code -> H.code
   Parse.Img -> const H.img
   Parse.I -> H.i
+  Parse.Svg -> S.svg
