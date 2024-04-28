@@ -108,6 +108,32 @@ extractClasses = nub . sort . concatMap f
   h ("class", Just c) = [c]
   h _ = []
 
+-- Return type used for `extractMixins`.
+data PugMixin
+  = PugMixinDef' Text [PugNode]
+  | PugMixinCall' Text
+  deriving (Show, Eq)
+
+extractMixins :: [PugNode] -> [PugMixin]
+extractMixins = concatMap f
+ where
+  f PugDoctype = []
+  f (PugElem _ _ _ children) = extractMixins children
+  f (PugText _ _) = []
+  f (PugInclude _ children) = maybe [] extractMixins children
+  f (PugMixinDef name children) = [PugMixinDef' name children]
+  f (PugMixinCall name children) = [PugMixinCall' name] <> maybe [] extractMixins children
+  f (PugComment _) = []
+  f (PugRawElem _ _) = []
+
+findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
+findMixin name ms = case filter f ms of
+  [PugMixinDef' _ nodes] -> Just nodes
+  _ -> Nothing
+ where
+  f (PugMixinDef' name' _) = name == name'
+  f _ = False
+
 --------------------------------------------------------------------------------
 data PreProcessError
   = PreProcessParseError (ParseErrorBundle Text Void)

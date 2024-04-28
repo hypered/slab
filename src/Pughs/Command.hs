@@ -2,6 +2,7 @@
 
 module Pughs.Command where
 
+import Data.Text (Text)
 import Options.Applicative ((<**>))
 import Options.Applicative qualified as A
 
@@ -13,7 +14,8 @@ data Command
 data CommandWithPath
   = Render RenderMode
   | Parse
-  | Classes -- ^ List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes/mixins.
+  | Classes -- ^ List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes.
+  | Mixins (Maybe Text) -- ^ List the mixins used in a template. If a name is given, extract that definition.
 
 data RenderMode = RenderNormal | RenderPretty
 
@@ -52,6 +54,12 @@ parser =
             A.progDesc
               "Parse a Pug template and report its CSS classes"
         )
+    <>  A.command
+        "mixins"
+        ( A.info (parserMixins <**> A.helper) $
+            A.progDesc
+              "Parse a Pug template and report its mixins"
+        )
     )
 
 --------------------------------------------------------------------------------
@@ -72,6 +80,15 @@ parserClasses :: A.Parser Command
 parserClasses = do
   pathAndmode <- parserWithPath
   pure $ uncurry CommandWithPath pathAndmode Classes
+
+parserMixins :: A.Parser Command
+parserMixins = do
+  pathAndmode <- parserWithPath
+  mname <- A.optional $
+    A.argument
+      A.str
+      (A.metavar "NAME" <> A.help "Mixin name to extract.")
+  pure $ uncurry CommandWithPath pathAndmode $ Mixins mname
 
 --------------------------------------------------------------------------------
 parserWithPath :: A.Parser (FilePath, ParseMode)

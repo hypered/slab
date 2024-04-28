@@ -38,6 +38,17 @@ run (Command.CommandWithPath path pmode Command.Classes) = do
   case parsed of
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> mapM_ T.putStrLn $ Parse.extractClasses nodes
+run (Command.CommandWithPath path pmode (Command.Mixins mname)) = do
+  parsed <- parseWithMode path pmode
+  case parsed of
+    Left err -> TL.putStrLn $ pShowNoColor err
+    Right nodes -> do
+      let ms = Parse.extractMixins nodes
+      case mname of
+        Just name -> case Parse.findMixin name ms of
+          Just m -> TL.putStrLn $ pShowNoColor m
+          Nothing -> putStrLn "No such mixin."
+        Nothing -> TL.putStrLn $ pShowNoColor ms
 
 --------------------------------------------------------------------------------
 parseWithMode :: FilePath
