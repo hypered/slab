@@ -71,6 +71,9 @@ pugNodeToHtml (Parse.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Parse.PugInclude path Nothing) = H.stringComment $ "include " <> path
 
 pugNodeToHtml (Parse.PugComment _) = mempty -- TODO Should it appear in the HTML ?
+pugNodeToHtml (Parse.PugRawElem content children) = do
+  H.preEscapedText content -- TODO Construct a proper tag ?
+  mapM_ pugNodeToHtml children
 
 pugTextsToHtml :: [Parse.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
@@ -81,6 +84,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Parse.PugText _ s) = s
   f (Parse.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
   f (Parse.PugComment _) = error "pugTextsToHtml called on a PugComment"
+  f (Parse.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
 
 pugElemToHtml :: Parse.Elem -> Html -> Html
 pugElemToHtml = \case

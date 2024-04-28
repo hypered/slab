@@ -30,6 +30,7 @@ data PugNode
     -- ^ @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
   | PugComment Text
+  | PugRawElem Text [PugNode]
   deriving (Show, Eq)
 
 hasTrailingDot :: PugNode -> Bool
@@ -93,6 +94,8 @@ extractClasses = nub . sort . concatMap f
   f (PugText _ _) = []
   f (PugInclude _ children) = maybe [] extractClasses children
   f (PugComment _) = []
+  -- TODO Would be nice to extract classes from verbatim HTML too.
+  f (PugRawElem _ _) = []
   g (AttrList xs) = concatMap h xs
   g (Class c) = [c]
   h ("class", Just c) = [c]
@@ -139,6 +142,7 @@ preProcessNodeE startPath = \case
         nodes' <- preProcessPugFileE $ includedPath <> ".pug"
         pure $ PugInclude path (Just nodes')
   node@(PugComment _) -> pure node
+  node@(PugRawElem _ _) -> pure node
 
 --------------------------------------------------------------------------------
 parsePugFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [PugNode])
@@ -160,6 +164,7 @@ pugNode = L.indentBlock scn $
     , pugElement
     , pugPipe
     , pugComment
+    , pugRawElement
     ]
 
 pugElement :: Parser (L.IndentOpt Parser PugNode PugNode)
@@ -341,6 +346,18 @@ pugComment = do
   _ <- lexeme (string "//")
   content <- pugText
   pure $ L.IndentNone $ PugComment content
+
+--------------------------------------------------------------------------------
+pugRawElement :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugRawElement = do
+  header <- pugAngleBracket
+  pure $ L.IndentMany Nothing (pure . header) pugNode
+
+pugAngleBracket :: Parser ([PugNode] -> PugNode)
+pugAngleBracket = do
+  _ <- char '<'
+  content <- pugText
+  pure $ PugRawElem $ "<" <> content
 
 --------------------------------------------------------------------------------
 scn :: Parser ()
