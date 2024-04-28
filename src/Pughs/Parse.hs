@@ -68,6 +68,9 @@ data Elem
   | Tbody
   | Tr
   | Td
+  | Dl
+  | Dt
+  | Dd
   | Footer
   | Figure
   | Form
@@ -368,6 +371,9 @@ pugElem = choice
   , string "tbody" *> pure Tbody
   , string "tr" *> pure Tr
   , string "td" *> pure Td
+  , string "dl" *> pure Dl
+  , string "dt" *> pure Dt
+  , string "dd" *> pure Dd
   , string "footer" *> pure Footer
   , string "figure" *> pure Figure
   , string "form" *> pure Form
