@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE RecordWildCards #-}
 module Pughs.Parse where
 
 import Control.Monad (void)
@@ -135,6 +136,10 @@ findMixin name ms = case filter f ms of
   f _ = False
 
 --------------------------------------------------------------------------------
+data Context = Context
+  { ctxStartPath :: FilePath
+  }
+
 data PreProcessError
   = PreProcessParseError (ParseErrorBundle Text Void)
   | PreProcessError Text -- TODO Add specific variants instead of using Text.
@@ -149,22 +154,25 @@ preProcessPugFileE path = do
   pugContent <- liftIO $ T.readFile path
   let mnodes = first PreProcessParseError $ parsePug path pugContent
   nodes <- except mnodes
-  preProcessNodesE path nodes
+  let ctx = Context
+        { ctxStartPath = path
+        }
+  preProcessNodesE ctx nodes
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
-preProcessNodesE :: FilePath -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
-preProcessNodesE startPath nodes = mapM (preProcessNodeE startPath) nodes
+preProcessNodesE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
+preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
 
-preProcessNodeE :: FilePath -> PugNode -> ExceptT PreProcessError IO PugNode
-preProcessNodeE startPath = \case
+preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
+preProcessNodeE ctx@Context {..} = \case
   node@PugDoctype -> pure node
   PugElem name mdot attrs nodes -> do
-    nodes' <- preProcessNodesE startPath nodes
+    nodes' <- preProcessNodesE ctx nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
   PugInclude path _ -> do
-    let includedPath = takeDirectory startPath </> path
+    let includedPath = takeDirectory ctxStartPath </> path
         pugExt = takeExtension includedPath == ".pug"
     exists <- liftIO $ doesFileExist includedPath
     if exists && not pugExt
@@ -179,7 +187,7 @@ preProcessNodeE startPath = \case
         nodes' <- preProcessPugFileE includedPath'
         pure $ PugInclude path (Just nodes')
   PugMixinDef name nodes -> do
-    nodes' <- preProcessNodesE startPath nodes
+    nodes' <- preProcessNodesE ctx nodes
     pure $ PugMixinDef name nodes'
   PugMixinCall name _ -> do
     pure $ PugMixinCall name (Just [PugComment "TODO process mixin"])
