@@ -17,7 +17,8 @@ import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
 import System.Directory (doesFileExist)
 import System.FilePath (takeDirectory, takeExtension, (<.>), (</>))
-import Text.Megaparsec hiding (label, parse, unexpected)
+import Text.Megaparsec hiding (label, parse, unexpected, Label)
+import Text.Megaparsec qualified as M
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
 import Text.Pretty.Simple (pShowNoColor)
@@ -69,6 +70,8 @@ data Elem
   | Td
   | Footer
   | Figure
+  | Form
+  | Label
   | Blockquote
   | Button
   | Figcaption
@@ -366,6 +369,8 @@ pugElem = choice
   , string "td" *> pure Td
   , string "footer" *> pure Footer
   , string "figure" *> pure Figure
+  , string "form" *> pure Form
+  , string "label" *> pure Label
   , string "blockquote" *> pure Blockquote
   , string "button" *> pure Button
   , string "figcaption" *> pure Figcaption
@@ -507,5 +512,5 @@ parseErrorPretty (ParseErrorBundle errors posState) =
 errorItemPretty :: ErrorItem Char -> Text
 errorItemPretty = \case
   Tokens ts -> "character '" <> T.pack (NE.toList ts) <> "'"
-  Label label -> T.pack (NE.toList label)
+  M.Label label -> T.pack (NE.toList label)
   EndOfInput -> "end of input"
