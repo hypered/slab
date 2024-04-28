@@ -77,6 +77,7 @@ data Elem
   | Figcaption
   | Audio
   | Script
+  | Style
   | Small
   | Source
   | Pre
@@ -375,6 +376,7 @@ pugElem = choice
   , string "button" *> pure Button
   , string "figcaption" *> pure Figcaption
   , string "script" *> pure Script
+  , string "style" *> pure Style
   , string "small" *> pure Small
   , string "source" *> pure Source
   , string "svg" *> pure Svg
