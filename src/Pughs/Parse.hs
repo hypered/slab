@@ -62,6 +62,11 @@ data Elem
   | P
   | Ul
   | Li
+  | Table
+  | Thead
+  | Tbody
+  | Tr
+  | Td
   | Footer
   | Figure
   | Blockquote
@@ -354,6 +359,11 @@ pugElem = choice
   , string "ul" *> pure Ul
   , string "link" *> pure Link
   , string "li" *> pure Li
+  , string "table" *> pure Table
+  , string "thead" *> pure Thead
+  , string "tbody" *> pure Tbody
+  , string "tr" *> pure Tr
+  , string "td" *> pure Td
   , string "footer" *> pure Footer
   , string "figure" *> pure Figure
   , string "blockquote" *> pure Blockquote

@@ -116,6 +116,11 @@ pugElemToHtml = \case
   Parse.P -> H.p
   Parse.Ul -> H.ul
   Parse.Li -> H.li
+  Parse.Table -> H.table
+  Parse.Thead -> H.thead
+  Parse.Tbody -> H.tbody
+  Parse.Tr -> H.tr
+  Parse.Td -> H.td
   Parse.Footer -> H.footer
   Parse.Figure -> H.figure
   Parse.Blockquote -> H.blockquote

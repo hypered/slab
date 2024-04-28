@@ -1,14 +1,12 @@
 module Pughs.Run where
 
 import Data.Bifunctor (first)
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy.IO as TL
 import Pughs.Command qualified as Command
 import Pughs.Parse qualified as Parse
 import Pughs.Render qualified as Render
-import qualified Text.Blaze.Html5 as H
 import Text.Megaparsec hiding (parse)
 import Text.Pretty.Simple (pShowNoColor)
 

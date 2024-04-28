@@ -45,7 +45,7 @@ mkGoldenTest path = do
   action = do
     parsed <- Parse.preProcessPugFile path
     case parsed of
-      Left err -> pure "TODO"
+      Left _ -> pure "TODO"
       Right nodes -> do
         let output = Render.prettyHtmls . Render.pugNodesToHtml $ nodes
         pure output
