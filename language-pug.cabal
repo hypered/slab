@@ -38,6 +38,7 @@ library
     , blaze-markup
     , blaze-svg
     , containers
+    , directory
     , filepath
     , megaparsec
     , pretty-simple

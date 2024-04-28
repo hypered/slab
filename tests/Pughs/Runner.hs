@@ -4,7 +4,8 @@ module Pughs.Runner
 
 import Data.List (sort)
 import Data.Text (Text)
-import Pughs.Run qualified as Run
+import Pughs.Parse qualified as Parse
+import Pughs.Render qualified as Render
 import System.FilePath
 import System.FilePath.Glob qualified as Glob
 import Test.Tasty
@@ -42,7 +43,12 @@ mkGoldenTest path = do
  where
   action :: IO Text
   action = do
-    mrenderedHtml <- Run.renderPretty path
-    either pure pure mrenderedHtml
+    parsed <- Parse.preProcessPugFile path
+    case parsed of
+      Left err -> pure "TODO"
+      Right nodes -> do
+        let output = Render.prettyHtmls . Render.pugNodesToHtml $ nodes
+        pure output
 
   convert = id
+

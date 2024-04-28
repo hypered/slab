@@ -58,17 +58,3 @@ parseWithMode path pmode =
   case pmode of
     Command.ParseShallow -> first Parse.PreProcessParseError <$> Parse.parsePugFile path
     Command.ParseDeep -> Parse.preProcessPugFile path
-
---------------------------------------------------------------------------------
-renderPretty :: FilePath -> IO (Either Text Text)
-renderPretty path = do
-  pugContent <- T.readFile path
-  let parsedHtml = parse path pugContent
-  pure $ fmap Render.prettyHtmls parsedHtml
-
-parse :: FilePath -> Text -> Either Text [H.Html]
-parse fn =
-  either
-    (Left . T.pack . errorBundlePretty)
-    (Right . Render.pugNodesToHtml)
-  . Parse.parsePug fn

@@ -3,7 +3,7 @@
 module Pughs.Parse where
 
 import Control.Monad (void)
-import Control.Monad.Trans.Except (ExceptT, runExceptT, except)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, except, throwE)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bifunctor (first)
 import Data.List (nub, sort)
@@ -138,6 +138,7 @@ findMixin name ms = case filter f ms of
 --------------------------------------------------------------------------------
 data Context = Context
   { ctxStartPath :: FilePath
+  , ctxNodes :: [PugNode] -- ^ Nodes before pre-processing.
   }
 
 data PreProcessError
@@ -156,13 +157,20 @@ preProcessPugFileE path = do
   nodes <- except mnodes
   let ctx = Context
         { ctxStartPath = path
+        , ctxNodes = nodes
         }
-  preProcessNodesE ctx nodes
+  nodes' <- preProcessNodesE ctx nodes
+  preProcessMixinsE ctx { ctxNodes = nodes' } nodes'
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
 preProcessNodesE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
+
+-- Process mixin calls. This should be done after processing the include statement
+-- since mixins may be defined in included files.
+preProcessMixinsE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
+preProcessMixinsE ctx nodes = mapM (preProcessMixinE ctx) nodes
 
 preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
 preProcessNodeE ctx@Context {..} = \case
@@ -189,8 +197,32 @@ preProcessNodeE ctx@Context {..} = \case
   PugMixinDef name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugMixinDef name nodes'
+  node@(PugMixinCall _ _) -> pure node
+  node@(PugComment _) -> pure node
+  node@(PugRawElem _ _) -> pure node
+
+preProcessMixinE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
+preProcessMixinE ctx@Context {..} = \case
+  node@PugDoctype -> pure node
+  PugElem name mdot attrs nodes -> do
+    nodes' <- preProcessMixinsE ctx nodes
+    pure $ PugElem name mdot attrs nodes'
+  node@(PugText _ _) -> pure node
+  PugInclude path mnodes -> do
+    case mnodes of
+      Just nodes -> do
+        nodes' <- preProcessMixinsE ctx nodes
+        pure $ PugInclude path (Just nodes')
+      Nothing ->
+        pure $ PugInclude path Nothing
+  PugMixinDef name nodes -> do
+    nodes' <- preProcessMixinsE ctx nodes
+    pure $ PugMixinDef name nodes'
   PugMixinCall name _ -> do
-    pure $ PugMixinCall name (Just [PugComment "TODO process mixin"])
+    case findMixin name $ extractMixins ctxNodes of
+      Just body ->
+        pure $ PugMixinCall name (Just body)
+      Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
   node@(PugComment _) -> pure node
   node@(PugRawElem _ _) -> pure node
 
@@ -404,7 +436,7 @@ pugMixinDef = do
 --------------------------------------------------------------------------------
 pugMixinCall :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugMixinCall = do
-  name <- lexeme (char '+' *> pugText)
+  name <- lexeme (char '+') *> pugText
   pure $ L.IndentNone $ PugMixinCall name Nothing
 
 --------------------------------------------------------------------------------
