@@ -1,4 +1,3 @@
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 module Pughs.Parse where
 
@@ -275,7 +274,8 @@ pugElement = do
         scn
         lvl <- L.indentLevel
         items <- textBlock ref lvl pugText
-        pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items]
+        let items' = realign items
+        pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items']
       else
         pure $ L.IndentMany Nothing (pure . header) pugNode
     Just content ->
@@ -298,10 +298,18 @@ textBlock ref lvl p = go
       if done
         then return []
         else
-          if
-            | pos <= ref -> return []
-            | pos >= lvl -> ((:) . (T.replicate (unPos pos - unPos lvl) " " <>)) <$> p <*> go
-            | otherwise -> L.incorrectIndent GT lvl pos
+          if pos <= ref
+            then return []
+            else
+              ((:) . (T.replicate (unPos pos - unPos ref) " " <>)) <$> p <*> go
+
+-- | Considering all the given lign as a block, strip the leading whitespace of
+-- each ligne so that the left-most character of the block is in the first
+-- column.
+realign :: [Text] -> [Text]
+realign xs = map (T.drop n) xs
+ where
+  n = minimum $ map (T.length . T.takeWhile (== ' ')) xs
 
 pugPipe :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugPipe = do
