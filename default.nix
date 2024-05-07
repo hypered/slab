@@ -6,4 +6,15 @@ in rec
   {
     # Build with nix-build -A <attr>
     binaries = nixpkgs.haskellPackages.language-pug;
+
+    # A shell to try out our binaries
+    # Run with nix-shell default.nix -A shell
+    shell = nixpkgs.mkShell {
+      buildInputs = [
+        binaries
+      ];
+      shellHook = ''
+        source <(pughs --bash-completion-script `which pughs`)
+      '';
+    };
   }
