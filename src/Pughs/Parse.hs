@@ -272,8 +272,7 @@ pugElement = do
       if hasTrailingDot $ header []
       then do
         scn
-        lvl <- L.indentLevel
-        items <- textBlock ref lvl pugText
+        items <- textBlock ref pugText
         let items' = realign items
         pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items']
       else
@@ -281,15 +280,14 @@ pugElement = do
     Just content ->
       pure $ L.IndentNone $ header [PugText Normal content]
 
--- | Parse lines of text, at least as indented as `lvl`, keeping the white
--- space in front of those indented more than `lvl.
+-- | Parse lines of text, indented more than `ref`.
 -- E.g.:
 --     a
 --       b
 --     c
 -- will return ["a", "  b", "c"].
-textBlock :: Pos -> Pos -> Parser Text -> Parser [Text]
-textBlock ref lvl p = go
+textBlock :: Pos -> Parser Text -> Parser [Text]
+textBlock ref p = go
   where
     go = do
       scn
@@ -325,9 +323,6 @@ pugDoctype = do
   pure $ L.IndentNone PugDoctype
 
 --------------------------------------------------------------------------------
-pugTexts :: Parser PugNode
-pugTexts = PugText Dot <$> pugText
-
 -- E.g. div, div.a, .a
 pugDiv :: Parser ([PugNode] -> PugNode)
 pugDiv =
