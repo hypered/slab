@@ -1,6 +1,12 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Pughs.Command where
+module Pughs.Command
+  ( Command (..)
+  , CommandWithPath (..)
+  , RenderMode (..)
+  , ParseMode (..)
+  , parserInfo
+  ) where
 
 import Data.Text (Text)
 import Options.Applicative ((<**>))

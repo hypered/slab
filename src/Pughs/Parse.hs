@@ -1,5 +1,17 @@
 {-# LANGUAGE RecordWildCards #-}
-module Pughs.Parse where
+module Pughs.Parse
+  ( PugNode (..)
+  , Elem (..)
+  , TrailingDot (..)
+  , Attr (..)
+  , extractClasses
+  , extractMixins
+  , findMixin
+  , PreProcessError (..)
+  , parsePugFile
+  , preProcessPugFile
+  , parseErrorPretty
+  ) where
 
 import Control.Monad (void)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, except, throwE)
@@ -16,7 +28,7 @@ import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
 import System.Directory (doesFileExist)
 import System.FilePath (takeDirectory, takeExtension, (<.>), (</>))
-import Text.Megaparsec hiding (label, parse, unexpected, Label)
+import Text.Megaparsec hiding (label, parse, parseErrorPretty, unexpected, Label)
 import Text.Megaparsec qualified as M
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L

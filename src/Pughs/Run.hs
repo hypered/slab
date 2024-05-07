@@ -1,4 +1,6 @@
-module Pughs.Run where
+module Pughs.Run
+  ( run
+  ) where
 
 import Data.Bifunctor (first)
 import qualified Data.Text as T

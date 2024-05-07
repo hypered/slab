@@ -1,4 +1,6 @@
-module Main where
+module Main
+  ( main
+  ) where
 
 import Options.Applicative qualified as A
 import Pughs.Command qualified as Command

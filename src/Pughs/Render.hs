@@ -1,4 +1,8 @@
-module Pughs.Render where
+module Pughs.Render
+  ( prettyHtmls
+  , renderHtmls
+  , pugNodesToHtml
+  ) where
 
 import Data.String (fromString)
 import Data.Text (Text)
