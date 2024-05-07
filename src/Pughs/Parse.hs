@@ -283,6 +283,7 @@ pugNode =
       , try pugInclude
       , pugElement
       , pugPipe
+      , pugCode'
       , pugMixinDef
       , pugMixinCall
       , pugComment
@@ -350,6 +351,12 @@ pugPipe = do
   _ <- lexeme $ string "|"
   mcontent <- optional pugText
   pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
+
+pugCode' :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugCode' = do
+  _ <- lexeme $ string "="
+  content <- pugCode
+  pure $ L.IndentNone $ PugCode content
 
 pugCode :: Parser Text
 pugCode = do
