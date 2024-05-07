@@ -293,25 +293,29 @@ pugElement :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugElement = do
   ref <- L.indentLevel
   header <- pugDiv
-  mcontent <- optional pugText
-  case mcontent of
-    Nothing ->
-      case trailingSym $ header [] of
-        HasDot -> do
+  case trailingSym $ header [] of
+    HasDot -> do
+      mcontent <- optional pugText
+      case mcontent of
+        Just content -> pure $ L.IndentNone $ header [PugText Dot content]
+        Nothing -> do
           scn
           items <- textBlock ref pugText
           let items' = realign items
           pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items']
-        HasEqual -> do
+    HasEqual -> do
+      mcontent <- optional pugCode
+      case mcontent of
+        Just content -> pure $ L.IndentNone $ header [PugCode content]
+        Nothing -> do
           scn
           content <- pugCode
           pure $ L.IndentNone $ header [PugCode content]
-        NoSym -> pure $ L.IndentMany Nothing (pure . header) pugNode
-    Just content ->
-      case trailingSym $ header [] of
-        HasDot -> pure $ L.IndentNone $ header [PugText Dot content]
-        HasEqual -> pure $ L.IndentNone $ header [PugCode content]
-        NoSym -> pure $ L.IndentNone $ header [PugText Normal content]
+    NoSym -> do
+      mcontent <- optional pugText
+      case mcontent of
+        Just content -> pure $ L.IndentNone $ header [PugText Normal content]
+        Nothing -> pure $ L.IndentMany Nothing (pure . header) pugNode
 
 -- | Parse lines of text, indented more than `ref`.
 -- E.g.:
