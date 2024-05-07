@@ -9,12 +9,12 @@ import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
 import Pughs.Parse qualified as Parse
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A
-import qualified Text.Blaze.Svg11 as S
-import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Text.Blaze.Html.Renderer.Pretty qualified as Pretty (renderHtml)
+import Text.Blaze.Html.Renderer.Text (renderHtml)
+import Text.Blaze.Html5 (Html, (!))
+import Text.Blaze.Html5 qualified as H
+import Text.Blaze.Html5.Attributes qualified as A
+import Text.Blaze.Svg11 qualified as S
 
 --------------------------------------------------------------------------------
 prettyHtmls :: [Html] -> Text
@@ -29,20 +29,20 @@ pugNodesToHtml = map pugNodeToHtml
 
 pugNodeToHtml :: Parse.PugNode -> H.Html
 pugNodeToHtml Parse.PugDoctype = H.docType
-
 pugNodeToHtml (Parse.PugElem name mdot attrs children) =
-  mAddAttr $ mAddClass $ pugElemToHtml name $ mconcat $
-    if mdot == Parse.HasDot
-    then
-      [pugTextsToHtml children]
-    else
-      map pugNodeToHtml children
+  mAddAttr $
+    mAddClass $
+      pugElemToHtml name $
+        mconcat $
+          if mdot == Parse.HasDot
+            then [pugTextsToHtml children]
+            else map pugNodeToHtml children
  where
   mAddClass :: H.Html -> H.Html
   mAddClass e =
     if classNames == []
-    then e
-    else e ! A.class_ (H.toValue classNames')
+      then e
+      else e ! A.class_ (H.toValue classNames')
   classNames =
     concatMap
       ( \case
@@ -68,18 +68,14 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
   g ("class", _) = []
   g (a, Just b) = [(T.unpack a, b)]
   g (a, Nothing) = [(T.unpack a, a)]
-
-pugNodeToHtml (Parse.PugText _ s) | s == T.empty = mempty
-                                  | otherwise = H.preEscapedText s -- TODO
-
+pugNodeToHtml (Parse.PugText _ s)
+  | s == T.empty = mempty
+  | otherwise = H.preEscapedText s -- TODO
 pugNodeToHtml (Parse.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Parse.PugInclude path Nothing) = H.stringComment $ "include " <> path
-
 pugNodeToHtml (Parse.PugMixinDef _ _) = mempty
-
 pugNodeToHtml (Parse.PugMixinCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Parse.PugMixinCall name Nothing) = H.textComment $ "+" <> name
-
 pugNodeToHtml (Parse.PugComment _) = mempty -- TODO Should it appear in the HTML ?
 pugNodeToHtml (Parse.PugRawElem content children) = do
   H.preEscapedText content -- TODO Construct a proper tag ?

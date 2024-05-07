@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+
 module Pughs.Parse
   ( PugNode (..)
   , Elem (..)
@@ -14,8 +15,8 @@ module Pughs.Parse
   ) where
 
 import Control.Monad (void)
-import Control.Monad.Trans.Except (ExceptT, runExceptT, except, throwE)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
 import Data.Bifunctor (first)
 import Data.List (nub, sort)
 import Data.List.NonEmpty qualified as NE (toList)
@@ -28,7 +29,7 @@ import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
 import System.Directory (doesFileExist)
 import System.FilePath (takeDirectory, takeExtension, (<.>), (</>))
-import Text.Megaparsec hiding (label, parse, parseErrorPretty, unexpected, Label)
+import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
 import Text.Megaparsec qualified as M
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
@@ -36,15 +37,16 @@ import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 data PugNode
-  = PugDoctype -- ^ Only @doctype html@ for now.
+  = -- | Only @doctype html@ for now.
+    PugDoctype
   | PugElem Elem TrailingDot [Attr] [PugNode]
   | PugText TextSyntax Text
-  | PugInclude FilePath (Maybe [PugNode])
-    -- ^ @Nothing@ when the template is parsed, then @Just nodes@ after
+  | -- | @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
+    PugInclude FilePath (Maybe [PugNode])
   | PugMixinDef Text [PugNode]
-  | PugMixinCall Text (Maybe [PugNode])
-    -- ^ The Maybe works similarly to `PugInclude`.
+  | -- | The Maybe works similarly to `PugInclude`.
+    PugMixinCall Text (Maybe [PugNode])
   | PugComment Text
   | PugRawElem Text [PugNode]
   deriving (Show, Eq)
@@ -109,10 +111,14 @@ data Attr = AttrList [(Text, Maybe Text)] | Class Text
 
 -- Tracks the syntax used to enter the text.
 data TextSyntax
-  = Normal -- ^ The text follows an element on the same line.
-  | Pipe -- ^ The text follows a pipe character.
-  | Dot -- ^ The text is part of a text block following a trailing dot.
-  | Include -- ^ The text is the content of an include statement without a .pug extension.
+  = -- | The text follows an element on the same line.
+    Normal
+  | -- | The text follows a pipe character.
+    Pipe
+  | -- | The text is part of a text block following a trailing dot.
+    Dot
+  | -- | The text is the content of an include statement without a .pug extension.
+    Include
   deriving (Show, Eq)
 
 extractClasses :: [PugNode] -> [Text]
@@ -161,7 +167,8 @@ findMixin name ms = case filter f ms of
 --------------------------------------------------------------------------------
 data Context = Context
   { ctxStartPath :: FilePath
-  , ctxNodes :: [PugNode] -- ^ Nodes before pre-processing.
+  , ctxNodes :: [PugNode]
+  -- ^ Nodes before pre-processing.
   }
 
 data PreProcessError
@@ -178,12 +185,13 @@ preProcessPugFileE path = do
   pugContent <- liftIO $ T.readFile path
   let mnodes = first PreProcessParseError $ parsePug path pugContent
   nodes <- except mnodes
-  let ctx = Context
-        { ctxStartPath = path
-        , ctxNodes = nodes
-        }
+  let ctx =
+        Context
+          { ctxStartPath = path
+          , ctxNodes = nodes
+          }
   nodes' <- preProcessNodesE ctx nodes
-  preProcessMixinsE ctx { ctxNodes = nodes' } nodes'
+  preProcessMixinsE ctx {ctxNodes = nodes'} nodes'
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
@@ -262,17 +270,18 @@ parsePug fn = runParser (many pugNode <* eof) fn
 type Parser = Parsec Void Text
 
 pugNode :: Parser PugNode
-pugNode = L.indentBlock scn $
-  choice
-    [ pugDoctype
-    , try pugInclude
-    , pugElement
-    , pugPipe
-    , pugMixinDef
-    , pugMixinCall
-    , pugComment
-    , pugRawElement
-    ]
+pugNode =
+  L.indentBlock scn $
+    choice
+      [ pugDoctype
+      , try pugInclude
+      , pugElement
+      , pugPipe
+      , pugMixinDef
+      , pugMixinCall
+      , pugComment
+      , pugRawElement
+      ]
 
 pugElement :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugElement = do
@@ -282,13 +291,12 @@ pugElement = do
   case mcontent of
     Nothing ->
       if hasTrailingDot $ header []
-      then do
-        scn
-        items <- textBlock ref pugText
-        let items' = realign items
-        pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items']
-      else
-        pure $ L.IndentMany Nothing (pure . header) pugNode
+        then do
+          scn
+          items <- textBlock ref pugText
+          let items' = realign items
+          pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items']
+        else pure $ L.IndentMany Nothing (pure . header) pugNode
     Just content ->
       pure $ L.IndentNone $ header [PugText Normal content]
 
@@ -300,18 +308,17 @@ pugElement = do
 -- will return ["a", "  b", "c"].
 textBlock :: Pos -> Parser Text -> Parser [Text]
 textBlock ref p = go
-  where
-    go = do
-      scn
-      pos <- L.indentLevel
-      done <- isJust <$> optional eof
-      if done
-        then return []
-        else
-          if pos <= ref
-            then return []
-            else
-              ((:) . (T.replicate (unPos pos - unPos ref) " " <>)) <$> p <*> go
+ where
+  go = do
+    scn
+    pos <- L.indentLevel
+    done <- isJust <$> optional eof
+    if done
+      then return []
+      else
+        if pos <= ref
+          then return []
+          else ((:) . (T.replicate (unPos pos - unPos ref) " " <>)) <$> p <*> go
 
 -- | Considering all the given lign as a block, strip the leading whitespace of
 -- each ligne so that the left-most character of the block is in the first
@@ -343,81 +350,88 @@ pugDiv =
 -- E.g. div, div.a, div()
 pugElemWithAttrs :: Parser ([PugNode] -> PugNode)
 pugElemWithAttrs = do
-  (name, attrs, mdot) <- lexeme
-    ( do
-        a <- pugElem
-        -- `try` because we want to backtrack if there is a dot
-        -- not followed by a class name, for mdot to succeed.
-        b <- many (try pugClass <|> pugAttrList)
-        mdot <- optional (string ".")
-        pure (a, b, maybe NoDot (const HasDot) mdot)
-    ) <?> "div tag"
+  (name, attrs, mdot) <-
+    lexeme
+      ( do
+          a <- pugElem
+          -- `try` because we want to backtrack if there is a dot
+          -- not followed by a class name, for mdot to succeed.
+          b <- many (try pugClass <|> pugAttrList)
+          mdot <- optional (string ".")
+          pure (a, b, maybe NoDot (const HasDot) mdot)
+      )
+      <?> "div tag"
   pure $ PugElem name mdot attrs
 
 pugElem :: Parser Elem
-pugElem = choice
-  [ string "html" *> pure Html
-  , string "body" *> pure Body
-  , string "div" *> pure Div
-  , string "span" *> pure Span
-  , string "hr" *> pure Hr
-  , string "h1" *> pure H1
-  , string "h2" *> pure H2
-  , string "h3" *> pure H3
-  , string "h4" *> pure H4
-  , string "h5" *> pure H5
-  , string "h6" *> pure H6
-  , string "header" *> pure Header
-  , string "head" *> pure Head
-  , string "meta" *> pure Meta
-  , string "main" *> pure Main
-  , string "audio" *> pure Audio
-  , string "a" *> pure A
-  , string "code" *> pure Code
-  , string "img" *> pure Img
-  , string "i" *> pure I
-  , string "pre" *> pure Pre
-  , string "p" *> pure P
-  , string "ul" *> pure Ul
-  , string "link" *> pure Link
-  , string "li" *> pure Li
-  , string "table" *> pure Table
-  , string "thead" *> pure Thead
-  , string "tbody" *> pure Tbody
-  , string "tr" *> pure Tr
-  , string "td" *> pure Td
-  , string "dl" *> pure Dl
-  , string "dt" *> pure Dt
-  , string "dd" *> pure Dd
-  , string "footer" *> pure Footer
-  , string "figure" *> pure Figure
-  , string "form" *> pure Form
-  , string "label" *> pure Label
-  , string "blockquote" *> pure Blockquote
-  , string "button" *> pure Button
-  , string "figcaption" *> pure Figcaption
-  , string "script" *> pure Script
-  , string "style" *> pure Style
-  , string "small" *> pure Small
-  , string "source" *> pure Source
-  , string "svg" *> pure Svg
-  ]
+pugElem =
+  choice
+    [ string "html" *> pure Html
+    , string "body" *> pure Body
+    , string "div" *> pure Div
+    , string "span" *> pure Span
+    , string "hr" *> pure Hr
+    , string "h1" *> pure H1
+    , string "h2" *> pure H2
+    , string "h3" *> pure H3
+    , string "h4" *> pure H4
+    , string "h5" *> pure H5
+    , string "h6" *> pure H6
+    , string "header" *> pure Header
+    , string "head" *> pure Head
+    , string "meta" *> pure Meta
+    , string "main" *> pure Main
+    , string "audio" *> pure Audio
+    , string "a" *> pure A
+    , string "code" *> pure Code
+    , string "img" *> pure Img
+    , string "i" *> pure I
+    , string "pre" *> pure Pre
+    , string "p" *> pure P
+    , string "ul" *> pure Ul
+    , string "link" *> pure Link
+    , string "li" *> pure Li
+    , string "table" *> pure Table
+    , string "thead" *> pure Thead
+    , string "tbody" *> pure Tbody
+    , string "tr" *> pure Tr
+    , string "td" *> pure Td
+    , string "dl" *> pure Dl
+    , string "dt" *> pure Dt
+    , string "dd" *> pure Dd
+    , string "footer" *> pure Footer
+    , string "figure" *> pure Figure
+    , string "form" *> pure Form
+    , string "label" *> pure Label
+    , string "blockquote" *> pure Blockquote
+    , string "button" *> pure Button
+    , string "figcaption" *> pure Figcaption
+    , string "script" *> pure Script
+    , string "style" *> pure Style
+    , string "small" *> pure Small
+    , string "source" *> pure Source
+    , string "svg" *> pure Svg
+    ]
 
 -- E.g. .a, ()
 pugAttrs :: Parser ([PugNode] -> PugNode)
 pugAttrs = do
-  (attrs, mdot) <- lexeme
-    ( do
-        attrs <- some (pugClass <|> pugAttrList)
-        mdot <- optional (string ".")
-        pure (attrs, maybe NoDot (const HasDot) mdot)
-    ) <?> "attributes"
+  (attrs, mdot) <-
+    lexeme
+      ( do
+          attrs <- some (pugClass <|> pugAttrList)
+          mdot <- optional (string ".")
+          pure (attrs, maybe NoDot (const HasDot) mdot)
+      )
+      <?> "attributes"
   pure $ PugElem Div mdot attrs
 
 -- E.g. .a
 pugClass :: Parser Attr
-pugClass = Class . T.pack <$>
-  (char '.' *> some (alphaNumChar <|> oneOf ("-_" :: String))) <?> "class name"
+pugClass =
+  Class . T.pack
+    <$> (char '.' *> some (alphaNumChar <|> oneOf ("-_" :: String)))
+    <?> "class name"
 
 -- E.g. (), (class='a')
 pugAttrList :: Parser Attr
@@ -465,7 +479,7 @@ pugPath :: Parser FilePath
 pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
 
 --------------------------------------------------------------------------------
-pugMixinDef:: Parser (L.IndentOpt Parser PugNode PugNode)
+pugMixinDef :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugMixinDef = do
   _ <- lexeme (string "mixin")
   name <- pugText
@@ -512,22 +526,29 @@ parseErrorPretty :: ParseErrorBundle Text Void -> Text
 parseErrorPretty (ParseErrorBundle errors posState) =
   case NE.toList errors of
     [] -> "Unknown error"
-    (e:_) -> case e of
+    (e : _) -> case e of
       TrivialError offset unexpected expected ->
         let
           pos = pstateSourcePos $ reachOffsetNoLine offset posState
           errorPos =
             T.pack (show (unPos (sourceLine pos)))
-              <> ":" <> T.pack (show (unPos (sourceColumn pos)))
-          unexpectedMsg = maybe "Unexpected end of input."
-                          (\u -> "Unexpected " <> errorItemPretty u <> ".")
-                          unexpected
-          expectedMsg = if null expected
-                        then ""
-                        else "Expected " <> (T.intercalate ", " . map errorItemPretty . S.toList $ expected) <> "."
-        in
+              <> ":"
+              <> T.pack (show (unPos (sourceColumn pos)))
+          unexpectedMsg =
+            maybe
+              "Unexpected end of input."
+              (\u -> "Unexpected " <> errorItemPretty u <> ".")
+              unexpected
+          expectedMsg =
+            if null expected
+              then ""
+              else "Expected " <> (T.intercalate ", " . map errorItemPretty . S.toList $ expected) <> "."
+         in
           T.unwords
-            [ "Error at", errorPos, "-", unexpectedMsg
+            [ "Error at"
+            , errorPos
+            , "-"
+            , unexpectedMsg
             , if T.null expectedMsg then "." else expectedMsg
             ]
       FancyError offset err -> "Complex error at position " <> T.pack (show offset) <> ": " <> TL.toStrict (pShowNoColor err)

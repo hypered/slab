@@ -3,9 +3,9 @@ module Pughs.Run
   ) where
 
 import Data.Bifunctor (first)
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-import qualified Data.Text.Lazy.IO as TL
+import Data.Text qualified as T
+import Data.Text.IO qualified as T
+import Data.Text.Lazy.IO qualified as TL
 import Pughs.Command qualified as Command
 import Pughs.Parse qualified as Parse
 import Pughs.Render qualified as Render
@@ -51,9 +51,10 @@ run (Command.CommandWithPath path pmode (Command.Mixins mname)) = do
         Nothing -> TL.putStrLn $ pShowNoColor ms
 
 --------------------------------------------------------------------------------
-parseWithMode :: FilePath
-              -> Command.ParseMode
-              -> IO (Either Parse.PreProcessError [Parse.PugNode])
+parseWithMode
+  :: FilePath
+  -> Command.ParseMode
+  -> IO (Either Parse.PreProcessError [Parse.PugNode])
 parseWithMode path pmode =
   case pmode of
     Command.ParseShallow -> first Parse.PreProcessParseError <$> Parse.parsePugFile path

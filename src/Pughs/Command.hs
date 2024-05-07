@@ -20,14 +20,18 @@ data Command
 data CommandWithPath
   = Render RenderMode
   | Parse
-  | Classes -- ^ List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes.
-  | Mixins (Maybe Text) -- ^ List the mixins used in a template. If a name is given, extract that definition.
+  | -- | List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes.
+    Classes
+  | -- | List the mixins used in a template. If a name is given, extract that definition.
+    Mixins (Maybe Text)
 
 data RenderMode = RenderNormal | RenderPretty
 
 data ParseMode
-  = ParseShallow -- ^ Don't process include statements.
-  | ParseDeep -- ^ Process the include statements, creating a complete template.
+  = -- | Don't process include statements.
+    ParseShallow
+  | -- | Process the include statements, creating a complete template.
+    ParseDeep
 
 --------------------------------------------------------------------------------
 parserInfo :: A.ParserInfo Command
@@ -48,32 +52,35 @@ parser =
             A.progDesc
               "Render a Pug template to HTML"
         )
-    <>  A.command
-        "parse"
-        ( A.info (parserParse <**> A.helper) $
-            A.progDesc
-              "Parse a Pug template to AST"
-        )
-    <>  A.command
-        "classes"
-        ( A.info (parserClasses <**> A.helper) $
-            A.progDesc
-              "Parse a Pug template and report its CSS classes"
-        )
-    <>  A.command
-        "mixins"
-        ( A.info (parserMixins <**> A.helper) $
-            A.progDesc
-              "Parse a Pug template and report its mixins"
-        )
+        <> A.command
+          "parse"
+          ( A.info (parserParse <**> A.helper) $
+              A.progDesc
+                "Parse a Pug template to AST"
+          )
+        <> A.command
+          "classes"
+          ( A.info (parserClasses <**> A.helper) $
+              A.progDesc
+                "Parse a Pug template and report its CSS classes"
+          )
+        <> A.command
+          "mixins"
+          ( A.info (parserMixins <**> A.helper) $
+              A.progDesc
+                "Parse a Pug template and report its mixins"
+          )
     )
 
 --------------------------------------------------------------------------------
 parserRender :: A.Parser Command
 parserRender = do
-  mode <- A.flag RenderNormal RenderPretty
-    ( A.long "pretty" <> A.help "Use pretty-printing"
-    )
+  mode <-
+    A.flag
+      RenderNormal
+      RenderPretty
+      ( A.long "pretty" <> A.help "Use pretty-printing"
+      )
   pathAndmode <- parserWithPath
   pure $ uncurry CommandWithPath pathAndmode $ Render mode
 
@@ -90,10 +97,11 @@ parserClasses = do
 parserMixins :: A.Parser Command
 parserMixins = do
   pathAndmode <- parserWithPath
-  mname <- A.optional $
-    A.argument
-      A.str
-      (A.metavar "NAME" <> A.help "Mixin name to extract.")
+  mname <-
+    A.optional $
+      A.argument
+        A.str
+        (A.metavar "NAME" <> A.help "Mixin name to extract.")
   pure $ uncurry CommandWithPath pathAndmode $ Mixins mname
 
 --------------------------------------------------------------------------------
@@ -108,6 +116,8 @@ parserTemplatePath =
 
 parserShallowFlag :: A.Parser ParseMode
 parserShallowFlag =
-  A.flag ParseDeep ParseShallow
+  A.flag
+    ParseDeep
+    ParseShallow
     ( A.long "shallow" <> A.help "Don't parse recursively the included Pug files"
     )

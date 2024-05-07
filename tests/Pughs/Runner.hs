@@ -20,7 +20,8 @@ runExamples = do
   -- https://github.com/pugjs/pug/tree/master/packages/pug/test/cases.
   cases <- listExamples "examples/cases/" >>= mapM mkGoldenTest
   defaultMain $
-    testGroup "Test suite"
+    testGroup
+      "Test suite"
       [ testGroup "Examples" goldens
       , testGroup "Cases" cases
       ]
@@ -51,4 +52,3 @@ mkGoldenTest path = do
         pure output
 
   convert = id
-
