@@ -71,6 +71,9 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
 pugNodeToHtml (Parse.PugText _ s)
   | s == T.empty = mempty
   | otherwise = H.preEscapedText s -- TODO
+pugNodeToHtml (Parse.PugCode s)
+  | s == T.empty = mempty
+  | otherwise = H.text s -- Should be already escaped in the AST ?
 pugNodeToHtml (Parse.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Parse.PugInclude path Nothing) = H.stringComment $ "include " <> path
 pugNodeToHtml (Parse.PugMixinDef _ _) = mempty
@@ -88,6 +91,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f Parse.PugDoctype = error "pugTextsToHtml called on a PugDoctype"
   f (Parse.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
   f (Parse.PugText _ s) = s
+  f (Parse.PugCode _) = error "pugTextsToHtml called on a PugCode"
   f (Parse.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
   f (Parse.PugMixinDef _ _) = error "pugTextsToHtml called on a PugMixinDef"
   f (Parse.PugMixinCall _ _) = error "pugTextsToHtml called on a PugMixinCall"

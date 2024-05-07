@@ -3,7 +3,7 @@
 module Pughs.Parse
   ( PugNode (..)
   , Elem (..)
-  , TrailingDot (..)
+  , TrailingSym (..)
   , Attr (..)
   , extractClasses
   , extractMixins
@@ -39,8 +39,10 @@ import Text.Pretty.Simple (pShowNoColor)
 data PugNode
   = -- | Only @doctype html@ for now.
     PugDoctype
-  | PugElem Elem TrailingDot [Attr] [PugNode]
+  | PugElem Elem TrailingSym [Attr] [PugNode]
   | PugText TextSyntax Text
+  | -- | Recognize only strings for now.
+    PugCode Text
   | -- | @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
     PugInclude FilePath (Maybe [PugNode])
@@ -51,9 +53,9 @@ data PugNode
   | PugRawElem Text [PugNode]
   deriving (Show, Eq)
 
-hasTrailingDot :: PugNode -> Bool
-hasTrailingDot (PugElem _ HasDot _ _) = True
-hasTrailingDot _ = False
+trailingSym :: PugNode -> TrailingSym
+trailingSym (PugElem _ sym _ _) = sym
+trailingSym _ = NoSym
 
 data Elem
   = Html
@@ -103,7 +105,7 @@ data Elem
   | Svg
   deriving (Show, Eq)
 
-data TrailingDot = HasDot | NoDot
+data TrailingSym = HasDot | HasEqual | NoSym
   deriving (Show, Eq)
 
 data Attr = AttrList [(Text, Maybe Text)] | Class Text
@@ -127,6 +129,7 @@ extractClasses = nub . sort . concatMap f
   f PugDoctype = []
   f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (PugText _ _) = []
+  f (PugCode _) = []
   f (PugInclude _ children) = maybe [] extractClasses children
   f (PugMixinDef _ _) = [] -- We extract them in PugMixinCall instead.
   f (PugMixinCall _ children) = maybe [] extractClasses children
@@ -150,6 +153,7 @@ extractMixins = concatMap f
   f PugDoctype = []
   f (PugElem _ _ _ children) = extractMixins children
   f (PugText _ _) = []
+  f (PugCode _) = []
   f (PugInclude _ children) = maybe [] extractMixins children
   f (PugMixinDef name children) = [PugMixinDef' name children]
   f (PugMixinCall name children) = [PugMixinCall' name] <> maybe [] extractMixins children
@@ -210,6 +214,7 @@ preProcessNodeE ctx@Context {..} = \case
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
+  node@(PugCode _) -> pure node
   PugInclude path _ -> do
     let includedPath = takeDirectory ctxStartPath </> path
         pugExt = takeExtension includedPath == ".pug"
@@ -239,6 +244,7 @@ preProcessMixinE ctx@Context {..} = \case
     nodes' <- preProcessMixinsE ctx nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
+  node@(PugCode _) -> pure node
   PugInclude path mnodes -> do
     case mnodes of
       Just nodes -> do
@@ -290,15 +296,22 @@ pugElement = do
   mcontent <- optional pugText
   case mcontent of
     Nothing ->
-      if hasTrailingDot $ header []
-        then do
+      case trailingSym $ header [] of
+        HasDot -> do
           scn
           items <- textBlock ref pugText
           let items' = realign items
           pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items']
-        else pure $ L.IndentMany Nothing (pure . header) pugNode
+        HasEqual -> do
+          scn
+          content <- pugCode
+          pure $ L.IndentNone $ header [PugCode content]
+        NoSym -> pure $ L.IndentMany Nothing (pure . header) pugNode
     Just content ->
-      pure $ L.IndentNone $ header [PugText Normal content]
+      case trailingSym $ header [] of
+        HasDot -> pure $ L.IndentNone $ header [PugText Dot content]
+        HasEqual -> pure $ L.IndentNone $ header [PugCode content]
+        NoSym -> pure $ L.IndentNone $ header [PugText Normal content]
 
 -- | Parse lines of text, indented more than `ref`.
 -- E.g.:
@@ -334,6 +347,10 @@ pugPipe = do
   mcontent <- optional pugText
   pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
 
+pugCode :: Parser Text
+pugCode = do
+  pugSingleQuoteString -- TODO Escape HTML, e.g. < to &lt;.
+
 --------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugDoctype = do
@@ -357,8 +374,11 @@ pugElemWithAttrs = do
           -- `try` because we want to backtrack if there is a dot
           -- not followed by a class name, for mdot to succeed.
           b <- many (try pugClass <|> pugAttrList)
-          mdot <- optional (string ".")
-          pure (a, b, maybe NoDot (const HasDot) mdot)
+          mtrailing <- optional $ choice
+            [ string "." >> pure HasDot
+            , string "=" >> pure HasEqual
+            ]
+          pure (a, b, maybe NoSym id mtrailing)
       )
       <?> "div tag"
   pure $ PugElem name mdot attrs
@@ -421,7 +441,7 @@ pugAttrs = do
       ( do
           attrs <- some (pugClass <|> pugAttrList)
           mdot <- optional (string ".")
-          pure (attrs, maybe NoDot (const HasDot) mdot)
+          pure (attrs, maybe NoSym (const HasDot) mdot)
       )
       <?> "attributes"
   pure $ PugElem Div mdot attrs
