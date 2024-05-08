@@ -31,6 +31,7 @@ pugNodeToHtml :: Parse.PugNode -> H.Html
 pugNodeToHtml Parse.PugDoctype = H.docType
 pugNodeToHtml (Parse.PugElem name mdot attrs children) =
   mAddAttr $
+    mAddId $
     mAddClass $
       pugElemToHtml name $
         mconcat $
@@ -38,6 +39,23 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
             then [pugTextsToHtml children]
             else map pugNodeToHtml children
  where
+  mAddId :: H.Html -> H.Html
+  mAddId e =
+    if idNames == []
+      then e
+      else e ! A.id (H.toValue idNames')
+  idNames =
+    concatMap
+      ( \case
+          Parse.Id i -> [i]
+          Parse.Class _ -> []
+          Parse.AttrList pairs -> concatMap fId pairs
+      )
+      attrs
+  fId ("id", Just x) = [x]
+  fId _ = []
+  idNames' :: Text
+  idNames' = T.intercalate "-" idNames -- TODO Refuse multiple Ids in some kind of validation step after parsing ?
   mAddClass :: H.Html -> H.Html
   mAddClass e =
     if classNames == []
@@ -46,6 +64,7 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
   classNames =
     concatMap
       ( \case
+          Parse.Id _ -> []
           Parse.Class c -> [c]
           Parse.AttrList pairs -> concatMap f pairs
       )
@@ -61,10 +80,12 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
   attrs' =
     concatMap
       ( \case
+          Parse.Id _ -> []
           Parse.Class _ -> []
           Parse.AttrList pairs -> concatMap g pairs
       )
       attrs
+  g ("id", _) = []
   g ("class", _) = []
   g (a, Just b) = [(T.unpack a, b)]
   g (a, Nothing) = [(T.unpack a, a)]

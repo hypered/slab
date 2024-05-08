@@ -108,7 +108,7 @@ data Elem
 data TrailingSym = HasDot | HasEqual | NoSym
   deriving (Show, Eq)
 
-data Attr = AttrList [(Text, Maybe Text)] | Class Text
+data Attr = AttrList [(Text, Maybe Text)] | Id Text | Class Text
   deriving (Show, Eq)
 
 -- Tracks the syntax used to enter the text.
@@ -137,6 +137,7 @@ extractClasses = nub . sort . concatMap f
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
   g (AttrList xs) = concatMap h xs
+  g (Id _) = []
   g (Class c) = [c]
   h ("class", Just c) = [c]
   h _ = []
@@ -384,7 +385,7 @@ pugElemWithAttrs = do
           a <- pugElem
           -- `try` because we want to backtrack if there is a dot
           -- not followed by a class name, for mdot to succeed.
-          b <- many (try pugClass <|> pugAttrList)
+          b <- many (pugId <|> try pugClass <|> pugAttrList)
           mtrailing <- optional $ choice
             [ string "." >> pure HasDot
             , string "=" >> pure HasEqual
@@ -450,12 +451,19 @@ pugAttrs = do
   (attrs, mdot) <-
     lexeme
       ( do
-          attrs <- some (pugClass <|> pugAttrList)
+          attrs <- some (pugId <|> pugClass <|> pugAttrList)
           mdot <- optional (string ".")
           pure (attrs, maybe NoSym (const HasDot) mdot)
       )
       <?> "attributes"
   pure $ PugElem Div mdot attrs
+
+-- E.g. #a
+pugId :: Parser Attr
+pugId =
+  Id . T.pack
+    <$> (char '#' *> some (alphaNumChar <|> oneOf ("-_" :: String)))
+    <?> "id"
 
 -- E.g. .a
 pugClass :: Parser Attr
