@@ -12,6 +12,7 @@ in rec
     shell = nixpkgs.mkShell {
       buildInputs = [
         binaries
+        nixpkgs.busybox # for httpd
       ];
       shellHook = ''
         source <(pughs --bash-completion-script `which pughs`)
