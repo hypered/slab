@@ -315,9 +315,16 @@ pugFragmentCall _ = do
 --------------------------------------------------------------------------------
 pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugComment = do
+  ref <- L.indentLevel
   _ <- lexeme (string "//")
-  content <- pugText
-  pure $ L.IndentNone $ PugComment True content
+  mcontent <- optional pugText
+  case mcontent of
+    Just content -> pure $ L.IndentNone $ PugComment True content
+    Nothing -> do
+      scn
+      items <- textBlock ref pugText
+      let items' = realign items
+      pure $ L.IndentNone $ PugComment True $ T.intercalate "\n" items'
 
 --------------------------------------------------------------------------------
 pugRawElement :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
