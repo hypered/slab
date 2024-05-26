@@ -49,6 +49,7 @@ library
     Pughs.Parse
     Pughs.Render
     Pughs.Run
+    Pughs.Syntax
 
 executable pughs
   import: common-extensions, common-options, common-dependencies

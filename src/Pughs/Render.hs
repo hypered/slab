@@ -8,7 +8,7 @@ import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
-import Pughs.Parse qualified as Parse
+import Pughs.Syntax qualified as Syntax
 import Text.Blaze.Html.Renderer.Pretty qualified as Pretty (renderHtml)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Text.Blaze.Html5 (Html, (!))
@@ -24,18 +24,18 @@ renderHtmls :: [Html] -> TL.Text
 renderHtmls = TL.concat . map renderHtml
 
 --------------------------------------------------------------------------------
-pugNodesToHtml :: [Parse.PugNode] -> [H.Html]
+pugNodesToHtml :: [Syntax.PugNode] -> [H.Html]
 pugNodesToHtml = map pugNodeToHtml
 
-pugNodeToHtml :: Parse.PugNode -> H.Html
-pugNodeToHtml Parse.PugDoctype = H.docType
-pugNodeToHtml (Parse.PugElem name mdot attrs children) =
+pugNodeToHtml :: Syntax.PugNode -> H.Html
+pugNodeToHtml Syntax.PugDoctype = H.docType
+pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
   mAddAttr $
     mAddId $
     mAddClass $
       pugElemToHtml name $
         mconcat $
-          if mdot == Parse.HasDot
+          if mdot == Syntax.HasDot
             then [pugTextsToHtml children]
             else map pugNodeToHtml children
  where
@@ -47,9 +47,9 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
   idNames =
     concatMap
       ( \case
-          Parse.Id i -> [i]
-          Parse.Class _ -> []
-          Parse.AttrList pairs -> concatMap fId pairs
+          Syntax.Id i -> [i]
+          Syntax.Class _ -> []
+          Syntax.AttrList pairs -> concatMap fId pairs
       )
       attrs
   fId ("id", Just x) = [x]
@@ -64,9 +64,9 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
   classNames =
     concatMap
       ( \case
-          Parse.Id _ -> []
-          Parse.Class c -> [c]
-          Parse.AttrList pairs -> concatMap f pairs
+          Syntax.Id _ -> []
+          Syntax.Class c -> [c]
+          Syntax.AttrList pairs -> concatMap f pairs
       )
       attrs
   f ("class", Just x) = [x]
@@ -80,96 +80,96 @@ pugNodeToHtml (Parse.PugElem name mdot attrs children) =
   attrs' =
     concatMap
       ( \case
-          Parse.Id _ -> []
-          Parse.Class _ -> []
-          Parse.AttrList pairs -> concatMap g pairs
+          Syntax.Id _ -> []
+          Syntax.Class _ -> []
+          Syntax.AttrList pairs -> concatMap g pairs
       )
       attrs
   g ("id", _) = []
   g ("class", _) = []
   g (a, Just b) = [(T.unpack a, b)]
   g (a, Nothing) = [(T.unpack a, a)]
-pugNodeToHtml (Parse.PugText _ s)
+pugNodeToHtml (Syntax.PugText _ s)
   | s == T.empty = mempty
   | otherwise = H.preEscapedText s -- TODO
-pugNodeToHtml (Parse.PugCode s)
+pugNodeToHtml (Syntax.PugCode s)
   | s == T.empty = mempty
   | otherwise = H.text s -- Should be already escaped in the AST ?
-pugNodeToHtml (Parse.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Parse.PugInclude path Nothing) = H.stringComment $ "include " <> path
-pugNodeToHtml (Parse.PugMixinDef _ _) = mempty
-pugNodeToHtml (Parse.PugMixinCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Parse.PugMixinCall name Nothing) = H.textComment $ "+" <> name
-pugNodeToHtml (Parse.PugFragmentDef _ _) = mempty
-pugNodeToHtml (Parse.PugFragmentCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Parse.PugFragmentCall name Nothing) = H.textComment $ "frag " <> name
-pugNodeToHtml (Parse.PugComment _) = mempty -- TODO Should it appear in the HTML ?
-pugNodeToHtml (Parse.PugRawElem content children) = do
+pugNodeToHtml (Syntax.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
+pugNodeToHtml (Syntax.PugMixinDef _ _) = mempty
+pugNodeToHtml (Syntax.PugMixinCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.PugMixinCall name Nothing) = H.textComment $ "+" <> name
+pugNodeToHtml (Syntax.PugFragmentDef _ _) = mempty
+pugNodeToHtml (Syntax.PugFragmentCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.PugFragmentCall name Nothing) = H.textComment $ "frag " <> name
+pugNodeToHtml (Syntax.PugComment _) = mempty -- TODO Should it appear in the HTML ?
+pugNodeToHtml (Syntax.PugRawElem content children) = do
   H.preEscapedText content -- TODO Construct a proper tag ?
   mapM_ pugNodeToHtml children
-pugNodeToHtml (Parse.PugBlock _ nodes) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.PugBlock _ nodes) = mapM_ pugNodeToHtml nodes
 
-pugTextsToHtml :: [Parse.PugNode] -> H.Markup
+pugTextsToHtml :: [Syntax.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
  where
   xs' = T.intercalate "\n" $ map f xs
-  f Parse.PugDoctype = error "pugTextsToHtml called on a PugDoctype"
-  f (Parse.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
-  f (Parse.PugText _ s) = s
-  f (Parse.PugCode _) = error "pugTextsToHtml called on a PugCode"
-  f (Parse.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
-  f (Parse.PugMixinDef _ _) = error "pugTextsToHtml called on a PugMixinDef"
-  f (Parse.PugMixinCall _ _) = error "pugTextsToHtml called on a PugMixinCall"
-  f (Parse.PugFragmentDef _ _) = error "pugTextsToHtml called on a PugFragmentDef"
-  f (Parse.PugFragmentCall _ _) = error "pugTextsToHtml called on a PugFragmentCall"
-  f (Parse.PugComment _) = error "pugTextsToHtml called on a PugComment"
-  f (Parse.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
-  f (Parse.PugBlock _ _) = error "pugTextsToHtml called on a PugBlock"
+  f Syntax.PugDoctype = error "pugTextsToHtml called on a PugDoctype"
+  f (Syntax.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
+  f (Syntax.PugText _ s) = s
+  f (Syntax.PugCode _) = error "pugTextsToHtml called on a PugCode"
+  f (Syntax.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
+  f (Syntax.PugMixinDef _ _) = error "pugTextsToHtml called on a PugMixinDef"
+  f (Syntax.PugMixinCall _ _) = error "pugTextsToHtml called on a PugMixinCall"
+  f (Syntax.PugFragmentDef _ _) = error "pugTextsToHtml called on a PugFragmentDef"
+  f (Syntax.PugFragmentCall _ _) = error "pugTextsToHtml called on a PugFragmentCall"
+  f (Syntax.PugComment _) = error "pugTextsToHtml called on a PugComment"
+  f (Syntax.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
+  f (Syntax.PugBlock _ _) = error "pugTextsToHtml called on a PugBlock"
 
-pugElemToHtml :: Parse.Elem -> Html -> Html
+pugElemToHtml :: Syntax.Elem -> Html -> Html
 pugElemToHtml = \case
-  Parse.Html -> H.html
-  Parse.Body -> H.body
-  Parse.Div -> H.div
-  Parse.Span -> H.span
-  Parse.Hr -> const H.hr
-  Parse.H1 -> H.h1
-  Parse.H2 -> H.h2
-  Parse.H3 -> H.h3
-  Parse.H4 -> H.h4
-  Parse.H5 -> H.h5
-  Parse.H6 -> H.h6
-  Parse.Header -> H.header
-  Parse.Head -> H.head
-  Parse.Meta -> const H.meta
-  Parse.Main -> H.main
-  Parse.Link -> const H.link
-  Parse.A -> H.a
-  Parse.P -> H.p
-  Parse.Ul -> H.ul
-  Parse.Li -> H.li
-  Parse.Table -> H.table
-  Parse.Thead -> H.thead
-  Parse.Tbody -> H.tbody
-  Parse.Tr -> H.tr
-  Parse.Td -> H.td
-  Parse.Dl -> H.dl
-  Parse.Dt -> H.dt
-  Parse.Dd -> H.dd
-  Parse.Footer -> H.footer
-  Parse.Figure -> H.figure
-  Parse.Form -> H.form
-  Parse.Label -> H.label
-  Parse.Blockquote -> H.blockquote
-  Parse.Button -> H.button
-  Parse.Figcaption -> H.figcaption
-  Parse.Audio -> H.audio
-  Parse.Script -> H.script
-  Parse.Style -> H.style
-  Parse.Small -> H.small
-  Parse.Source -> const H.source
-  Parse.Pre -> H.pre
-  Parse.Code -> H.code
-  Parse.Img -> const H.img
-  Parse.I -> H.i
-  Parse.Svg -> S.svg
+  Syntax.Html -> H.html
+  Syntax.Body -> H.body
+  Syntax.Div -> H.div
+  Syntax.Span -> H.span
+  Syntax.Hr -> const H.hr
+  Syntax.H1 -> H.h1
+  Syntax.H2 -> H.h2
+  Syntax.H3 -> H.h3
+  Syntax.H4 -> H.h4
+  Syntax.H5 -> H.h5
+  Syntax.H6 -> H.h6
+  Syntax.Header -> H.header
+  Syntax.Head -> H.head
+  Syntax.Meta -> const H.meta
+  Syntax.Main -> H.main
+  Syntax.Link -> const H.link
+  Syntax.A -> H.a
+  Syntax.P -> H.p
+  Syntax.Ul -> H.ul
+  Syntax.Li -> H.li
+  Syntax.Table -> H.table
+  Syntax.Thead -> H.thead
+  Syntax.Tbody -> H.tbody
+  Syntax.Tr -> H.tr
+  Syntax.Td -> H.td
+  Syntax.Dl -> H.dl
+  Syntax.Dt -> H.dt
+  Syntax.Dd -> H.dd
+  Syntax.Footer -> H.footer
+  Syntax.Figure -> H.figure
+  Syntax.Form -> H.form
+  Syntax.Label -> H.label
+  Syntax.Blockquote -> H.blockquote
+  Syntax.Button -> H.button
+  Syntax.Figcaption -> H.figcaption
+  Syntax.Audio -> H.audio
+  Syntax.Script -> H.script
+  Syntax.Style -> H.style
+  Syntax.Small -> H.small
+  Syntax.Source -> const H.source
+  Syntax.Pre -> H.pre
+  Syntax.Code -> H.code
+  Syntax.Img -> const H.img
+  Syntax.I -> H.i
+  Syntax.Svg -> S.svg

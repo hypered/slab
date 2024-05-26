@@ -1,14 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Pughs.Parse
-  ( PugNode (..)
-  , Elem (..)
-  , TrailingSym (..)
-  , Attr (..)
-  , extractClasses
-  , extractMixins
-  , findMixin
-  , PreProcessError (..)
+  ( PreProcessError (..)
   , parsePugFile
   , preProcessPugFile
   , parseErrorPretty
@@ -18,7 +11,6 @@ import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
 import Data.Bifunctor (first)
-import Data.List (nub, sort)
 import Data.List.NonEmpty qualified as NE (toList)
 import Data.Maybe (isJust)
 import Data.Set qualified as S (toList)
@@ -27,6 +19,7 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
+import Pughs.Syntax
 import System.Directory (doesFileExist)
 import System.FilePath (takeDirectory, takeExtension, (<.>), (</>))
 import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
@@ -34,156 +27,6 @@ import Text.Megaparsec qualified as M
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
 import Text.Pretty.Simple (pShowNoColor)
-
---------------------------------------------------------------------------------
-data PugNode
-  = -- | Only @doctype html@ for now.
-    PugDoctype
-  | PugElem Elem TrailingSym [Attr] [PugNode]
-  | PugText TextSyntax Text
-  | -- | Recognize only strings for now.
-    PugCode Text
-  | -- | @Nothing@ when the template is parsed, then @Just nodes@ after
-    -- preprocessing (i.e. actually running the include statement).
-    PugInclude FilePath (Maybe [PugNode])
-  | PugMixinDef Text [PugNode]
-  | -- | The Maybe works similarly to `PugInclude`.
-    PugMixinCall Text (Maybe [PugNode])
-  | -- | This doesn't exit in Pug. This is like a mixin than receive block arguments.
-    -- Or like a parent template that can be @extended@ by a child template.
-    PugFragmentDef Text [PugNode]
-  | PugFragmentCall Text (Maybe [PugNode])
-  | PugComment Text
-  | PugRawElem Text [PugNode]
-  | PugBlock Text [PugNode]
-  deriving (Show, Eq)
-
-trailingSym :: PugNode -> TrailingSym
-trailingSym (PugElem _ sym _ _) = sym
-trailingSym _ = NoSym
-
-data Elem
-  = Html
-  | Body
-  | Div
-  | Span
-  | Hr
-  | H1
-  | H2
-  | H3
-  | H4
-  | H5
-  | H6
-  | Header
-  | Head
-  | Meta
-  | Main
-  | Link
-  | A
-  | P
-  | Ul
-  | Li
-  | Table
-  | Thead
-  | Tbody
-  | Tr
-  | Td
-  | Dl
-  | Dt
-  | Dd
-  | Footer
-  | Figure
-  | Form
-  | Label
-  | Blockquote
-  | Button
-  | Figcaption
-  | Audio
-  | Script
-  | Style
-  | Small
-  | Source
-  | Pre
-  | Code
-  | Img
-  | I
-  | Svg
-  deriving (Show, Eq)
-
-data TrailingSym = HasDot | HasEqual | NoSym
-  deriving (Show, Eq)
-
-data Attr = AttrList [(Text, Maybe Text)] | Id Text | Class Text
-  deriving (Show, Eq)
-
--- Tracks the syntax used to enter the text.
-data TextSyntax
-  = -- | The text follows an element on the same line.
-    Normal
-  | -- | The text follows a pipe character.
-    Pipe
-  | -- | The text is part of a text block following a trailing dot.
-    Dot
-  | -- | The text is the content of an include statement without a .pug extension.
-    Include
-  deriving (Show, Eq)
-
-extractClasses :: [PugNode] -> [Text]
-extractClasses = nub . sort . concatMap f
- where
-  f PugDoctype = []
-  f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
-  f (PugText _ _) = []
-  f (PugCode _) = []
-  f (PugInclude _ children) = maybe [] extractClasses children
-  f (PugMixinDef _ _) = [] -- We extract them in PugMixinCall instead.
-  f (PugMixinCall _ children) = maybe [] extractClasses children
-  f (PugFragmentDef _ _) = [] -- We extract them in PugFragmentCall instead.
-  f (PugFragmentCall _ children) = maybe [] extractClasses children
-  f (PugComment _) = []
-  -- TODO Would be nice to extract classes from verbatim HTML too.
-  f (PugRawElem _ _) = []
-  f (PugBlock _ children) = extractClasses children
-
-  g (AttrList xs) = concatMap h xs
-  g (Id _) = []
-  g (Class c) = [c]
-  h ("class", Just c) = [c]
-  h _ = []
-
--- Return type used for `extractMixins`.
-data PugMixin
-  = PugMixinDef' Text [PugNode]
-  | PugMixinCall' Text
-  | PugFragmentDef' Text [PugNode]
-  | PugFragmentCall' Text
-  deriving (Show, Eq)
-
-extractMixins :: [PugNode] -> [PugMixin]
-extractMixins = concatMap f
- where
-  f PugDoctype = []
-  f (PugElem _ _ _ children) = extractMixins children
-  f (PugText _ _) = []
-  f (PugCode _) = []
-  f (PugInclude _ children) = maybe [] extractMixins children
-  f (PugMixinDef name children) = [PugMixinDef' name children]
-  f (PugMixinCall name children) = [PugMixinCall' name] <> maybe [] extractMixins children
-  f (PugFragmentDef name children) = [PugFragmentDef' name children]
-  f (PugFragmentCall name children) = [PugFragmentCall' name] <> maybe [] extractMixins children
-  f (PugComment _) = []
-  f (PugRawElem _ _) = []
-  f (PugBlock _ children) = extractMixins children
-
-findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
-findMixin name ms = case filter f ms of
-  [PugMixinDef' _ nodes] -> Just nodes
-  [PugFragmentDef' _ nodes] -> Just nodes
-  _ -> Nothing
- where
-  f (PugMixinDef' name' _) = name == name'
-  f (PugFragmentDef' name' _) = name == name'
-  f _ = False
 
 --------------------------------------------------------------------------------
 data Context = Context

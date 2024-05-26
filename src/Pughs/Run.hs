@@ -9,6 +9,7 @@ import Data.Text.Lazy.IO qualified as TL
 import Pughs.Command qualified as Command
 import Pughs.Parse qualified as Parse
 import Pughs.Render qualified as Render
+import Pughs.Syntax qualified as Syntax
 import Text.Megaparsec hiding (parse)
 import Text.Pretty.Simple (pShowNoColor)
 
@@ -37,15 +38,15 @@ run (Command.CommandWithPath path pmode Command.Classes) = do
   parsed <- parseWithMode path pmode
   case parsed of
     Left err -> TL.putStrLn $ pShowNoColor err
-    Right nodes -> mapM_ T.putStrLn $ Parse.extractClasses nodes
+    Right nodes -> mapM_ T.putStrLn $ Syntax.extractClasses nodes
 run (Command.CommandWithPath path pmode (Command.Mixins mname)) = do
   parsed <- parseWithMode path pmode
   case parsed of
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> do
-      let ms = Parse.extractMixins nodes
+      let ms = Syntax.extractMixins nodes
       case mname of
-        Just name -> case Parse.findMixin name ms of
+        Just name -> case Syntax.findMixin name ms of
           Just m -> TL.putStrLn $ pShowNoColor m
           Nothing -> putStrLn "No such mixin."
         Nothing -> TL.putStrLn $ pShowNoColor ms
@@ -54,7 +55,7 @@ run (Command.CommandWithPath path pmode (Command.Mixins mname)) = do
 parseWithMode
   :: FilePath
   -> Command.ParseMode
-  -> IO (Either Parse.PreProcessError [Parse.PugNode])
+  -> IO (Either Parse.PreProcessError [Syntax.PugNode])
 parseWithMode path pmode =
   case pmode of
     Command.ParseShallow -> first Parse.PreProcessParseError <$> Parse.parsePugFile path
