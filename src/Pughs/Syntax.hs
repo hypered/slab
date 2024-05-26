@@ -6,10 +6,12 @@ module Pughs.Syntax
   , TrailingSym (..)
   , Attr (..)
   , TextSyntax (..)
+  , What (..)
   , trailingSym
   , extractClasses
   , extractMixins
   , findMixin
+  , extractCombinators
   ) where
 
 import Data.List (nub, sort)
@@ -32,10 +34,10 @@ data PugNode
   | -- | This doesn't exit in Pug. This is like a mixin than receive block arguments.
     -- Or like a parent template that can be @extended@ by a child template.
     PugFragmentDef Text [PugNode]
-  | PugFragmentCall Text (Maybe [PugNode])
+  | PugFragmentCall Text [PugNode]
   | PugComment Text
   | PugRawElem Text [PugNode]
-  | PugBlock Text [PugNode]
+  | PugBlock What Text [PugNode]
   deriving (Show, Eq)
 
 trailingSym :: PugNode -> TrailingSym
@@ -108,6 +110,13 @@ data TextSyntax
     Include
   deriving (Show, Eq)
 
+-- | Because we use the same syntax to define named blocks, and to pass them as
+-- arguments, we want to keep track of whether we're parsing a fragment
+-- definition (where we "use" blocks), or fragment calls (where we "pass"
+-- block arguments).
+data What = WithinDef | WithinCall
+  deriving (Show, Eq)
+
 extractClasses :: [PugNode] -> [Text]
 extractClasses = nub . sort . concatMap f
  where
@@ -119,11 +128,11 @@ extractClasses = nub . sort . concatMap f
   f (PugMixinDef _ _) = [] -- We extract them in PugMixinCall instead.
   f (PugMixinCall _ children) = maybe [] extractClasses children
   f (PugFragmentDef _ _) = [] -- We extract them in PugFragmentCall instead.
-  f (PugFragmentCall _ children) = maybe [] extractClasses children
+  f (PugFragmentCall _ children) = extractClasses children
   f (PugComment _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
-  f (PugBlock _ children) = extractClasses children
+  f (PugBlock _ _ children) = extractClasses children
 
   g (AttrList xs) = concatMap h xs
   g (Id _) = []
@@ -150,10 +159,10 @@ extractMixins = concatMap f
   f (PugMixinDef name children) = [PugMixinDef' name children]
   f (PugMixinCall name children) = [PugMixinCall' name] <> maybe [] extractMixins children
   f (PugFragmentDef name children) = [PugFragmentDef' name children]
-  f (PugFragmentCall name children) = [PugFragmentCall' name] <> maybe [] extractMixins children
+  f (PugFragmentCall name children) = [PugFragmentCall' name] <> extractMixins children
   f (PugComment _) = []
   f (PugRawElem _ _) = []
-  f (PugBlock _ children) = extractMixins children
+  f (PugBlock _ _ children) = extractMixins children
 
 findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
 findMixin name ms = case filter f ms of
@@ -165,3 +174,20 @@ findMixin name ms = case filter f ms of
   f (PugFragmentDef' name' _) = name == name'
   f _ = False
 
+-- Extract mixin and fragment definitions, in a single namespace. We don't
+-- extract them recursively.
+extractCombinators :: [PugNode] -> [(Text, [PugNode])]
+extractCombinators = concatMap f
+ where
+  f PugDoctype = []
+  f (PugElem _ _ _ children) = []
+  f (PugText _ _) = []
+  f (PugCode _) = []
+  f (PugInclude _ children) = maybe [] extractCombinators children
+  f (PugMixinDef name children) = [(name, children)]
+  f (PugMixinCall _ _) = []
+  f (PugFragmentDef name children) = [(name, children)]
+  f (PugFragmentCall _ _) = []
+  f (PugComment _) = []
+  f (PugRawElem _ _) = []
+  f (PugBlock _ _ _) = []

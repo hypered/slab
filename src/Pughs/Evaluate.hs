@@ -44,18 +44,23 @@ preProcessPugFileE path = do
           { ctxStartPath = path
           , ctxNodes = nodes
           }
+      env = []
   nodes' <- preProcessNodesE ctx nodes
-  preProcessMixinsE ctx {ctxNodes = nodes'} nodes'
+  preProcessMixinsE ctx {ctxNodes = nodes'} env nodes'
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
 preProcessNodesE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
 
+type Env = [(Text, [PugNode])]
+
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
-preProcessMixinsE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
-preProcessMixinsE ctx nodes = mapM (preProcessMixinE ctx) nodes
+preProcessMixinsE :: Context -> Env -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
+preProcessMixinsE ctx env nodes = do
+  let env' = extractCombinators nodes ++ env
+  mapM (preProcessMixinE ctx env') nodes
 
 preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
 preProcessNodeE ctx@Context {..} = \case
@@ -90,43 +95,59 @@ preProcessNodeE ctx@Context {..} = \case
   node@(PugFragmentCall _ _) -> pure node
   node@(PugComment _) -> pure node
   node@(PugRawElem _ _) -> pure node
-  PugBlock name nodes -> do
+  PugBlock what name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
-    pure $ PugBlock name nodes'
+    pure $ PugBlock what name nodes'
 
-preProcessMixinE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
-preProcessMixinE ctx@Context {..} = \case
+preProcessMixinE :: Context -> Env -> PugNode -> ExceptT PreProcessError IO PugNode
+preProcessMixinE ctx env = \case
   node@PugDoctype -> pure node
   PugElem name mdot attrs nodes -> do
-    nodes' <- preProcessMixinsE ctx nodes
+    nodes' <- preProcessMixinsE ctx env nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
   node@(PugCode _) -> pure node
   PugInclude path mnodes -> do
     case mnodes of
       Just nodes -> do
-        nodes' <- preProcessMixinsE ctx nodes
+        nodes' <- preProcessMixinsE ctx env nodes
         pure $ PugInclude path (Just nodes')
       Nothing ->
         pure $ PugInclude path Nothing
   PugMixinDef name nodes -> do
-    nodes' <- preProcessMixinsE ctx nodes
+    nodes' <- preProcessMixinsE ctx env nodes
     pure $ PugMixinDef name nodes'
   PugMixinCall name _ -> do
-    case findMixin name $ extractMixins ctxNodes of
+    case lookup name env of
       Just body ->
         pure $ PugMixinCall name (Just body)
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
   PugFragmentDef name nodes -> do
-    nodes' <- preProcessMixinsE ctx nodes
+    nodes' <- preProcessMixinsE ctx env nodes
     pure $ PugFragmentDef name nodes'
-  PugFragmentCall name _ -> do
-    case findMixin name $ extractMixins ctxNodes of
-      Just body ->
-        pure $ PugFragmentCall name (Just body)
+  PugFragmentCall name args -> do
+    case lookup name env of
+      Just body -> do
+        -- TODO Either evaluate the args before constructing the env, or capture
+        -- the env in a thunk.
+        env' <- mapM namedBlock args
+        body' <- preProcessMixinsE ctx (env' ++ env) body
+        pure $ PugFragmentCall name body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
   node@(PugComment _) -> pure node
   node@(PugRawElem _ _) -> pure node
-  PugBlock name nodes -> do
-    nodes' <- preProcessMixinsE ctx nodes
-    pure $ PugBlock name nodes'
+  PugBlock WithinDef name nodes -> do
+    -- If the block is not given as an argument, we return the default block,
+    -- but recursively trying to replace the blocks found within its own body.
+    case lookup name env of
+      Nothing -> do
+        nodes' <- preProcessMixinsE ctx env nodes
+        pure $ PugBlock WithinDef name nodes'
+      Just nodes' -> pure $ PugBlock WithinDef name nodes'
+  PugBlock WithinCall name nodes -> do
+    nodes' <- preProcessMixinsE ctx env nodes
+    pure $ PugBlock WithinCall name nodes'
+
+namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m (Text, [PugNode])
+namedBlock (PugBlock _ name content) = pure (name, content)
+namedBlock _ = throwE $ PreProcessError $ "Not a named block argument"
