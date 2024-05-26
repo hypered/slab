@@ -1,3 +1,9 @@
 ul
-  each val in [1, 2, 3, 4, 5]
+  each val in [1, 2, 3]
     li= val
+
+ul
+  each val, index in [1, 2]
+    li
+      span= val
+      p= index

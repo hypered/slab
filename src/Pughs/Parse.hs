@@ -329,9 +329,12 @@ pugEach :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
 pugEach what = do
   _ <- lexeme (string "each")
   name <- lexeme pugName
+  mindex <- optional $ do
+    lexeme $ string ","
+    lexeme pugName
   _ <- lexeme (string "in")
   collection <- pugCollection
-  pure $ L.IndentMany Nothing (pure . PugEach name collection) (pugNode what)
+  pure $ L.IndentMany Nothing (pure . PugEach name mindex collection) (pugNode what)
 
 pugCollection :: Parser [Text]
 pugCollection = do

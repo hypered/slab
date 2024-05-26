@@ -125,7 +125,7 @@ preProcessNodeE ctx@Context {..} = \case
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugFragmentDef name nodes'
   node@(PugFragmentCall _ _) -> pure node
-  node@(PugEach _ _ _) -> pure node
+  node@(PugEach _ _ _ _) -> pure node
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
@@ -176,12 +176,16 @@ eval env = \case
         body' <- evaluate env'' body
         pure $ PugFragmentCall name body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
-  node@(PugEach name values nodes) -> do
+  node@(PugEach name mindex values nodes) -> do
     -- Re-use PugEach to construct a single node to return.
-    nodes' <- forM values $ \value -> do
-      let env' = augmentVariables env [(name, value)]
+    let zero :: Int
+        zero = 0
+    nodes' <- forM (zip values [zero..]) $ \(value, index) -> do
+      let env' = case mindex of
+            Just idxname -> augmentVariables env [(name, value), (idxname, T.pack $ show index)]
+            Nothing -> augmentVariables env [(name, value)]
       evaluate env' nodes
-    pure $ PugEach name values $ concat nodes'
+    pure $ PugEach name mindex values $ concat nodes'
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
