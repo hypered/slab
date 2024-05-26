@@ -127,7 +127,18 @@ pugCode :: Parser Code
 pugCode = do
   (SingleQuoteString <$> pugSingleQuoteString) -- TODO Escape HTML, e.g. < to &lt;.
   <|> (Int <$> pugInt)
-  <|> (Variable <$> pugName)
+  <|> (do
+    name <- pugName
+    mkey <- optional $ do
+      _ <- string "["
+      key <- pugSingleQuoteString
+      _ <- string "]"
+      pure key
+    case mkey of
+      Nothing -> pure $ Variable name
+      Just key -> pure $ Lookup name key
+    )
+  <|> (Object <$> pugObject)
 
 --------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
@@ -340,16 +351,16 @@ pugEach what = do
 pugList :: Parser [Code]
 pugList = do
   _ <- lexeme "["
-  mx <- optional $ lexeme pugName
+  mx <- optional $ lexeme pugCode
   xs <- case mx of
     Nothing -> pure []
     Just x -> do
       xs <- many $ do
         _ <- lexeme (string ",")
-        lexeme pugName
+        lexeme pugCode
       pure $ x : xs
   _ <- lexeme "]"
-  pure $ map SingleQuoteString xs
+  pure xs
 
 pugObject :: Parser [(Code, Code)]
 pugObject = do

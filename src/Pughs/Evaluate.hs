@@ -147,6 +147,14 @@ eval env = \case
       Just val ->
         pure $ PugCode val
       Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
+  node@(PugCode (Lookup name key)) ->
+    case lookupVariable name env of
+      Just (Object obj) ->
+        case lookup (SingleQuoteString key) obj of
+          Just val -> pure $ PugCode val
+          Nothing -> throwE $ PreProcessError $ "Key lookup failed"
+      Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
+      Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
   node@(PugCode _) -> pure node
   PugInclude path mnodes -> do
     case mnodes of

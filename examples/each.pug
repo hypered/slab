@@ -17,3 +17,7 @@ ul
     li
       span= val
       p= key
+
+ul
+  each val in [{'a': 'one', 'b': 'two'}]
+    li= val['b']

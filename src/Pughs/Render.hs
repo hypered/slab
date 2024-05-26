@@ -99,6 +99,8 @@ pugNodeToHtml (Syntax.PugCode (Syntax.Variable s)) =
   H.textComment $ "code variable " <> s
 pugNodeToHtml (Syntax.PugCode (Syntax.Int i)) =
   H.string $ show i
+pugNodeToHtml (Syntax.PugCode (Syntax.Object _)) =
+  H.text "<Object>"
 pugNodeToHtml (Syntax.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
 pugNodeToHtml (Syntax.PugMixinDef _ _) = mempty

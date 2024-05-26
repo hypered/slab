@@ -133,7 +133,9 @@ data Code
   = Variable Text
   | Int Int
   | SingleQuoteString Text
-  | Object [(Text, Code)]
+  | Object [(Code, Code)]
+  | -- The object['key'] lookup. This is quite restrive as a start.
+    Lookup Text Text
   deriving (Show, Eq)
 
 data Collection
