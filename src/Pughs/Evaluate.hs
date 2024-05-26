@@ -5,8 +5,10 @@ module Pughs.Evaluate
   , preProcessPugFile
   , evaluatePugFile
   , evaluate
+  , emptyEnv
   ) where
 
+import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
 import Data.Bifunctor (first)
@@ -68,15 +70,28 @@ preProcessNodesE ctx@Context {..} (PugExtends path _ : nodes) = do
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
 
 evaluatePugFile :: FilePath -> IO (Either PreProcessError [PugNode])
-evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate [])
+evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate emptyEnv)
 
-type Env = [(Text, [PugNode])]
+data Env = Env
+  { envFragments :: [(Text, [PugNode])]
+  , envVariables :: [(Text, Text)]
+  }
+
+emptyEnv = Env [] []
+
+lookupFragment name Env {..} = lookup name envFragments
+
+lookupVariable name Env {..} = lookup name envVariables
+
+augmentFragments Env {..} xs = Env { envFragments = xs <> envFragments, .. }
+
+augmentVariables Env {..} xs = Env { envVariables = xs <> envVariables, .. }
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
 evaluate :: Env -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
 evaluate env nodes = do
-  let env' = extractCombinators nodes ++ env
+  let env' = augmentFragments env $ extractCombinators nodes
   mapM (eval env') nodes
 
 preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
@@ -110,6 +125,7 @@ preProcessNodeE ctx@Context {..} = \case
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugFragmentDef name nodes'
   node@(PugFragmentCall _ _) -> pure node
+  node@(PugEach _ _ _) -> pure node
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
@@ -126,6 +142,11 @@ eval env = \case
     nodes' <- evaluate env nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
+  node@(PugCode (Variable name)) ->
+    case lookupVariable name env of
+      Just val ->
+        pure $ PugCode (SingleQuoteString val)
+      Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
   node@(PugCode _) -> pure node
   PugInclude path mnodes -> do
     case mnodes of
@@ -137,8 +158,8 @@ eval env = \case
   PugMixinDef name nodes -> do
     nodes' <- evaluate env nodes
     pure $ PugMixinDef name nodes'
-  PugMixinCall name _ -> do
-    case lookup name env of
+  PugMixinCall name _ ->
+    case lookupFragment name env of
       Just body ->
         pure $ PugMixinCall name (Just body)
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
@@ -146,21 +167,28 @@ eval env = \case
     nodes' <- evaluate env nodes
     pure $ PugFragmentDef name nodes'
   PugFragmentCall name args -> do
-    case lookup name env of
+    case lookupFragment name env of
       Just body -> do
         -- TODO Either evaluate the args before constructing the env, or capture
         -- the env in a thunk.
         env' <- mapM namedBlock args
-        body' <- evaluate (env' ++ env) body
+        let env'' = augmentFragments env env'
+        body' <- evaluate env'' body
         pure $ PugFragmentCall name body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
+  node@(PugEach name values nodes) -> do
+    -- Re-use PugEach to construct a single node to return.
+    nodes' <- forM values $ \value -> do
+      let env' = augmentVariables env [(name, value)]
+      evaluate env' nodes
+    pure $ PugEach name values $ concat nodes'
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
   PugBlock WithinDef name nodes -> do
     -- If the block is not given as an argument, we return the default block,
     -- but recursively trying to replace the blocks found within its own body.
-    case lookup name env of
+    case lookupFragment name env of
       Nothing -> do
         nodes' <- evaluate env nodes
         pure $ PugBlock WithinDef name nodes'

@@ -92,9 +92,11 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
 pugNodeToHtml (Syntax.PugText _ s)
   | s == T.empty = mempty
   | otherwise = H.preEscapedText s -- TODO
-pugNodeToHtml (Syntax.PugCode s)
+pugNodeToHtml (Syntax.PugCode (Syntax.SingleQuoteString s))
   | s == T.empty = mempty
   | otherwise = H.text s -- Should be already escaped in the AST ?
+pugNodeToHtml (Syntax.PugCode (Syntax.Variable s)) =
+  H.textComment $ "code variable " <> s
 pugNodeToHtml (Syntax.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
 pugNodeToHtml (Syntax.PugMixinDef _ _) = mempty
@@ -102,6 +104,7 @@ pugNodeToHtml (Syntax.PugMixinCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugMixinCall name Nothing) = H.textComment $ "+" <> name
 pugNodeToHtml (Syntax.PugFragmentDef _ _) = mempty
 pugNodeToHtml (Syntax.PugFragmentCall _ nodes) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.PugEach _ _ nodes) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugComment b content) =
   if b then H.textComment content else mempty
 pugNodeToHtml (Syntax.PugFilter "escape-html" content) =
@@ -127,6 +130,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugMixinCall _ _) = error "pugTextsToHtml called on a PugMixinCall"
   f (Syntax.PugFragmentDef _ _) = error "pugTextsToHtml called on a PugFragmentDef"
   f (Syntax.PugFragmentCall _ _) = error "pugTextsToHtml called on a PugFragmentCall"
+  f (Syntax.PugEach _ _ _) = error "pugTextsToHtml called on a PugEach"
   f (Syntax.PugComment _ _) = error "pugTextsToHtml called on a PugComment"
   f (Syntax.PugFilter _ _) = error "pugTextsToHtml called on a PugFilter"
   f (Syntax.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"

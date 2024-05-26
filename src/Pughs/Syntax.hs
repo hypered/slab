@@ -7,6 +7,7 @@ module Pughs.Syntax
   , Attr (..)
   , TextSyntax (..)
   , What (..)
+  , Code (..)
   , trailingSym
   , extractClasses
   , extractMixins
@@ -24,7 +25,7 @@ data PugNode
   | PugElem Elem TrailingSym [Attr] [PugNode]
   | PugText TextSyntax Text
   | -- | Recognize only strings for now.
-    PugCode Text
+    PugCode Code
   | -- | @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
     PugInclude FilePath (Maybe [PugNode])
@@ -35,6 +36,7 @@ data PugNode
     -- Or like a parent template that can be @extended@ by a child template.
     PugFragmentDef Text [PugNode]
   | PugFragmentCall Text [PugNode]
+  | PugEach Text [Text] [PugNode]
   | -- | Whether or not the comment must appear in the output.
     PugComment Bool Text
   | PugFilter Text Text
@@ -125,6 +127,10 @@ data TextSyntax
 data What = WithinDef | WithinCall
   deriving (Show, Eq)
 
+-- Minimal support for some JS expressions.
+data Code = SingleQuoteString Text | Variable Text
+  deriving (Show, Eq)
+
 extractClasses :: [PugNode] -> [Text]
 extractClasses = nub . sort . concatMap f
  where
@@ -137,6 +143,7 @@ extractClasses = nub . sort . concatMap f
   f (PugMixinCall _ children) = maybe [] extractClasses children
   f (PugFragmentDef _ _) = [] -- We extract them in PugFragmentCall instead.
   f (PugFragmentCall _ children) = extractClasses children
+  f (PugEach _ _ children) = extractClasses children
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
@@ -170,6 +177,7 @@ extractMixins = concatMap f
   f (PugMixinCall name children) = [PugMixinCall' name] <> maybe [] extractMixins children
   f (PugFragmentDef name children) = [PugFragmentDef' name children]
   f (PugFragmentCall name children) = [PugFragmentCall' name] <> extractMixins children
+  f (PugEach _ _ children) = extractMixins children
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []

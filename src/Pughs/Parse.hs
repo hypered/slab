@@ -51,6 +51,7 @@ pugNode what =
       , pugRawElement what
       , pugBlock what
       , pugExtends
+      , pugEach what
       , pugFragmentCall what
       ]
 
@@ -122,9 +123,10 @@ pugCode' = do
   content <- pugCode
   pure $ L.IndentNone $ PugCode content
 
-pugCode :: Parser Text
+pugCode :: Parser Code
 pugCode = do
-  pugSingleQuoteString -- TODO Escape HTML, e.g. < to &lt;.
+  (SingleQuoteString <$> pugSingleQuoteString) -- TODO Escape HTML, e.g. < to &lt;.
+  <|> (Variable <$> pugName)
 
 --------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
@@ -323,6 +325,29 @@ pugFragmentCall _ = do
   pure $ L.IndentMany Nothing (pure . PugFragmentCall name) (pugNode WithinCall)
 
 --------------------------------------------------------------------------------
+pugEach :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
+pugEach what = do
+  _ <- lexeme (string "each")
+  name <- lexeme pugName
+  _ <- lexeme (string "in")
+  collection <- pugCollection
+  pure $ L.IndentMany Nothing (pure . PugEach name collection) (pugNode what)
+
+pugCollection :: Parser [Text]
+pugCollection = do
+  _ <- lexeme "["
+  mx <- optional $ lexeme pugName
+  xs <- case mx of
+    Nothing -> pure []
+    Just x -> do
+      xs <- many $ do
+        _ <- lexeme (string ",")
+        lexeme pugName
+      pure $ x : xs
+  _ <- lexeme "]"
+  pure xs
+
+--------------------------------------------------------------------------------
 pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugComment = do
   ref <- L.indentLevel
@@ -344,11 +369,11 @@ pugComment = do
 pugFilter :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugFilter = do
   ref <- L.indentLevel
-  name <- T.pack <$>
+  name <-
     lexeme (
         string ":" *>
-        (some (alphaNumChar <|> oneOf ("-_" :: String))) <?> "filter name"
-      )
+        pugName
+      ) <?> "filter name"
   mcontent <- optional pugText
   case mcontent of
     Just content -> pure $ L.IndentNone $ PugFilter name content
@@ -357,6 +382,9 @@ pugFilter = do
       items <- textBlock ref pugText
       let items' = realign items
       pure $ L.IndentNone $ PugFilter name $ T.intercalate "\n" items'
+
+pugName :: Parser Text
+pugName = T.pack <$> some (alphaNumChar <|> oneOf ("-_" :: String)) <?> "name"
 
 --------------------------------------------------------------------------------
 pugRawElement :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
