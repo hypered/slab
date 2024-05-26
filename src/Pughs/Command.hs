@@ -14,7 +14,8 @@ import Options.Applicative qualified as A
 
 --------------------------------------------------------------------------------
 data Command
-  = CommandWithPath FilePath ParseMode CommandWithPath
+  = Build FilePath RenderMode
+  | CommandWithPath FilePath ParseMode CommandWithPath
 
 -- | Commands operating on a path.
 data CommandWithPath
@@ -48,11 +49,17 @@ parser :: A.Parser Command
 parser =
   A.subparser
     ( A.command
-        "render"
-        ( A.info (parserRender <**> A.helper) $
+        "build"
+        ( A.info (parserBuild <**> A.helper) $
             A.progDesc
-              "Render a Pug template to HTML"
+              "Build a library of Pug templates"
         )
+        <> A.command
+          "render"
+          ( A.info (parserRender <**> A.helper) $
+              A.progDesc
+                "Render a Pug template to HTML"
+          )
         <> A.command
           "eval"
           ( A.info (parserEvaluate <**> A.helper) $
@@ -80,6 +87,19 @@ parser =
     )
 
 --------------------------------------------------------------------------------
+parserBuild :: A.Parser Command
+parserBuild = do
+  dir <- A.argument
+    A.str
+    (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Pug templates.")
+  mode <-
+    A.flag
+      RenderNormal
+      RenderPretty
+      ( A.long "pretty" <> A.help "Use pretty-printing"
+      )
+  pure $ Build dir mode
+
 parserRender :: A.Parser Command
 parserRender = do
   mode <-

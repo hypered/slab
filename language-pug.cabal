@@ -40,11 +40,13 @@ library
     , containers
     , directory
     , filepath
+    , Glob
     , megaparsec
     , pretty-simple
     , text
     , transformers
   exposed-modules:
+    Pughs.Build
     Pughs.Command
     Pughs.Evaluate
     Pughs.Parse

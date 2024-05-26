@@ -7,6 +7,7 @@ import Data.Bifunctor (first)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy.IO qualified as TL
+import Pughs.Build qualified as Build
 import Pughs.Command qualified as Command
 import Pughs.Evaluate qualified as Evaluate
 import Pughs.Parse qualified as Parse
@@ -17,6 +18,7 @@ import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
+run (Command.Build dir renderMode) = Build.buildDir dir renderMode
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
   evaluated <- evaluateWithMode path pmode
   case evaluated of

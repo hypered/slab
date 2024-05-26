@@ -167,6 +167,7 @@ extractMixins = concatMap f
   f (PugComment _) = []
   f (PugRawElem _ _) = []
   f (PugBlock _ _ children) = extractMixins children
+  f (PugExtends _ children) = maybe [] extractMixins children
 
 findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
 findMixin name ms = case filter f ms of
@@ -195,3 +196,4 @@ extractCombinators = concatMap f
   f (PugComment _) = []
   f (PugRawElem _ _) = []
   f (PugBlock _ _ _) = []
+  f (PugExtends _ _) = []
