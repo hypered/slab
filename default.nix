@@ -13,6 +13,7 @@ in rec
       buildInputs = [
         binaries
         nixpkgs.busybox # for httpd
+        nixpkgs.dart-sass
       ];
       shellHook = ''
         source <(pughs --bash-completion-script `which pughs`)

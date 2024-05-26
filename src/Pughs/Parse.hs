@@ -49,8 +49,13 @@ data PugNode
   | PugMixinDef Text [PugNode]
   | -- | The Maybe works similarly to `PugInclude`.
     PugMixinCall Text (Maybe [PugNode])
+  | -- | This doesn't exit in Pug. This is like a mixin than receive block arguments.
+    -- Or like a parent template that can be @extended@ by a child template.
+    PugFragmentDef Text [PugNode]
+  | PugFragmentCall Text (Maybe [PugNode])
   | PugComment Text
   | PugRawElem Text [PugNode]
+  | PugBlock Text [PugNode]
   deriving (Show, Eq)
 
 trailingSym :: PugNode -> TrailingSym
@@ -133,9 +138,13 @@ extractClasses = nub . sort . concatMap f
   f (PugInclude _ children) = maybe [] extractClasses children
   f (PugMixinDef _ _) = [] -- We extract them in PugMixinCall instead.
   f (PugMixinCall _ children) = maybe [] extractClasses children
+  f (PugFragmentDef _ _) = [] -- We extract them in PugFragmentCall instead.
+  f (PugFragmentCall _ children) = maybe [] extractClasses children
   f (PugComment _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
+  f (PugBlock _ children) = extractClasses children
+
   g (AttrList xs) = concatMap h xs
   g (Id _) = []
   g (Class c) = [c]
@@ -146,6 +155,8 @@ extractClasses = nub . sort . concatMap f
 data PugMixin
   = PugMixinDef' Text [PugNode]
   | PugMixinCall' Text
+  | PugFragmentDef' Text [PugNode]
+  | PugFragmentCall' Text
   deriving (Show, Eq)
 
 extractMixins :: [PugNode] -> [PugMixin]
@@ -158,15 +169,20 @@ extractMixins = concatMap f
   f (PugInclude _ children) = maybe [] extractMixins children
   f (PugMixinDef name children) = [PugMixinDef' name children]
   f (PugMixinCall name children) = [PugMixinCall' name] <> maybe [] extractMixins children
+  f (PugFragmentDef name children) = [PugFragmentDef' name children]
+  f (PugFragmentCall name children) = [PugFragmentCall' name] <> maybe [] extractMixins children
   f (PugComment _) = []
   f (PugRawElem _ _) = []
+  f (PugBlock _ children) = extractMixins children
 
 findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
 findMixin name ms = case filter f ms of
   [PugMixinDef' _ nodes] -> Just nodes
+  [PugFragmentDef' _ nodes] -> Just nodes
   _ -> Nothing
  where
   f (PugMixinDef' name' _) = name == name'
+  f (PugFragmentDef' name' _) = name == name'
   f _ = False
 
 --------------------------------------------------------------------------------
@@ -235,8 +251,15 @@ preProcessNodeE ctx@Context {..} = \case
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugMixinDef name nodes'
   node@(PugMixinCall _ _) -> pure node
+  PugFragmentDef name nodes -> do
+    nodes' <- preProcessNodesE ctx nodes
+    pure $ PugFragmentDef name nodes'
+  node@(PugFragmentCall _ _) -> pure node
   node@(PugComment _) -> pure node
   node@(PugRawElem _ _) -> pure node
+  PugBlock name nodes -> do
+    nodes' <- preProcessNodesE ctx nodes
+    pure $ PugBlock name nodes'
 
 preProcessMixinE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
 preProcessMixinE ctx@Context {..} = \case
@@ -261,8 +284,19 @@ preProcessMixinE ctx@Context {..} = \case
       Just body ->
         pure $ PugMixinCall name (Just body)
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
+  PugFragmentDef name nodes -> do
+    nodes' <- preProcessMixinsE ctx nodes
+    pure $ PugFragmentDef name nodes'
+  PugFragmentCall name _ -> do
+    case findMixin name $ extractMixins ctxNodes of
+      Just body ->
+        pure $ PugFragmentCall name (Just body)
+      Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
   node@(PugComment _) -> pure node
   node@(PugRawElem _ _) -> pure node
+  PugBlock name nodes -> do
+    nodes' <- preProcessMixinsE ctx nodes
+    pure $ PugBlock name nodes'
 
 --------------------------------------------------------------------------------
 parsePugFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [PugNode])
@@ -287,8 +321,11 @@ pugNode =
       , pugCode'
       , pugMixinDef
       , pugMixinCall
+      , pugFragmentDef
       , pugComment
       , pugRawElement
+      , pugBlock
+      , pugFragmentCall
       ]
 
 pugElement :: Parser (L.IndentOpt Parser PugNode PugNode)
@@ -397,53 +434,57 @@ pugElemWithAttrs = do
 
 pugElem :: Parser Elem
 pugElem =
-  choice
-    [ string "html" *> pure Html
-    , string "body" *> pure Body
-    , string "div" *> pure Div
-    , string "span" *> pure Span
-    , string "hr" *> pure Hr
-    , string "h1" *> pure H1
-    , string "h2" *> pure H2
-    , string "h3" *> pure H3
-    , string "h4" *> pure H4
-    , string "h5" *> pure H5
-    , string "h6" *> pure H6
-    , string "header" *> pure Header
-    , string "head" *> pure Head
-    , string "meta" *> pure Meta
-    , string "main" *> pure Main
-    , string "audio" *> pure Audio
-    , string "a" *> pure A
-    , string "code" *> pure Code
-    , string "img" *> pure Img
-    , string "i" *> pure I
-    , string "pre" *> pure Pre
-    , string "p" *> pure P
-    , string "ul" *> pure Ul
-    , string "link" *> pure Link
-    , string "li" *> pure Li
-    , string "table" *> pure Table
-    , string "thead" *> pure Thead
-    , string "tbody" *> pure Tbody
-    , string "tr" *> pure Tr
-    , string "td" *> pure Td
-    , string "dl" *> pure Dl
-    , string "dt" *> pure Dt
-    , string "dd" *> pure Dd
-    , string "footer" *> pure Footer
-    , string "figure" *> pure Figure
-    , string "form" *> pure Form
-    , string "label" *> pure Label
-    , string "blockquote" *> pure Blockquote
-    , string "button" *> pure Button
-    , string "figcaption" *> pure Figcaption
-    , string "script" *> pure Script
-    , string "style" *> pure Style
-    , string "small" *> pure Small
-    , string "source" *> pure Source
-    , string "svg" *> pure Svg
-    ]
+  ( try $ do
+      name <- T.pack <$> (some (alphaNumChar <|> oneOf ("-_" :: String))) <?> "identifier"
+      case name of
+        "html" -> pure Html
+        "body" -> pure Body
+        "div" -> pure Div
+        "span" -> pure Span
+        "hr" -> pure Hr
+        "h1" -> pure H1
+        "h2" -> pure H2
+        "h3" -> pure H3
+        "h4" -> pure H4
+        "h5" -> pure H5
+        "h6" -> pure H6
+        "header" -> pure Header
+        "head" -> pure Head
+        "meta" -> pure Meta
+        "main" -> pure Main
+        "audio" -> pure Audio
+        "a" -> pure A
+        "code" -> pure Code
+        "img" -> pure Img
+        "i" -> pure I
+        "pre" -> pure Pre
+        "p" -> pure P
+        "ul" -> pure Ul
+        "link" -> pure Link
+        "li" -> pure Li
+        "table" -> pure Table
+        "thead" -> pure Thead
+        "tbody" -> pure Tbody
+        "tr" -> pure Tr
+        "td" -> pure Td
+        "dl" -> pure Dl
+        "dt" -> pure Dt
+        "dd" -> pure Dd
+        "footer" -> pure Footer
+        "figure" -> pure Figure
+        "form" -> pure Form
+        "label" -> pure Label
+        "blockquote" -> pure Blockquote
+        "button" -> pure Button
+        "figcaption" -> pure Figcaption
+        "script" -> pure Script
+        "style" -> pure Style
+        "small" -> pure Small
+        "source" -> pure Source
+        "svg" -> pure Svg
+        _ -> fail "invalid element name"
+  )
+  <?> "element name"
 
 -- E.g. .a, ()
 pugAttrs :: Parser ([PugNode] -> PugNode)
@@ -507,6 +548,9 @@ pugDoubleQuoteString = do
 pugText :: Parser Text
 pugText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
+pugIdentifier :: Parser Text
+pugIdentifier = T.pack <$> lexeme (some (noneOf (" \n" :: String))) <?> "identifier"
+
 --------------------------------------------------------------------------------
 pugInclude :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugInclude = do
@@ -531,6 +575,19 @@ pugMixinCall = do
   pure $ L.IndentNone $ PugMixinCall name Nothing
 
 --------------------------------------------------------------------------------
+pugFragmentDef :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugFragmentDef = do
+  _ <- lexeme (string "fragment" <|> string "frag")
+  name <- pugText
+  pure $ L.IndentMany Nothing (pure . PugFragmentDef name) pugNode
+
+--------------------------------------------------------------------------------
+pugFragmentCall :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugFragmentCall = do
+  name <- pugIdentifier
+  pure $ L.IndentMany Nothing (pure . PugFragmentCall name . Just) pugNode
+
+--------------------------------------------------------------------------------
 pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugComment = do
   _ <- lexeme (string "//")
@@ -548,6 +605,13 @@ pugAngleBracket = do
   _ <- char '<'
   content <- pugText
   pure $ PugRawElem $ "<" <> content
+
+--------------------------------------------------------------------------------
+pugBlock :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugBlock = do
+  _ <- lexeme (string "block")
+  name <- pugText
+  pure $ L.IndentMany Nothing (pure . PugBlock name) pugNode
 
 --------------------------------------------------------------------------------
 scn :: Parser ()

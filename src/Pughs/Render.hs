@@ -100,10 +100,14 @@ pugNodeToHtml (Parse.PugInclude path Nothing) = H.stringComment $ "include " <> 
 pugNodeToHtml (Parse.PugMixinDef _ _) = mempty
 pugNodeToHtml (Parse.PugMixinCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Parse.PugMixinCall name Nothing) = H.textComment $ "+" <> name
+pugNodeToHtml (Parse.PugFragmentDef _ _) = mempty
+pugNodeToHtml (Parse.PugFragmentCall _ (Just nodes)) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Parse.PugFragmentCall name Nothing) = H.textComment $ "frag " <> name
 pugNodeToHtml (Parse.PugComment _) = mempty -- TODO Should it appear in the HTML ?
 pugNodeToHtml (Parse.PugRawElem content children) = do
   H.preEscapedText content -- TODO Construct a proper tag ?
   mapM_ pugNodeToHtml children
+pugNodeToHtml (Parse.PugBlock _ nodes) = mapM_ pugNodeToHtml nodes
 
 pugTextsToHtml :: [Parse.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
@@ -116,8 +120,11 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Parse.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
   f (Parse.PugMixinDef _ _) = error "pugTextsToHtml called on a PugMixinDef"
   f (Parse.PugMixinCall _ _) = error "pugTextsToHtml called on a PugMixinCall"
+  f (Parse.PugFragmentDef _ _) = error "pugTextsToHtml called on a PugFragmentDef"
+  f (Parse.PugFragmentCall _ _) = error "pugTextsToHtml called on a PugFragmentCall"
   f (Parse.PugComment _) = error "pugTextsToHtml called on a PugComment"
   f (Parse.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
+  f (Parse.PugBlock _ _) = error "pugTextsToHtml called on a PugBlock"
 
 pugElemToHtml :: Parse.Elem -> Html -> Html
 pugElemToHtml = \case
