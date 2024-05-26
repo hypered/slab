@@ -49,6 +49,7 @@ pugNode what =
       , pugComment
       , pugRawElement what
       , pugBlock what
+      , pugExtends
       , pugFragmentCall what
       ]
 
@@ -336,6 +337,13 @@ pugBlock what = do
   _ <- lexeme (string "block")
   name <- pugText
   pure $ L.IndentMany Nothing (pure . PugBlock what name) (pugNode what)
+
+--------------------------------------------------------------------------------
+pugExtends :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugExtends = do
+  _ <- lexeme (string "extends")
+  path <- pugPath
+  pure $ L.IndentNone $ PugExtends path Nothing
 
 --------------------------------------------------------------------------------
 scn :: Parser ()

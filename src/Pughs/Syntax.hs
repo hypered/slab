@@ -38,6 +38,9 @@ data PugNode
   | PugComment Text
   | PugRawElem Text [PugNode]
   | PugBlock What Text [PugNode]
+  | -- | Similar to PugInclude. The named block arguments are the following nodes.
+    -- This is not enforced by the parser.
+    PugExtends FilePath (Maybe [PugNode])
   deriving (Show, Eq)
 
 trailingSym :: PugNode -> TrailingSym
@@ -133,6 +136,7 @@ extractClasses = nub . sort . concatMap f
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
   f (PugBlock _ _ children) = extractClasses children
+  f (PugExtends _ children) = maybe [] extractClasses children
 
   g (AttrList xs) = concatMap h xs
   g (Id _) = []

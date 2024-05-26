@@ -107,6 +107,8 @@ pugNodeToHtml (Syntax.PugRawElem content children) = do
   H.preEscapedText content -- TODO Construct a proper tag ?
   mapM_ pugNodeToHtml children
 pugNodeToHtml (Syntax.PugBlock _ _ nodes) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.PugExtends _ (Just nodes)) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.PugExtends path Nothing) = H.stringComment $ "extends " <> path
 
 pugTextsToHtml :: [Syntax.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
@@ -124,6 +126,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugComment _) = error "pugTextsToHtml called on a PugComment"
   f (Syntax.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
   f (Syntax.PugBlock _ _ _) = error "pugTextsToHtml called on a PugBlock"
+  f (Syntax.PugExtends _ _) = error "pugTextsToHtml called on a PugExtends"
 
 pugElemToHtml :: Syntax.Elem -> Html -> Html
 pugElemToHtml = \case
