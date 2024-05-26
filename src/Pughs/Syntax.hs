@@ -70,6 +70,7 @@ data Elem
   | P
   | Ul
   | Li
+  | Title
   | Table
   | Thead
   | Tbody
@@ -94,6 +95,7 @@ data Elem
   | Code
   | Img
   | IFrame
+  | Input
   | I
   | Svg
   deriving (Show, Eq)

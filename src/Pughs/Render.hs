@@ -155,6 +155,7 @@ pugElemToHtml = \case
   Syntax.P -> H.p
   Syntax.Ul -> H.ul
   Syntax.Li -> H.li
+  Syntax.Title -> H.title
   Syntax.Table -> H.table
   Syntax.Thead -> H.thead
   Syntax.Tbody -> H.tbody
@@ -179,5 +180,6 @@ pugElemToHtml = \case
   Syntax.Code -> H.code
   Syntax.Img -> const H.img
   Syntax.IFrame -> H.iframe
+  Syntax.Input -> const H.input
   Syntax.I -> H.i
   Syntax.Svg -> S.svg

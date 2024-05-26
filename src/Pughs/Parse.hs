@@ -183,12 +183,14 @@ pugElem =
         "code" -> pure Code
         "img" -> pure Img
         "iframe" -> pure IFrame
+        "input" -> pure Input
         "i" -> pure I
         "pre" -> pure Pre
         "p" -> pure P
         "ul" -> pure Ul
         "link" -> pure Link
         "li" -> pure Li
+        "title" -> pure Title
         "table" -> pure Table
         "thead" -> pure Thead
         "tbody" -> pure Tbody
