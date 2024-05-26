@@ -21,8 +21,6 @@ import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected
 --------------------------------------------------------------------------------
 data Context = Context
   { ctxStartPath :: FilePath
-  , ctxNodes :: [PugNode]
-  -- ^ Nodes before pre-processing.
   }
 
 data PreProcessError
@@ -42,11 +40,10 @@ preProcessPugFileE path = do
   let ctx =
         Context
           { ctxStartPath = path
-          , ctxNodes = nodes
           }
       env = []
   nodes' <- preProcessNodesE ctx nodes
-  evaluate ctx {ctxNodes = nodes'} env nodes'
+  evaluate env nodes'
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
@@ -57,10 +54,10 @@ type Env = [(Text, [PugNode])]
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
-evaluate :: Context -> Env -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
-evaluate ctx env nodes = do
+evaluate :: Env -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
+evaluate env nodes = do
   let env' = extractCombinators nodes ++ env
-  mapM (eval ctx env') nodes
+  mapM (eval env') nodes
 
 preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
 preProcessNodeE ctx@Context {..} = \case
@@ -99,23 +96,23 @@ preProcessNodeE ctx@Context {..} = \case
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugBlock what name nodes'
 
-eval :: Context -> Env -> PugNode -> ExceptT PreProcessError IO PugNode
-eval ctx env = \case
+eval :: Env -> PugNode -> ExceptT PreProcessError IO PugNode
+eval env = \case
   node@PugDoctype -> pure node
   PugElem name mdot attrs nodes -> do
-    nodes' <- evaluate ctx env nodes
+    nodes' <- evaluate env nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
   node@(PugCode _) -> pure node
   PugInclude path mnodes -> do
     case mnodes of
       Just nodes -> do
-        nodes' <- evaluate ctx env nodes
+        nodes' <- evaluate env nodes
         pure $ PugInclude path (Just nodes')
       Nothing ->
         pure $ PugInclude path Nothing
   PugMixinDef name nodes -> do
-    nodes' <- evaluate ctx env nodes
+    nodes' <- evaluate env nodes
     pure $ PugMixinDef name nodes'
   PugMixinCall name _ -> do
     case lookup name env of
@@ -123,7 +120,7 @@ eval ctx env = \case
         pure $ PugMixinCall name (Just body)
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
   PugFragmentDef name nodes -> do
-    nodes' <- evaluate ctx env nodes
+    nodes' <- evaluate env nodes
     pure $ PugFragmentDef name nodes'
   PugFragmentCall name args -> do
     case lookup name env of
@@ -131,7 +128,7 @@ eval ctx env = \case
         -- TODO Either evaluate the args before constructing the env, or capture
         -- the env in a thunk.
         env' <- mapM namedBlock args
-        body' <- evaluate ctx (env' ++ env) body
+        body' <- evaluate (env' ++ env) body
         pure $ PugFragmentCall name body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
   node@(PugComment _) -> pure node
@@ -141,11 +138,11 @@ eval ctx env = \case
     -- but recursively trying to replace the blocks found within its own body.
     case lookup name env of
       Nothing -> do
-        nodes' <- evaluate ctx env nodes
+        nodes' <- evaluate env nodes
         pure $ PugBlock WithinDef name nodes'
       Just nodes' -> pure $ PugBlock WithinDef name nodes'
   PugBlock WithinCall name nodes -> do
-    nodes' <- evaluate ctx env nodes
+    nodes' <- evaluate env nodes
     pure $ PugBlock WithinCall name nodes'
 
 namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m (Text, [PugNode])
