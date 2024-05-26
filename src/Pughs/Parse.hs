@@ -47,6 +47,7 @@ pugNode what =
       , pugMixinCall
       , pugFragmentDef what
       , pugComment
+      , pugFilter
       , pugRawElement what
       , pugBlock what
       , pugExtends
@@ -336,6 +337,24 @@ pugComment = do
       items <- textBlock ref pugText
       let items' = realign items
       pure $ L.IndentNone $ PugComment b $ T.intercalate "\n" items'
+
+--------------------------------------------------------------------------------
+pugFilter :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugFilter = do
+  ref <- L.indentLevel
+  name <- T.pack <$>
+    lexeme (
+        string ":" *>
+        (some (alphaNumChar <|> oneOf ("-_" :: String))) <?> "filter name"
+      )
+  mcontent <- optional pugText
+  case mcontent of
+    Just content -> pure $ L.IndentNone $ PugFilter name content
+    Nothing -> do
+      scn
+      items <- textBlock ref pugText
+      let items' = realign items
+      pure $ L.IndentNone $ PugFilter name $ T.intercalate "\n" items'
 
 --------------------------------------------------------------------------------
 pugRawElement :: What -> Parser (L.IndentOpt Parser PugNode PugNode)

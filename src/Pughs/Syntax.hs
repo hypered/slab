@@ -37,6 +37,7 @@ data PugNode
   | PugFragmentCall Text [PugNode]
   | -- | Whether or not the comment must appear in the output.
     PugComment Bool Text
+  | PugFilter Text Text
   | PugRawElem Text [PugNode]
   | PugBlock What Text [PugNode]
   | -- | Similar to PugInclude. The named block arguments are the following nodes.
@@ -135,6 +136,7 @@ extractClasses = nub . sort . concatMap f
   f (PugFragmentDef _ _) = [] -- We extract them in PugFragmentCall instead.
   f (PugFragmentCall _ children) = extractClasses children
   f (PugComment _ _) = []
+  f (PugFilter _ _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
   f (PugBlock _ _ children) = extractClasses children
@@ -167,6 +169,7 @@ extractMixins = concatMap f
   f (PugFragmentDef name children) = [PugFragmentDef' name children]
   f (PugFragmentCall name children) = [PugFragmentCall' name] <> extractMixins children
   f (PugComment _ _) = []
+  f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
   f (PugBlock _ _ children) = extractMixins children
   f (PugExtends _ children) = maybe [] extractMixins children
@@ -196,6 +199,7 @@ extractCombinators = concatMap f
   f (PugFragmentDef name children) = [(name, children)]
   f (PugFragmentCall _ _) = []
   f (PugComment _ _) = []
+  f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
   f (PugBlock _ _ _) = []
   f (PugExtends _ _) = []
