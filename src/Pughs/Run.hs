@@ -2,6 +2,7 @@ module Pughs.Run
   ( run
   ) where
 
+import Control.Monad.Trans.Except (runExceptT)
 import Data.Bifunctor (first)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -17,17 +18,25 @@ import Text.Pretty.Simple (pShowNoColor)
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
-  parsed <- parseWithMode path pmode
-  case parsed of
+  evaluated <- evaluateWithMode path pmode
+  case evaluated of
     Left (Evaluate.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> TL.putStrLn . Render.renderHtmls $ Render.pugNodesToHtml nodes
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderPretty)) = do
-  parsed <- parseWithMode path pmode
-  case parsed of
+  evaluated <- evaluateWithMode path pmode
+  case evaluated of
     Left (Evaluate.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> T.putStrLn . Render.prettyHtmls $ Render.pugNodesToHtml nodes
+run (Command.CommandWithPath path pmode Command.Evaluate) = do
+  evaluated <- evaluateWithMode path pmode
+  case evaluated of
+    Left (Evaluate.PreProcessParseError err) ->
+      T.putStrLn . Parse.parseErrorPretty $ err
+    Left err -> TL.putStrLn $ pShowNoColor err
+    Right nodes -> do
+      TL.putStrLn $ pShowNoColor nodes
 run (Command.CommandWithPath path pmode Command.Parse) = do
   parsed <- parseWithMode path pmode
   case parsed of
@@ -61,3 +70,15 @@ parseWithMode path pmode =
   case pmode of
     Command.ParseShallow -> first Evaluate.PreProcessParseError <$> Parse.parsePugFile path
     Command.ParseDeep -> Evaluate.preProcessPugFile path
+
+evaluateWithMode
+  :: FilePath
+  -> Command.ParseMode
+  -> IO (Either Evaluate.PreProcessError [Syntax.PugNode])
+evaluateWithMode path pmode = do
+  parsed <- parseWithMode path pmode
+  case parsed of
+    Left err -> pure $ Left err
+    Right nodes -> do
+      evaluated <- runExceptT $ Evaluate.evaluate [] nodes
+      pure evaluated

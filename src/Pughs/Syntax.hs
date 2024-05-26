@@ -180,7 +180,7 @@ extractCombinators :: [PugNode] -> [(Text, [PugNode])]
 extractCombinators = concatMap f
  where
   f PugDoctype = []
-  f (PugElem _ _ _ children) = []
+  f (PugElem _ _ _ _) = []
   f (PugText _ _) = []
   f (PugCode _) = []
   f (PugInclude _ children) = maybe [] extractCombinators children

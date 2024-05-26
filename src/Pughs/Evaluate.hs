@@ -3,6 +3,8 @@
 module Pughs.Evaluate
   ( PreProcessError (..)
   , preProcessPugFile
+  , evaluatePugFile
+  , evaluate
   ) where
 
 import Control.Monad.IO.Class (liftIO)
@@ -41,14 +43,15 @@ preProcessPugFileE path = do
         Context
           { ctxStartPath = path
           }
-      env = []
-  nodes' <- preProcessNodesE ctx nodes
-  evaluate env nodes'
+  preProcessNodesE ctx nodes
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
 preProcessNodesE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
+
+evaluatePugFile :: FilePath -> IO (Either PreProcessError [PugNode])
+evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate [])
 
 type Env = [(Text, [PugNode])]
 

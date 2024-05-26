@@ -19,6 +19,7 @@ data Command
 -- | Commands operating on a path.
 data CommandWithPath
   = Render RenderMode
+  | Evaluate
   | Parse
   | -- | List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes.
     Classes
@@ -53,6 +54,12 @@ parser =
               "Render a Pug template to HTML"
         )
         <> A.command
+          "eval"
+          ( A.info (parserEvaluate <**> A.helper) $
+              A.progDesc
+                "Parse a Pug template to AST and evaluate it"
+          )
+        <> A.command
           "parse"
           ( A.info (parserParse <**> A.helper) $
               A.progDesc
@@ -83,6 +90,11 @@ parserRender = do
       )
   pathAndmode <- parserWithPath
   pure $ uncurry CommandWithPath pathAndmode $ Render mode
+
+parserEvaluate :: A.Parser Command
+parserEvaluate = do
+  pathAndmode <- parserWithPath
+  pure $ uncurry CommandWithPath pathAndmode Evaluate
 
 parserParse :: A.Parser Command
 parserParse = do
