@@ -174,5 +174,6 @@ pugElemToHtml = \case
   Syntax.Pre -> H.pre
   Syntax.Code -> H.code
   Syntax.Img -> const H.img
+  Syntax.IFrame -> H.iframe
   Syntax.I -> H.i
   Syntax.Svg -> S.svg

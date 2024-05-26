@@ -181,6 +181,7 @@ pugElem =
         "a" -> pure A
         "code" -> pure Code
         "img" -> pure Img
+        "iframe" -> pure IFrame
         "i" -> pure I
         "pre" -> pure Pre
         "p" -> pure P
@@ -251,7 +252,7 @@ pugPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
   mb <- optional $ do
     _ <- string "="
-    b <- lexeme (pugSingleQuoteString <|> pugDoubleQuoteString)
+    b <- lexeme (pugSingleQuoteString <|> pugDoubleQuoteString <|> pugNumber)
     pure b
   _ <- optional (lexeme $ string ",")
   pure (a, mb)
@@ -268,6 +269,12 @@ pugDoubleQuoteString = do
   _ <- string "\""
   s <- T.pack <$> (some (noneOf ("\"\n" :: String))) <?> "string"
   _ <- string "\""
+  pure s
+
+-- TODO Proper data type.
+pugNumber :: Parser Text
+pugNumber = do
+  s <- T.pack <$> (some digitChar) <?> "string"
   pure s
 
 pugText :: Parser Text

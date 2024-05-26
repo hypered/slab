@@ -92,6 +92,7 @@ data Elem
   | Pre
   | Code
   | Img
+  | IFrame
   | I
   | Svg
   deriving (Show, Eq)
