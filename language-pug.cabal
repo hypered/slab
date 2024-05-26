@@ -46,6 +46,7 @@ library
     , transformers
   exposed-modules:
     Pughs.Command
+    Pughs.Evaluate
     Pughs.Parse
     Pughs.Render
     Pughs.Run

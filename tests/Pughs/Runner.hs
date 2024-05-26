@@ -4,7 +4,7 @@ module Pughs.Runner
 
 import Data.List (sort)
 import Data.Text (Text)
-import Pughs.Parse qualified as Parse
+import Pughs.Evaluate qualified as Evaluate
 import Pughs.Render qualified as Render
 import System.FilePath
 import System.FilePath.Glob qualified as Glob
@@ -44,7 +44,7 @@ mkGoldenTest path = do
  where
   action :: IO Text
   action = do
-    parsed <- Parse.preProcessPugFile path
+    parsed <- Evaluate.preProcessPugFile path
     case parsed of
       Left _ -> pure "TODO"
       Right nodes -> do
