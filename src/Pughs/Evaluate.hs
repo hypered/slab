@@ -110,7 +110,7 @@ preProcessNodeE ctx@Context {..} = \case
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugFragmentDef name nodes'
   node@(PugFragmentCall _ _) -> pure node
-  node@(PugComment _) -> pure node
+  node@(PugComment _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
   PugBlock what name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
@@ -153,7 +153,7 @@ eval env = \case
         body' <- evaluate (env' ++ env) body
         pure $ PugFragmentCall name body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
-  node@(PugComment _) -> pure node
+  node@(PugComment _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
   PugBlock WithinDef name nodes -> do
     -- If the block is not given as an argument, we return the default block,

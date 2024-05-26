@@ -317,7 +317,7 @@ pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugComment = do
   _ <- lexeme (string "//")
   content <- pugText
-  pure $ L.IndentNone $ PugComment content
+  pure $ L.IndentNone $ PugComment True content
 
 --------------------------------------------------------------------------------
 pugRawElement :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
