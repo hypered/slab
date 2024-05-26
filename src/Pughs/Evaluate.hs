@@ -74,7 +74,7 @@ evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate emptyEnv
 
 data Env = Env
   { envFragments :: [(Text, [PugNode])]
-  , envVariables :: [(Text, Text)]
+  , envVariables :: [(Text, Code)]
   }
 
 emptyEnv = Env [] []
@@ -145,7 +145,7 @@ eval env = \case
   node@(PugCode (Variable name)) ->
     case lookupVariable name env of
       Just val ->
-        pure $ PugCode (SingleQuoteString val)
+        pure $ PugCode val
       Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
   node@(PugCode _) -> pure node
   PugInclude path mnodes -> do
@@ -180,9 +180,12 @@ eval env = \case
     -- Re-use PugEach to construct a single node to return.
     let zero :: Int
         zero = 0
-    nodes' <- forM (zip values [zero..]) $ \(value, index) -> do
+        collection = case values of
+          CollectionList xs -> zip xs $ map (SingleQuoteString . T.pack . show) [zero..]
+          CollectionObject xs -> map (\(k, v) -> (v, k)) xs
+    nodes' <- forM collection $ \(value, index) -> do
       let env' = case mindex of
-            Just idxname -> augmentVariables env [(name, value), (idxname, T.pack $ show index)]
+            Just idxname -> augmentVariables env [(name, value), (idxname, index)]
             Nothing -> augmentVariables env [(name, value)]
       evaluate env' nodes
     pure $ PugEach name mindex values $ concat nodes'

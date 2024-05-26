@@ -126,6 +126,7 @@ pugCode' = do
 pugCode :: Parser Code
 pugCode = do
   (SingleQuoteString <$> pugSingleQuoteString) -- TODO Escape HTML, e.g. < to &lt;.
+  <|> (Int <$> pugInt)
   <|> (Variable <$> pugName)
 
 --------------------------------------------------------------------------------
@@ -330,14 +331,14 @@ pugEach what = do
   _ <- lexeme (string "each")
   name <- lexeme pugName
   mindex <- optional $ do
-    lexeme $ string ","
+    _ <- lexeme $ string ","
     lexeme pugName
   _ <- lexeme (string "in")
-  collection <- pugCollection
+  collection <- (CollectionList <$> pugList) <|> (CollectionObject <$> pugObject)
   pure $ L.IndentMany Nothing (pure . PugEach name mindex collection) (pugNode what)
 
-pugCollection :: Parser [Text]
-pugCollection = do
+pugList :: Parser [Code]
+pugList = do
   _ <- lexeme "["
   mx <- optional $ lexeme pugName
   xs <- case mx of
@@ -348,7 +349,28 @@ pugCollection = do
         lexeme pugName
       pure $ x : xs
   _ <- lexeme "]"
-  pure xs
+  pure $ map SingleQuoteString xs
+
+pugObject :: Parser [(Code, Code)]
+pugObject = do
+  _ <- lexeme (string "{")
+  mkv <- optional $ do
+    key <- lexeme pugCode
+    _ <- lexeme (string ":")
+    val <- lexeme pugCode
+    pure (key, val)
+  kvs <- case mkv of
+    Nothing -> pure []
+    Just kv -> do
+      kvs <- many $ do
+        _ <- lexeme $ string ","
+        key <- lexeme pugCode
+        _ <- lexeme (string ":")
+        val <- lexeme pugCode
+        pure (key, val)
+      pure $ kv : kvs
+  _ <- lexeme (string "}")
+  pure kvs
 
 --------------------------------------------------------------------------------
 pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)
@@ -385,6 +407,9 @@ pugFilter = do
       items <- textBlock ref pugText
       let items' = realign items
       pure $ L.IndentNone $ PugFilter name $ T.intercalate "\n" items'
+
+pugInt :: Parser Int
+pugInt = L.decimal
 
 pugName :: Parser Text
 pugName = T.pack <$> some (alphaNumChar <|> oneOf ("-_" :: String)) <?> "name"

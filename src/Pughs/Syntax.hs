@@ -8,6 +8,7 @@ module Pughs.Syntax
   , TextSyntax (..)
   , What (..)
   , Code (..)
+  , Collection (..)
   , trailingSym
   , extractClasses
   , extractMixins
@@ -36,7 +37,7 @@ data PugNode
     -- Or like a parent template that can be @extended@ by a child template.
     PugFragmentDef Text [PugNode]
   | PugFragmentCall Text [PugNode]
-  | PugEach Text (Maybe Text) [Text] [PugNode]
+  | PugEach Text (Maybe Text) Collection [PugNode]
   | -- | Whether or not the comment must appear in the output.
     PugComment Bool Text
   | PugFilter Text Text
@@ -128,7 +129,16 @@ data What = WithinDef | WithinCall
   deriving (Show, Eq)
 
 -- Minimal support for some JS expressions.
-data Code = SingleQuoteString Text | Variable Text
+data Code
+  = Variable Text
+  | Int Int
+  | SingleQuoteString Text
+  | Object [(Text, Code)]
+  deriving (Show, Eq)
+
+data Collection
+  = CollectionList [Code]
+  | CollectionObject [(Code, Code)]
   deriving (Show, Eq)
 
 extractClasses :: [PugNode] -> [Text]
@@ -206,6 +216,7 @@ extractCombinators = concatMap f
   f (PugInclude _ children) = maybe [] extractCombinators children
   f (PugMixinDef name children) = [(name, children)]
   f (PugMixinCall _ _) = []
+  f (PugEach _ _ _ _) = []
   f (PugFragmentDef name children) = [(name, children)]
   f (PugFragmentCall _ _) = []
   f (PugComment _ _) = []

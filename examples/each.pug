@@ -7,3 +7,13 @@ ul
     li
       span= val
       p= index
+
+ul
+  each val in {1: 'one', 2: 'two'}
+    li= val
+
+ul
+  each val, key in {1: 'one', 2: 'two'}
+    li
+      span= val
+      p= key
