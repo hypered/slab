@@ -51,6 +51,7 @@ pugNode what =
       , pugRawElement what
       , pugBlock what
       , pugExtends
+      , pugReadJson
       , pugEach what
       , pugFragmentCall what
       ]
@@ -136,9 +137,12 @@ pugCode = do
       pure key
     case mkey of
       Nothing -> pure $ Variable name
-      Just key -> pure $ Lookup name key
+      Just key -> pure $ Lookup name (SingleQuoteString key)
     )
   <|> (Object <$> pugObject)
+
+pugVariable :: Parser Text
+pugVariable = pugName
 
 --------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
@@ -175,7 +179,11 @@ pugElemWithAttrs = do
 pugElem :: Parser Elem
 pugElem =
   ( try $ do
-      name <- T.pack <$> (some (alphaNumChar <|> oneOf ("-_" :: String))) <?> "identifier"
+      name <- T.pack <$> ( do
+        a <- letterChar
+        as <- many (alphaNumChar <|> oneOf ("-_" :: String))
+        pure (a:as)
+        ) <?> "identifier"
       case name of
         "html" -> pure Html
         "body" -> pure Body
@@ -345,7 +353,8 @@ pugEach what = do
     _ <- lexeme $ string ","
     lexeme pugName
   _ <- lexeme (string "in")
-  collection <- (CollectionList <$> pugList) <|> (CollectionObject <$> pugObject)
+  collection <-
+    (List <$> pugList) <|> (Object <$> pugObject) <|> (Variable <$> pugVariable)
   pure $ L.IndentMany Nothing (pure . PugEach name mindex collection) (pugNode what)
 
 pugList :: Parser [Code]
@@ -423,7 +432,11 @@ pugInt :: Parser Int
 pugInt = L.decimal
 
 pugName :: Parser Text
-pugName = T.pack <$> some (alphaNumChar <|> oneOf ("-_" :: String)) <?> "name"
+pugName = T.pack <$> ( do
+  a <- letterChar
+  as <- many (alphaNumChar <|> oneOf ("-_" :: String))
+  pure (a : as)
+  ) <?> "name"
 
 --------------------------------------------------------------------------------
 pugRawElement :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
@@ -450,6 +463,19 @@ pugExtends = do
   _ <- lexeme (string "extends")
   path <- pugPath
   pure $ L.IndentNone $ PugExtends path Nothing
+
+--------------------------------------------------------------------------------
+pugReadJson :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugReadJson = do
+  _ <- lexeme (string "-")
+  _ <- lexeme (string "var")
+  name <- lexeme pugName
+  _ <- lexeme (string "=")
+  _ <- lexeme (string "require")
+  _ <- lexeme (string "(")
+  path <- T.unpack <$> lexeme pugDoubleQuoteString
+  _ <- lexeme (string ")")
+  pure $ L.IndentNone $ PugReadJson name path Nothing
 
 --------------------------------------------------------------------------------
 scn :: Parser ()

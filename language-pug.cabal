@@ -34,9 +34,11 @@ library
   import: common-extensions, common-options, common-dependencies
   hs-source-dirs: src
   build-depends:
-      blaze-html
+      aeson
+    , blaze-html
     , blaze-markup
     , blaze-svg
+    , bytestring
     , containers
     , directory
     , filepath
@@ -45,6 +47,7 @@ library
     , pretty-simple
     , text
     , transformers
+    , vector
   exposed-modules:
     Pughs.Build
     Pughs.Command

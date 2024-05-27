@@ -8,16 +8,20 @@ module Pughs.Syntax
   , TextSyntax (..)
   , What (..)
   , Code (..)
-  , Collection (..)
   , trailingSym
   , extractClasses
   , extractMixins
   , findMixin
   , extractCombinators
+  , extractAssignments
   ) where
 
+import Data.Aeson qualified as Aeson
+import Data.Aeson.Key qualified as Aeson.Key
+import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.List (nub, sort)
 import Data.Text (Text)
+import Data.Vector qualified as V
 
 --------------------------------------------------------------------------------
 data PugNode
@@ -37,7 +41,7 @@ data PugNode
     -- Or like a parent template that can be @extended@ by a child template.
     PugFragmentDef Text [PugNode]
   | PugFragmentCall Text [PugNode]
-  | PugEach Text (Maybe Text) Collection [PugNode]
+  | PugEach Text (Maybe Text) Code [PugNode]
   | -- | Whether or not the comment must appear in the output.
     PugComment Bool Text
   | PugFilter Text Text
@@ -46,6 +50,9 @@ data PugNode
   | -- | Similar to PugInclude. The named block arguments are the following nodes.
     -- This is not enforced by the parser.
     PugExtends FilePath (Maybe [PugNode])
+  | -- | Allow to assign the content of a JSON file to a variable. The syntax
+    -- is specific to how Struct has a @require@ function in scope.
+    PugReadJson Text FilePath (Maybe Aeson.Value)
   deriving (Show, Eq)
 
 trailingSym :: PugNode -> TrailingSym
@@ -133,14 +140,10 @@ data Code
   = Variable Text
   | Int Int
   | SingleQuoteString Text
+  | List [Code]
   | Object [(Code, Code)]
-  | -- The object['key'] lookup. This is quite restrive as a start.
-    Lookup Text Text
-  deriving (Show, Eq)
-
-data Collection
-  = CollectionList [Code]
-  | CollectionObject [(Code, Code)]
+  | -- The object[key] lookup. This is quite restrive as a start.
+    Lookup Text Code
   deriving (Show, Eq)
 
 extractClasses :: [PugNode] -> [Text]
@@ -162,6 +165,7 @@ extractClasses = nub . sort . concatMap f
   f (PugRawElem _ _) = []
   f (PugBlock _ _ children) = extractClasses children
   f (PugExtends _ children) = maybe [] extractClasses children
+  f (PugReadJson _ _ _) = []
 
   g (AttrList xs) = concatMap h xs
   g (Id _) = []
@@ -195,6 +199,7 @@ extractMixins = concatMap f
   f (PugRawElem _ _) = []
   f (PugBlock _ _ children) = extractMixins children
   f (PugExtends _ children) = maybe [] extractMixins children
+  f (PugReadJson _ _ _) = []
 
 findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
 findMixin name ms = case filter f ms of
@@ -226,3 +231,37 @@ extractCombinators = concatMap f
   f (PugRawElem _ _) = []
   f (PugBlock _ _ _) = []
   f (PugExtends _ _) = []
+  f (PugReadJson _ _ _) = []
+
+-- Extract variable assignments. We don't extract them recursively.
+-- This doens't extract @each@ loops.
+extractAssignments :: [PugNode] -> [(Text, Code)]
+extractAssignments = concatMap f
+ where
+  f PugDoctype = []
+  f (PugElem _ _ _ _) = []
+  f (PugText _ _) = []
+  f (PugCode _) = []
+  f (PugInclude _ _) = []
+  f (PugMixinDef _ _) = []
+  f (PugMixinCall _ _) = []
+  f (PugEach _ _ _ _) = []
+  f (PugFragmentDef _ _) = []
+  f (PugFragmentCall _ _) = []
+  f (PugComment _ _) = []
+  f (PugFilter _ _) = []
+  f (PugRawElem _ _) = []
+  f (PugBlock _ _ _) = []
+  f (PugExtends _ _) = []
+  f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
+  f (PugReadJson _ _ Nothing) = []
+
+jsonToCode :: Aeson.Value -> Code
+jsonToCode = \case
+  Aeson.String s -> SingleQuoteString s
+  Aeson.Array xs ->
+    List $ map jsonToCode (V.toList xs)
+  Aeson.Object kvs ->
+    let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToCode v)
+    in Object $ map f (Aeson.KeyMap.toList kvs)
+  x -> error $ "jsonToCode: " <> show x

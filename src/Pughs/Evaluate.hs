@@ -11,7 +11,10 @@ module Pughs.Evaluate
 import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
+import Data.Aeson qualified as Aeson
+import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.Bifunctor (first)
+import Data.ByteString.Lazy qualified as BL
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -76,6 +79,7 @@ data Env = Env
   { envFragments :: [(Text, [PugNode])]
   , envVariables :: [(Text, Code)]
   }
+  deriving Show
 
 emptyEnv = Env [] []
 
@@ -91,7 +95,9 @@ augmentVariables Env {..} xs = Env { envVariables = xs <> envVariables, .. }
 -- since mixins may be defined in included files.
 evaluate :: Env -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
 evaluate env nodes = do
-  let env' = augmentFragments env $ extractCombinators nodes
+  let combs = extractCombinators nodes
+      assigns = extractAssignments nodes
+  let env' = augmentVariables (augmentFragments env $ combs) assigns
   mapM (eval env') nodes
 
 preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
@@ -134,6 +140,13 @@ preProcessNodeE ctx@Context {..} = \case
     pure $ PugBlock what name nodes'
   PugExtends _ _ ->
     throwE $ PreProcessError $ "Extends must be the first node in a file\""
+  PugReadJson name path _ -> do
+    content <- liftIO $ BL.readFile path
+    case Aeson.eitherDecode content of
+      Right val ->
+        pure $ PugReadJson name path $ Just val
+      Left err ->
+        throwE $ PreProcessError $ "Can't decode JSON: " <> T.pack err
 
 eval :: Env -> PugNode -> ExceptT PreProcessError IO PugNode
 eval env = \case
@@ -142,20 +155,9 @@ eval env = \case
     nodes' <- evaluate env nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
-  node@(PugCode (Variable name)) ->
-    case lookupVariable name env of
-      Just val ->
-        pure $ PugCode val
-      Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
-  node@(PugCode (Lookup name key)) ->
-    case lookupVariable name env of
-      Just (Object obj) ->
-        case lookup (SingleQuoteString key) obj of
-          Just val -> pure $ PugCode val
-          Nothing -> throwE $ PreProcessError $ "Key lookup failed"
-      Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
-      Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
-  node@(PugCode _) -> pure node
+  node@(PugCode code) -> do
+    code' <- evalCode env code
+    pure $ PugCode code'
   PugInclude path mnodes -> do
     case mnodes of
       Just nodes -> do
@@ -188,9 +190,10 @@ eval env = \case
     -- Re-use PugEach to construct a single node to return.
     let zero :: Int
         zero = 0
-        collection = case values of
-          CollectionList xs -> zip xs $ map (SingleQuoteString . T.pack . show) [zero..]
-          CollectionObject xs -> map (\(k, v) -> (v, k)) xs
+    values' <- evalCode env values
+    let collection = case values' of
+          List xs -> zip xs $ map (SingleQuoteString . T.pack . show) [zero..]
+          Object xs -> map (\(k, v) -> (v, k)) xs
     nodes' <- forM collection $ \(value, index) -> do
       let env' = case mindex of
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
@@ -213,7 +216,26 @@ eval env = \case
     pure $ PugBlock WithinCall name nodes'
   PugExtends _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
+  node@(PugReadJson _ _ _) -> pure node
 
 namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m (Text, [PugNode])
 namedBlock (PugBlock _ name content) = pure (name, content)
 namedBlock _ = throwE $ PreProcessError $ "Not a named block argument"
+
+evalCode :: Env -> Code -> ExceptT PreProcessError IO Code
+evalCode env = \case
+  Variable name ->
+    case lookupVariable name env of
+      Just val -> pure val
+      Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
+  Lookup name key ->
+    case lookupVariable name env of
+      Just (Object obj) -> do
+        -- key' <- evalCode env key
+        case lookup key obj of
+          Just val -> pure val
+          Nothing ->
+            throwE $ PreProcessError $ "Key lookup failed. Key: " <> T.pack (show key) <> T.pack (show obj)
+      Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
+      Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
+  code -> pure code

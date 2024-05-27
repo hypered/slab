@@ -120,6 +120,7 @@ pugNodeToHtml (Syntax.PugRawElem content children) = do
 pugNodeToHtml (Syntax.PugBlock _ _ nodes) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugExtends _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugExtends path Nothing) = H.stringComment $ "extends " <> path
+pugNodeToHtml (Syntax.PugReadJson _ _ _) = mempty
 
 pugTextsToHtml :: [Syntax.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
@@ -140,6 +141,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
   f (Syntax.PugBlock _ _ _) = error "pugTextsToHtml called on a PugBlock"
   f (Syntax.PugExtends _ _) = error "pugTextsToHtml called on a PugExtends"
+  f (Syntax.PugReadJson _ _ _) = error "pugTextsToHtml called on a PugReadJson"
 
 pugElemToHtml :: Syntax.Elem -> Html -> Html
 pugElemToHtml = \case
