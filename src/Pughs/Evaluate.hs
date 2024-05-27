@@ -67,6 +67,7 @@ preProcessNodesE ctx@Context {..} (PugExtends path _ : nodes) = do
       nodes' <- preProcessPugFileE includedPath'
       let def = PugFragmentDef (T.pack path) nodes'
       nodes'' <- mapM (preProcessNodeE ctx) nodes
+      -- Maybe we should set the blocks as WithinCall here?
       let call = PugFragmentCall (T.pack path) nodes''
       pure [def, call]
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
@@ -96,7 +97,7 @@ evaluate :: Env -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
 evaluate env nodes = do
   let combs = extractCombinators nodes
       assigns = extractAssignments nodes
-  let env' = augmentVariables (augmentFragments env $ combs) assigns
+  let env' = augmentVariables (augmentFragments env combs) assigns
   mapM (eval env') nodes
 
 preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
@@ -214,7 +215,9 @@ eval env = \case
       Nothing -> do
         nodes' <- evaluate env nodes
         pure $ PugBlock WithinDef name nodes'
-      Just nodes' -> pure $ PugBlock WithinDef name nodes'
+      Just nodes' -> do
+        nodes'' <- evaluate env nodes'
+        pure $ PugBlock WithinDef name nodes''
   PugBlock WithinCall name nodes -> do
     nodes' <- evaluate env nodes
     pure $ PugBlock WithinCall name nodes'
