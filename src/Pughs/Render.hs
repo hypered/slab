@@ -94,7 +94,7 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
   g (_, Just _) = error "The attribute is not a string"
   g (a, Nothing) = [(T.unpack a, a)]
 pugNodeToHtml (Syntax.PugText _ s)
-  | s == T.empty = mempty
+  | s == T.empty = H.preEscapedText "\n" -- This allows to force some whitespace.
   | otherwise = H.preEscapedText s -- TODO
 pugNodeToHtml (Syntax.PugCode (Syntax.SingleQuoteString s))
   | s == T.empty = mempty
