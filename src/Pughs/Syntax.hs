@@ -109,6 +109,8 @@ data Elem
   | Input
   | I
   | Svg
+  | Textarea
+  | Canvas
   deriving (Show, Eq)
 
 data TrailingSym = HasDot | HasEqual | NoSym

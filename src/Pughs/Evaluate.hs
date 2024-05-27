@@ -249,7 +249,8 @@ evalCode env = \case
         case lookup key obj of
           Just val -> pure val
           Nothing ->
-            throwE $ PreProcessError $ "Key lookup failed. Key: " <> T.pack (show key) <> T.pack (show obj)
+            pure $ Variable "false"
+            -- throwE $ PreProcessError $ "Key lookup failed. Key: " <> T.pack (show key) <> T.pack (show obj)
       Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
       Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
   code -> pure code

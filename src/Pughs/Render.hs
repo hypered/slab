@@ -202,3 +202,5 @@ pugElemToHtml = \case
   Syntax.Input -> const H.input
   Syntax.I -> H.i
   Syntax.Svg -> S.svg
+  Syntax.Textarea -> H.textarea
+  Syntax.Canvas -> H.canvas

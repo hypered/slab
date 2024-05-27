@@ -262,6 +262,8 @@ pugElem =
         "small" -> pure Small
         "source" -> pure Source
         "svg" -> pure Svg
+        "textarea" -> pure Textarea
+        "canvas" -> pure Canvas
         _ -> fail "invalid element name"
   )
   <?> "element name"
