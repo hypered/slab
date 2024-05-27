@@ -272,5 +272,5 @@ jsonToCode = \case
     List $ map jsonToCode (V.toList xs)
   Aeson.Object kvs ->
     let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToCode v)
-    in Object $ map f (Aeson.KeyMap.toList kvs)
+     in Object $ map f (Aeson.KeyMap.toList kvs)
   x -> error $ "jsonToCode: " <> show x

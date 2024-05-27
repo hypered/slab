@@ -60,15 +60,14 @@ preProcessNodesE ctx@Context {..} (PugExtends path _ : nodes) = do
       pugExt = takeExtension includedPath == ".pug"
   exists <- liftIO $ doesFileExist includedPath
   if exists && not pugExt
-    then
-      throwE $ PreProcessError $ "Extends requires a .pug file"
+    then throwE $ PreProcessError $ "Extends requires a .pug file"
     else do
       -- Parse and process the .pug file.
       let includedPath' = if pugExt then includedPath else includedPath <.> ".pug"
       nodes' <- preProcessPugFileE includedPath'
       let def = PugFragmentDef (T.pack path) nodes'
       nodes'' <- mapM (preProcessNodeE ctx) nodes
-      let    call = PugFragmentCall (T.pack path) nodes''
+      let call = PugFragmentCall (T.pack path) nodes''
       pure [def, call]
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
 
@@ -79,7 +78,7 @@ data Env = Env
   { envFragments :: [(Text, [PugNode])]
   , envVariables :: [(Text, Code)]
   }
-  deriving Show
+  deriving (Show)
 
 emptyEnv = Env [] [("true", Int 1), ("false", Int 0)]
 
@@ -87,9 +86,9 @@ lookupFragment name Env {..} = lookup name envFragments
 
 lookupVariable name Env {..} = lookup name envVariables
 
-augmentFragments Env {..} xs = Env { envFragments = xs <> envFragments, .. }
+augmentFragments Env {..} xs = Env {envFragments = xs <> envFragments, ..}
 
-augmentVariables Env {..} xs = Env { envVariables = xs <> envVariables, .. }
+augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables, ..}
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
@@ -197,7 +196,7 @@ eval env = \case
         zero = 0
     values' <- evalCode env values
     let collection = case values' of
-          List xs -> zip xs $ map (SingleQuoteString . T.pack . show) [zero..]
+          List xs -> zip xs $ map (SingleQuoteString . T.pack . show) [zero ..]
           Object xs -> map (\(k, v) -> (v, k)) xs
     nodes' <- forM collection $ \(value, index) -> do
       let env' = case mindex of
@@ -225,10 +224,12 @@ eval env = \case
   PugIf cond as bs -> do
     cond' <- evalCode env cond
     case cond' of
-      SingleQuoteString s | not (T.null s) ->
-        pure $ PugIf cond as []
-      Int n | n /= 0 ->
-        pure $ PugIf cond as []
+      SingleQuoteString s
+        | not (T.null s) ->
+            pure $ PugIf cond as []
+      Int n
+        | n /= 0 ->
+            pure $ PugIf cond as []
       _ ->
         pure $ PugIf cond [] bs
 
@@ -250,7 +251,7 @@ evalCode env = \case
           Just val -> pure val
           Nothing ->
             pure $ Variable "false"
-            -- throwE $ PreProcessError $ "Key lookup failed. Key: " <> T.pack (show key) <> T.pack (show obj)
+      -- throwE $ PreProcessError $ "Key lookup failed. Key: " <> T.pack (show key) <> T.pack (show obj)
       Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
       Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
   code -> pure code

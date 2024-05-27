@@ -36,26 +36,27 @@ type Parser = Parsec Void Text
 
 pugNode :: What -> Parser PugNode
 pugNode what = do
-  node <- L.indentBlock scn $
-    choice
-      [ pugDoctype
-      , try pugInclude
-      , pugElement what
-      , pugPipe
-      , pugCode'
-      , pugMixinDef what
-      , pugMixinCall
-      , pugFragmentDef what
-      , pugComment
-      , pugFilter
-      , pugRawElement what
-      , pugBlock what
-      , pugExtends
-      , pugReadJson
-      , pugEach what
-      , pugIf what
-      , pugFragmentCall what
-      ]
+  node <-
+    L.indentBlock scn $
+      choice
+        [ pugDoctype
+        , try pugInclude
+        , pugElement what
+        , pugPipe
+        , pugCode'
+        , pugMixinDef what
+        , pugMixinCall
+        , pugFragmentDef what
+        , pugComment
+        , pugFilter
+        , pugRawElement what
+        , pugBlock what
+        , pugExtends
+        , pugReadJson
+        , pugEach what
+        , pugIf what
+        , pugFragmentCall what
+        ]
   case node of
     PugIf cond as _ -> do
       mbs <- optional $ L.indentBlock scn $ pugElse what
@@ -142,22 +143,23 @@ pugCode' = do
   pure $ L.IndentNone $ PugCode content
 
 pugCode :: Parser Code
-pugCode = do
-  try pugExpression
-  <|> (SingleQuoteString <$> pugSingleQuoteString) -- TODO Escape HTML, e.g. < to &lt;.
-  <|> (Int <$> pugInt)
-  <|> (do
-    name <- pugName
-    mkey <- optional $ do
-      _ <- string "["
-      key <- pugSingleQuoteString
-      _ <- string "]"
-      pure key
-    case mkey of
-      Nothing -> pure $ Variable name
-      Just key -> pure $ Lookup name (SingleQuoteString key)
-    )
-  <|> (Object <$> pugObject)
+pugCode =
+  do
+    try pugExpression
+    <|> (SingleQuoteString <$> pugSingleQuoteString) -- TODO Escape HTML, e.g. < to &lt;.
+    <|> (Int <$> pugInt)
+    <|> ( do
+            name <- pugName
+            mkey <- optional $ do
+              _ <- string "["
+              key <- pugSingleQuoteString
+              _ <- string "]"
+              pure key
+            case mkey of
+              Nothing -> pure $ Variable name
+              Just key -> pure $ Lookup name (SingleQuoteString key)
+        )
+    <|> (Object <$> pugObject)
 
 pugVariable :: Parser Text
 pugVariable = pugName
@@ -196,10 +198,12 @@ pugElemWithAttrs = do
           -- `try` because we want to backtrack if there is a dot
           -- not followed by a class name, for mdot to succeed.
           b <- many (pugId <|> try pugClass <|> pugAttrList)
-          mtrailing <- optional $ choice
-            [ string "." >> pure HasDot
-            , string "=" >> pure HasEqual
-            ]
+          mtrailing <-
+            optional $
+              choice
+                [ string "." >> pure HasDot
+                , string "=" >> pure HasEqual
+                ]
           pure (a, b, maybe NoSym id mtrailing)
       )
       <?> "div tag"
@@ -208,11 +212,14 @@ pugElemWithAttrs = do
 pugElem :: Parser Elem
 pugElem =
   ( try $ do
-      name <- T.pack <$> ( do
-        a <- letterChar
-        as <- many (alphaNumChar <|> oneOf ("-_" :: String))
-        pure (a:as)
-        ) <?> "identifier"
+      name <-
+        T.pack
+          <$> ( do
+                  a <- letterChar
+                  as <- many (alphaNumChar <|> oneOf ("-_" :: String))
+                  pure (a : as)
+              )
+          <?> "identifier"
       case name of
         "html" -> pure Html
         "body" -> pure Body
@@ -266,7 +273,7 @@ pugElem =
         "canvas" -> pure Canvas
         _ -> fail "invalid element name"
   )
-  <?> "element name"
+    <?> "element name"
 
 -- E.g. .a, ()
 pugAttrs :: Parser ([PugNode] -> PugNode)
@@ -284,14 +291,16 @@ pugAttrs = do
 -- E.g. #a
 pugId :: Parser Attr
 pugId =
-  Id . T.pack
+  Id
+    . T.pack
     <$> (char '#' *> some (alphaNumChar <|> oneOf ("-_" :: String)))
     <?> "id"
 
 -- E.g. .a
 pugClass :: Parser Attr
 pugClass =
-  Class . T.pack
+  Class
+    . T.pack
     <$> (char '.' *> some (alphaNumChar <|> oneOf ("-_" :: String)))
     <?> "class name"
 
@@ -425,11 +434,12 @@ pugObject = do
 pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugComment = do
   ref <- L.indentLevel
-  b <- lexeme $
-    choice
-      [ string "//-" *> pure False
-      , string "//" *> pure True
-      ]
+  b <-
+    lexeme $
+      choice
+        [ string "//-" *> pure False
+        , string "//" *> pure True
+        ]
   mcontent <- optional pugText
   case mcontent of
     Just content -> pure $ L.IndentNone $ PugComment b content
@@ -444,10 +454,11 @@ pugFilter :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugFilter = do
   ref <- L.indentLevel
   name <-
-    lexeme (
-        string ":" *>
-        pugName
-      ) <?> "filter name"
+    lexeme
+      ( string ":"
+          *> pugName
+      )
+      <?> "filter name"
   mcontent <- optional pugText
   case mcontent of
     Just content -> pure $ L.IndentNone $ PugFilter name content
@@ -461,11 +472,14 @@ pugInt :: Parser Int
 pugInt = L.decimal
 
 pugName :: Parser Text
-pugName = T.pack <$> ( do
-  a <- letterChar
-  as <- many (alphaNumChar <|> oneOf ("-_" :: String))
-  pure (a : as)
-  ) <?> "name"
+pugName =
+  T.pack
+    <$> ( do
+            a <- letterChar
+            as <- many (alphaNumChar <|> oneOf ("-_" :: String))
+            pure (a : as)
+        )
+    <?> "name"
 
 --------------------------------------------------------------------------------
 pugRawElement :: What -> Parser (L.IndentOpt Parser PugNode PugNode)

@@ -89,9 +89,10 @@ parser =
 --------------------------------------------------------------------------------
 parserBuild :: A.Parser Command
 parserBuild = do
-  dir <- A.argument
-    A.str
-    (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Pug templates.")
+  dir <-
+    A.argument
+      A.str
+      (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Pug templates.")
   mode <-
     A.flag
       RenderNormal

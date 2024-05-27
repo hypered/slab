@@ -22,7 +22,7 @@ buildDir dir mode = do
   templates <- listTemplates dir
 
   let build path = do
-        let path' = "_site" </> replaceExtension (makeRelative dir path ) ".html"
+        let path' = "_site" </> replaceExtension (makeRelative dir path) ".html"
             dir' = takeDirectory path'
         putStrLn $ "Building " <> path' <> "..."
         createDirectoryIfMissing True dir'

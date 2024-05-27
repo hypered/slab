@@ -32,12 +32,12 @@ pugNodeToHtml Syntax.PugDoctype = H.docType
 pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
   mAddAttr $
     mAddId $
-    mAddClass $
-      pugElemToHtml name $
-        mconcat $
-          if mdot == Syntax.HasDot
-            then [pugTextsToHtml children]
-            else map pugNodeToHtml children
+      mAddClass $
+        pugElemToHtml name $
+          mconcat $
+            if mdot == Syntax.HasDot
+              then [pugTextsToHtml children]
+              else map pugNodeToHtml children
  where
   mAddId :: H.Html -> H.Html
   mAddId e =
