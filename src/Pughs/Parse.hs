@@ -126,7 +126,8 @@ pugCode' = do
 
 pugCode :: Parser Code
 pugCode = do
-  (SingleQuoteString <$> pugSingleQuoteString) -- TODO Escape HTML, e.g. < to &lt;.
+  try pugExpression
+  <|> (SingleQuoteString <$> pugSingleQuoteString) -- TODO Escape HTML, e.g. < to &lt;.
   <|> (Int <$> pugInt)
   <|> (do
     name <- pugName
@@ -143,6 +144,17 @@ pugCode = do
 
 pugVariable :: Parser Text
 pugVariable = pugName
+
+-- Hard-coded for now to parse something like
+--   p= index + 1 + '.'
+pugExpression :: Parser Code
+pugExpression = do
+  name <- lexeme pugVariable
+  _ <- lexeme $ string "+"
+  n <- lexeme $ pugNumber
+  _ <- lexeme $ string "+"
+  s <- lexeme $ pugSingleQuoteString
+  pure $ Variable name
 
 --------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
