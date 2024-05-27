@@ -52,7 +52,8 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
           Syntax.AttrList pairs -> concatMap fId pairs
       )
       attrs
-  fId ("id", Just x) = [x]
+  fId ("id", Just (Syntax.SingleQuoteString x)) = [x]
+  fId ("id", Just _) = error "The id is not a string"
   fId _ = []
   idNames' :: Text
   idNames' = T.intercalate "-" idNames -- TODO Refuse multiple Ids in some kind of validation step after parsing ?
@@ -69,7 +70,8 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
           Syntax.AttrList pairs -> concatMap f pairs
       )
       attrs
-  f ("class", Just x) = [x]
+  f ("class", Just (Syntax.SingleQuoteString x)) = [x]
+  f ("class", Just _) = error "The class is not a string"
   f _ = []
   classNames' :: Text
   classNames' = T.intercalate " " classNames
@@ -87,7 +89,9 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
       attrs
   g ("id", _) = []
   g ("class", _) = []
-  g (a, Just b) = [(T.unpack a, b)]
+  g (a, Just (Syntax.SingleQuoteString b)) = [(T.unpack a, b)]
+  g (a, Just (Syntax.Int b)) = [(T.unpack a, T.pack $ show b)]
+  g (a, Just _) = error "The attribute is not a string"
   g (a, Nothing) = [(T.unpack a, a)]
 pugNodeToHtml (Syntax.PugText _ s)
   | s == T.empty = mempty

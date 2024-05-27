@@ -272,12 +272,12 @@ pugAttrList = (<?> "attribute") $ do
   _ <- string ")"
   pure $ AttrList pairs
 
-pugPair :: Parser (Text, Maybe Text)
+pugPair :: Parser (Text, Maybe Code)
 pugPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
   mb <- optional $ do
     _ <- string "="
-    b <- lexeme (pugSingleQuoteString <|> pugDoubleQuoteString <|> pugNumber)
+    b <- lexeme (SingleQuoteString <$> pugSingleQuoteString <|> SingleQuoteString <$> pugDoubleQuoteString <|> Int <$> pugNumber)
     pure b
   _ <- optional (lexeme $ string ",")
   pure (a, mb)
@@ -297,10 +297,8 @@ pugDoubleQuoteString = do
   pure s
 
 -- TODO Proper data type.
-pugNumber :: Parser Text
-pugNumber = do
-  s <- T.pack <$> (some digitChar) <?> "string"
-  pure s
+pugNumber :: Parser Int
+pugNumber = L.decimal
 
 pugText :: Parser Text
 pugText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"

@@ -113,7 +113,8 @@ data Elem
 data TrailingSym = HasDot | HasEqual | NoSym
   deriving (Show, Eq)
 
-data Attr = AttrList [(Text, Maybe Text)] | Id Text | Class Text
+-- The Code must already be evaluated.
+data Attr = AttrList [(Text, Maybe Code)] | Id Text | Class Text
   deriving (Show, Eq)
 
 -- Tracks the syntax used to enter the text.
@@ -170,7 +171,8 @@ extractClasses = nub . sort . concatMap f
   g (AttrList xs) = concatMap h xs
   g (Id _) = []
   g (Class c) = [c]
-  h ("class", Just c) = [c]
+  h ("class", Just (SingleQuoteString c)) = [c]
+  h ("class", _) = error "The class is not a string"
   h _ = []
 
 -- Return type used for `extractMixins`.
