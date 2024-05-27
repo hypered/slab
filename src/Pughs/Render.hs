@@ -91,7 +91,7 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
   g ("class", _) = []
   g (a, Just (Syntax.SingleQuoteString b)) = [(T.unpack a, b)]
   g (a, Just (Syntax.Int b)) = [(T.unpack a, T.pack $ show b)]
-  g (a, Just _) = error "The attribute is not a string"
+  g (_, Just _) = error "The attribute is not a string"
   g (a, Nothing) = [(T.unpack a, a)]
 pugNodeToHtml (Syntax.PugText _ s)
   | s == T.empty = mempty
@@ -125,6 +125,10 @@ pugNodeToHtml (Syntax.PugBlock _ _ nodes) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugExtends _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugExtends path Nothing) = H.stringComment $ "extends " <> path
 pugNodeToHtml (Syntax.PugReadJson _ _ _) = mempty
+pugNodeToHtml (Syntax.PugIf _ as bs) = do
+  -- The evaluation code remove the non-taken branch.
+  mapM_ pugNodeToHtml as
+  mapM_ pugNodeToHtml bs
 
 pugTextsToHtml :: [Syntax.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
@@ -146,6 +150,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugBlock _ _ _) = error "pugTextsToHtml called on a PugBlock"
   f (Syntax.PugExtends _ _) = error "pugTextsToHtml called on a PugExtends"
   f (Syntax.PugReadJson _ _ _) = error "pugTextsToHtml called on a PugReadJson"
+  f (Syntax.PugIf _ _ _) = error "pugTextsToHtml called on a PugIf"
 
 pugElemToHtml :: Syntax.Elem -> Html -> Html
 pugElemToHtml = \case

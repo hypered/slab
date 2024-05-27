@@ -35,8 +35,8 @@ parsePug fn = runParser (many (pugNode WithinDef) <* eof) fn
 type Parser = Parsec Void Text
 
 pugNode :: What -> Parser PugNode
-pugNode what =
-  L.indentBlock scn $
+pugNode what = do
+  node <- L.indentBlock scn $
     choice
       [ pugDoctype
       , try pugInclude
@@ -53,8 +53,25 @@ pugNode what =
       , pugExtends
       , pugReadJson
       , pugEach what
+      , pugIf what
       , pugFragmentCall what
       ]
+  case node of
+    PugIf cond as _ -> do
+      mbs <- optional $ L.indentBlock scn $ pugElse what
+      pure $ PugIf cond as $ maybe [] id mbs
+    _ -> pure node
+
+pugIf :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
+pugIf what = do
+  _ <- lexeme $ string "if"
+  cond <- pugCode
+  pure $ L.IndentMany Nothing (pure . (\as -> PugIf cond as [])) (pugNode what)
+
+pugElse :: What -> Parser (L.IndentOpt Parser [PugNode] PugNode)
+pugElse what = do
+  _ <- lexeme $ string "else"
+  pure $ L.IndentMany Nothing pure (pugNode what)
 
 pugElement :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
 pugElement what = do

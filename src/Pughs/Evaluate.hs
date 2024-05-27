@@ -81,7 +81,7 @@ data Env = Env
   }
   deriving Show
 
-emptyEnv = Env [] []
+emptyEnv = Env [] [("true", Int 1), ("false", Int 0)]
 
 lookupFragment name Env {..} = lookup name envFragments
 
@@ -147,6 +147,11 @@ preProcessNodeE ctx@Context {..} = \case
         pure $ PugReadJson name path $ Just val
       Left err ->
         throwE $ PreProcessError $ "Can't decode JSON: " <> T.pack err
+  PugIf cond as bs -> do
+    -- File inclusion is done right away, without checking the condition.
+    as' <- preProcessNodesE ctx as
+    bs' <- preProcessNodesE ctx bs
+    pure $ PugIf cond as bs
 
 eval :: Env -> PugNode -> ExceptT PreProcessError IO PugNode
 eval env = \case
@@ -217,6 +222,15 @@ eval env = \case
   PugExtends _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
   node@(PugReadJson _ _ _) -> pure node
+  PugIf cond as bs -> do
+    cond' <- evalCode env cond
+    case cond' of
+      SingleQuoteString s | not (T.null s) ->
+        pure $ PugIf cond as []
+      Int n | n /= 0 ->
+        pure $ PugIf cond as []
+      _ ->
+        pure $ PugIf cond [] bs
 
 namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m (Text, [PugNode])
 namedBlock (PugBlock _ name content) = pure (name, content)
