@@ -175,8 +175,9 @@ eval env = \case
     pure $ PugMixinDef name nodes'
   PugMixinCall name _ ->
     case lookupFragment name env of
-      Just body ->
-        pure $ PugMixinCall name (Just body)
+      Just body -> do
+        body' <- evaluate env body
+        pure $ PugMixinCall name (Just body')
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
   PugFragmentDef name nodes -> do
     nodes' <- evaluate env nodes
