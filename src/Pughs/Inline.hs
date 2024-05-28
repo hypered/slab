@@ -3,6 +3,8 @@
 -- - This uses @#@ instead of @$@.
 -- - Only the safe parsers are provided.
 -- - Only the applicative interface is provided.
+-- - We don't support #name, but only #{name}, because # can appear
+--   in character entities, URLs, ...
 -- TODO Mention the BSD-3 license and Johan.
 
 module Pughs.Inline
@@ -39,7 +41,7 @@ newtype Template = Template [Inline]
   deriving (Eq, Show)
 
 -- | A template fragment.
-data Inline = Lit {-# UNPACK #-} !Text | Var {-# UNPACK #-} !Text !Bool
+data Inline = Lit {-# UNPACK #-} !Text | Var {-# UNPACK #-} !Text
   deriving (Eq, Show)
 
 -- | A mapping from placeholders in the template to values with an applicative
@@ -94,7 +96,7 @@ render :: Applicative f => Template -> Context f -> f TL.Text
 render (Template frags) context = TL.fromChunks <$> traverse renderInline frags
  where
   renderInline (Lit s) = pure s
-  renderInline (Var x _) = context x
+  renderInline (Var x) = context x
 
 --------------------------------------------------------------------------------
 -- Template parser
@@ -108,49 +110,40 @@ parseInline :: Parser Inline
 parseInline =
   M.choice
     [ parseLit
-    , parseLitEntity
-    , parseEscape
-    , parseBracketVar
     , parseVar
+    , parseEscape
+    , parseSharpLit
     ]
 
 -- TODO The \n condition could be optional if we want this module to be useful
 -- outside Pughs.
 parseLit :: Parser Inline
 parseLit = do
-  s <- M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n' && c /= '&')
+  s <- M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n')
   pure $ Lit s
 
--- Allow # to appear for character entities using numeric references.
-parseLitEntity :: Parser Inline
-parseLitEntity = do
-  _ <- C.string $ T.pack "&#"
-  n <- M.some C.digitChar
-  _ <- C.string $ T.pack ";"
-  pure $ Lit $ T.pack $ "&#" <> n <> ";"
+parseVar :: Parser Inline
+parseVar = do
+  _ <- C.string $ T.pack "#{"
+  name <- parseExpression
+  _ <- C.string $ T.pack "}"
+  pure $ Var name
 
 parseEscape :: Parser Inline
 parseEscape = do
   _ <- C.string $ T.pack "##"
   pure $ Lit $ T.pack "#"
 
-parseBracketVar :: Parser Inline
-parseBracketVar = do
-  _ <- C.string $ T.pack "#{"
-  name <- parseIdentifier
-  _ <- C.string $ T.pack "}"
-  pure $ Var name True
-
-parseVar :: Parser Inline
-parseVar = do
+parseSharpLit :: Parser Inline
+parseSharpLit = do
   _ <- C.string $ T.pack "#"
-  name <- parseIdentifier
-  pure $ Var name False
+  s <- M.takeWhile1P Nothing (\c -> c /= '#' && c /= '\n')
+  pure $ Lit $ "#" <> s
 
-parseIdentifier :: Parser Text
-parseIdentifier = do
+parseExpression :: Parser Text
+parseExpression = do
   a <- C.letterChar
-  as <- M.many (C.alphaNumChar <|> M.oneOf ("-_" :: String))
+  as <- M.many (C.alphaNumChar <|> M.oneOf ("-_[]'" :: String))
   pure $ T.pack (a : as)
 
 -- Example usage.
