@@ -19,7 +19,6 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
-import Pughs.Inline qualified as Inline
 import Pughs.Parse qualified as Parse
 import Pughs.Syntax
 import System.Directory (doesFileExist)
@@ -122,7 +121,7 @@ preProcessNodeE ctx@Context {..} = \case
       then do
         -- Include the file content as-is.
         content <- liftIO $ T.readFile includedPath
-        let nodes' = map (PugText Include . (: []) . Inline.Lit) $ T.lines content
+        let nodes' = map (PugText Include . (: []) . Lit) $ T.lines content
         pure $ PugInclude path (Just nodes')
       else do
         -- Parse and process the .pug file.
@@ -271,9 +270,9 @@ evalCode env = \case
   code -> pure code
 
 -- After evaluation, the template should be either empty or contain a single literal.
-evalTemplate :: Env -> [Inline.Inline] -> ExceptT PreProcessError IO [Inline.Inline]
-evalTemplate env inlines = case Inline.render (Inline.Template inlines) context of
-  Right t -> pure [Inline.Lit $ TL.toStrict t]
+evalTemplate :: Env -> [Inline] -> ExceptT PreProcessError IO [Inline]
+evalTemplate env inlines = case render inlines context of
+  Right t -> pure [Lit $ TL.toStrict t]
   Left err -> throwE $ PreProcessError $ "Interpolation error: " <> err
  where
   context name = case lookupVariable name env of
@@ -283,3 +282,25 @@ evalTemplate env inlines = case Inline.render (Inline.Template inlines) context 
 stringCode :: Code -> Text
 stringCode = \case
   SingleQuoteString s -> s
+
+--------------------------------------------------------------------------------
+
+-- Text interpolation stuff
+
+-- | Perform the template substitution, returning a new Text. The lookup can
+-- have side effects.  The lookups are performed in order that they are needed
+-- to generate the resulting text.
+--
+-- You can use this e.g. to report errors when a lookup cannot be made
+-- successfully.  For example, given a list @context@ of key-value pairs
+-- and a 'Template' @template@:
+--
+-- > render template (flip lookup context)
+--
+-- will return 'Nothing' if any of the placeholders in the template
+-- don't appear in @ctx@ and @Just text@ otherwise.
+render :: Applicative f => [Inline] -> Parse.InterpolationContext f -> f TL.Text
+render inlines context = TL.fromChunks <$> traverse renderInline inlines
+ where
+  renderInline (Lit s) = pure s
+  renderInline (Var x) = context x

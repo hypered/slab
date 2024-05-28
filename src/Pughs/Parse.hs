@@ -4,6 +4,15 @@ module Pughs.Parse
   ( parsePugFile
   , parsePug
   , parseErrorPretty
+
+    -- Inline parsing stuff
+
+    -- * The @InterpolationContext@ type
+  , InterpolationContext
+
+    -- * Basic interface
+  , parse
+  , parseInlines
   ) where
 
 import Control.Monad (void)
@@ -15,7 +24,6 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
-import Pughs.Inline qualified as Inline
 import Pughs.Syntax
 import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
 import Text.Megaparsec qualified as M
@@ -81,13 +89,13 @@ pugElement what = do
   header <- pugDiv
   case trailingSym $ header [] of
     HasDot -> do
-      template <- Inline.parseInlines
+      template <- parseInlines
       case template of
         [] -> do
           scn
-          items <- textBlock ref pugText -- TODO Use Inline.parseInlines
+          items <- textBlock ref pugText -- TODO Use parseInlines
           let items' = realign items
-          pure $ L.IndentNone $ header [PugText Dot [Inline.Lit $ T.intercalate "\n" items']]
+          pure $ L.IndentNone $ header [PugText Dot [Lit $ T.intercalate "\n" items']]
         _ -> pure $ L.IndentNone $ header [PugText Dot template]
     HasEqual -> do
       mcontent <- optional pugCode
@@ -98,7 +106,7 @@ pugElement what = do
           content <- pugCode
           pure $ L.IndentNone $ header [PugCode content]
     NoSym -> do
-      template <- Inline.parseInlines
+      template <- parseInlines
       case template of
         [] -> pure $ L.IndentMany Nothing (pure . header) (pugNode what)
         _ -> pure $ L.IndentNone $ header [PugText Normal template]
@@ -134,7 +142,7 @@ realign xs = map (T.drop n) xs
 pugPipe :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugPipe = do
   _ <- lexeme $ string "|"
-  template <- Inline.parseInlines
+  template <- parseInlines
   pure $ L.IndentNone $ PugText Pipe template
 
 pugCode' :: Parser (L.IndentOpt Parser PugNode PugNode)
@@ -578,3 +586,99 @@ errorItemPretty = \case
   Tokens ts -> "character '" <> T.pack (NE.toList ts) <> "'"
   M.Label label -> T.pack (NE.toList label)
   EndOfInput -> "end of input"
+
+--------------------------------------------------------------------------------
+
+-- Text interpolation stuff
+
+-- Text interpolation modeled on the @template@ library by Johan Tibell.
+-- - This uses Megaparsec instead of an internal State monad parser.
+-- - This uses @#@ instead of @$@.
+-- - Only the safe parsers are provided.
+-- - Only the applicative interface is provided.
+-- - We don't support #name, but only #{name}, because # can appear
+--   in character entities, URLs, ...
+-- TODO Mention the BSD-3 license and Johan.
+
+--------------------------------------------------------------------------------
+
+-- | A mapping from placeholders in the template to values with an applicative
+-- lookup function. For instance the lookup function can fail, returning
+-- 'Nothing' or 'Left'.
+type InterpolationContext f = Text -> f Text
+
+--------------------------------------------------------------------------------
+-- Basic interface
+
+-- | Create a template from a template string. A malformed template
+-- string will cause 'parse' to return a parse error.
+parse :: Text -> Either (M.ParseErrorBundle Text Void) [Inline]
+parse = M.parse (parseInlines <* M.eof) "-"
+
+combineLits :: [Inline] -> [Inline]
+combineLits [] = []
+combineLits xs =
+  let (lits, xs') = span isLit xs
+   in case lits of
+        [] -> gatherVars xs'
+        [lit] -> lit : gatherVars xs'
+        _ -> Lit (T.concat (map fromLit lits)) : gatherVars xs'
+ where
+  gatherVars [] = []
+  gatherVars ys =
+    let (vars, ys') = span isVar ys
+     in vars <> combineLits ys'
+
+  isLit (Lit _) = True
+  isLit _ = False
+
+  isVar = not . isLit
+
+  fromLit (Lit v) = v
+  fromLit _ = undefined
+
+--------------------------------------------------------------------------------
+-- Template parser
+
+parseInlines :: Parser [Inline]
+parseInlines = combineLits <$> M.many parseInline
+
+parseInline :: Parser Inline
+parseInline =
+  M.choice
+    [ parseLit
+    , parseVar
+    , parseEscape
+    , parseSharpLit
+    ]
+
+-- TODO The \n condition could be optional if we want this module to be useful
+-- outside Pughs.
+parseLit :: Parser Inline
+parseLit = do
+  s <- M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n')
+  pure $ Lit s
+
+parseVar :: Parser Inline
+parseVar = do
+  _ <- string $ T.pack "#{"
+  name <- parseExpression
+  _ <- string $ T.pack "}"
+  pure $ Var name
+
+parseEscape :: Parser Inline
+parseEscape = do
+  _ <- string $ T.pack "##"
+  pure $ Lit $ T.pack "#"
+
+parseSharpLit :: Parser Inline
+parseSharpLit = do
+  _ <- string $ T.pack "#"
+  s <- M.takeWhile1P Nothing (\c -> c /= '#' && c /= '\n')
+  pure $ Lit $ "#" <> s
+
+parseExpression :: Parser Text
+parseExpression = do
+  a <- letterChar
+  as <- M.many (alphaNumChar <|> M.oneOf ("-_[]'" :: String))
+  pure $ T.pack (a : as)

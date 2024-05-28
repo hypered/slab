@@ -8,6 +8,7 @@ module Pughs.Syntax
   , TextSyntax (..)
   , What (..)
   , Code (..)
+  , Inline (..)
   , trailingSym
   , extractClasses
   , extractMixins
@@ -22,7 +23,6 @@ import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.List (nub, sort)
 import Data.Text (Text)
 import Data.Vector qualified as V
-import Pughs.Inline
 
 --------------------------------------------------------------------------------
 data PugNode
@@ -152,6 +152,14 @@ data Code
   | -- The object[key] lookup. This is quite restrive as a start.
     Lookup Text Code
   deriving (Show, Eq)
+
+-- | A representation of a 'Data.Text' template is a list of Inline, supporting
+-- efficient rendering. Use 'parse' to create a template from a text containing
+-- placeholders.
+data Inline = Lit {-# UNPACK #-} !Text | Var {-# UNPACK #-} !Text
+  deriving (Eq, Show)
+
+--------------------------------------------------------------------------------
 
 extractClasses :: [PugNode] -> [Text]
 extractClasses = nub . sort . concatMap f

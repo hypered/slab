@@ -8,7 +8,6 @@ import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
-import Pughs.Inline qualified as Inline
 import Pughs.Syntax qualified as Syntax
 import Text.Blaze.Html.Renderer.Pretty qualified as Pretty (renderHtml)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
@@ -96,7 +95,7 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
   g (a, Nothing) = [(T.unpack a, a)]
 pugNodeToHtml (Syntax.PugText _ []) =
   H.preEscapedText "\n" -- This allows to force some whitespace.
-pugNodeToHtml (Syntax.PugText _ [Inline.Lit s])
+pugNodeToHtml (Syntax.PugText _ [Syntax.Lit s])
   | s == T.empty = H.preEscapedText "\n" -- This allows to force some whitespace.
   | otherwise = H.preEscapedText s -- TODO
 pugNodeToHtml (Syntax.PugText _ _) = error "Template is not rendered."
@@ -141,7 +140,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   xs' = T.intercalate "\n" $ map f xs
   f Syntax.PugDoctype = error "pugTextsToHtml called on a PugDoctype"
   f (Syntax.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
-  f (Syntax.PugText _ [Inline.Lit s]) = s
+  f (Syntax.PugText _ [Syntax.Lit s]) = s
   f (Syntax.PugText _ _) = error "pugTextsToHtml called on unevaluated PugText"
   f (Syntax.PugCode _) = error "pugTextsToHtml called on a PugCode"
   f (Syntax.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
