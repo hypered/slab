@@ -303,4 +303,5 @@ render :: Applicative f => [Inline] -> Parse.InterpolationContext f -> f TL.Text
 render inlines context = TL.fromChunks <$> traverse renderInline inlines
  where
   renderInline (Lit s) = pure s
-  renderInline (Var x) = context x
+  renderInline (Place (SingleQuoteString x)) = pure x
+  renderInline (Place (Variable x)) = context x

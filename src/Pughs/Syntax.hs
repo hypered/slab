@@ -156,7 +156,7 @@ data Code
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting
 -- efficient rendering. Use 'parse' to create a template from a text containing
 -- placeholders.
-data Inline = Lit {-# UNPACK #-} !Text | Var {-# UNPACK #-} !Text
+data Inline = Lit {-# UNPACK #-} !Text | Place {-# UNPACK #-} !Code
   deriving (Eq, Show)
 
 --------------------------------------------------------------------------------

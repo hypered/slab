@@ -647,7 +647,7 @@ parseInline :: Parser Inline
 parseInline =
   M.choice
     [ parseLit
-    , parseVar
+    , parsePlace
     , parseEscape
     , parseSharpLit
     ]
@@ -659,12 +659,12 @@ parseLit = do
   s <- M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n')
   pure $ Lit s
 
-parseVar :: Parser Inline
-parseVar = do
+parsePlace :: Parser Inline
+parsePlace = do
   _ <- string $ T.pack "#{"
-  name <- parseExpression
+  e <- pugCode
   _ <- string $ T.pack "}"
-  pure $ Var name
+  pure $ Place e
 
 parseEscape :: Parser Inline
 parseEscape = do
@@ -676,9 +676,3 @@ parseSharpLit = do
   _ <- string $ T.pack "#"
   s <- M.takeWhile1P Nothing (\c -> c /= '#' && c /= '\n')
   pure $ Lit $ "#" <> s
-
-parseExpression :: Parser Text
-parseExpression = do
-  a <- letterChar
-  as <- M.many (alphaNumChar <|> M.oneOf ("-_[]'" :: String))
-  pure $ T.pack (a : as)
