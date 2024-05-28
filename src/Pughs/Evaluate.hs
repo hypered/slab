@@ -12,7 +12,6 @@ import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
 import Data.Aeson qualified as Aeson
-import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.Bifunctor (first)
 import Data.ByteString.Lazy qualified as BL
 import Data.Text (Text)
@@ -81,14 +80,19 @@ data Env = Env
   }
   deriving (Show)
 
+emptyEnv :: Env
 emptyEnv = Env [] [("true", Int 1), ("false", Int 0)]
 
+lookupFragment :: Text -> Env -> Maybe [PugNode]
 lookupFragment name Env {..} = lookup name envFragments
 
+lookupVariable :: Text -> Env -> Maybe Code
 lookupVariable name Env {..} = lookup name envVariables
 
+augmentFragments :: Env -> [(Text, [PugNode])] -> Env
 augmentFragments Env {..} xs = Env {envFragments = xs <> envFragments, ..}
 
+augmentVariables :: Env -> [(Text, Code)] -> Env
 augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables, ..}
 
 -- Process mixin calls. This should be done after processing the include statement
@@ -151,7 +155,7 @@ preProcessNodeE ctx@Context {..} = \case
     -- File inclusion is done right away, without checking the condition.
     as' <- preProcessNodesE ctx as
     bs' <- preProcessNodesE ctx bs
-    pure $ PugIf cond as bs
+    pure $ PugIf cond as' bs'
 
 eval :: Env -> PugNode -> ExceptT PreProcessError IO PugNode
 eval env = \case
@@ -160,7 +164,7 @@ eval env = \case
     nodes' <- evaluate env nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
-  node@(PugCode code) -> do
+  PugCode code -> do
     code' <- evalCode env code
     pure $ PugCode code'
   PugInclude path mnodes -> do
@@ -192,7 +196,7 @@ eval env = \case
         body' <- evaluate env'' body
         pure $ PugFragmentCall name body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
-  node@(PugEach name mindex values nodes) -> do
+  PugEach name mindex values nodes -> do
     -- Re-use PugEach to construct a single node to return.
     let zero :: Int
         zero = 0
