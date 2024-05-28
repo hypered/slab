@@ -15,7 +15,7 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
-import Pughs.Inline
+import Pughs.Inline qualified as Inline
 import Pughs.Syntax
 import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
 import Text.Megaparsec qualified as M
@@ -53,7 +53,7 @@ pugNode what = do
         , pugRawElement what
         , pugBlock what
         , pugExtends
-        , pugReadJson
+        , (try pugReadJson <|> pugAssignVar)
         , pugEach what
         , pugIf what
         , pugFragmentCall what
@@ -81,14 +81,14 @@ pugElement what = do
   header <- pugDiv
   case trailingSym $ header [] of
     HasDot -> do
-      mcontent <- optional pugText
-      case mcontent of
-        Just content -> pure $ L.IndentNone $ header [PugText Dot content]
-        Nothing -> do
+      template <- Inline.parseInlines
+      case template of
+        [] -> do
           scn
-          items <- textBlock ref pugText
+          items <- textBlock ref pugText -- TODO Use Inline.parseInlines
           let items' = realign items
-          pure $ L.IndentNone $ header [PugText Dot $ T.intercalate "\n" items']
+          pure $ L.IndentNone $ header [PugText Dot [Inline.Lit $ T.intercalate "\n" items']]
+        _ -> pure $ L.IndentNone $ header [PugText Dot template]
     HasEqual -> do
       mcontent <- optional pugCode
       case mcontent of
@@ -98,10 +98,10 @@ pugElement what = do
           content <- pugCode
           pure $ L.IndentNone $ header [PugCode content]
     NoSym -> do
-      mcontent <- optional pugText
-      case mcontent of
-        Just content -> pure $ L.IndentNone $ header [PugText Normal content]
-        Nothing -> pure $ L.IndentMany Nothing (pure . header) (pugNode what)
+      template <- Inline.parseInlines
+      case template of
+        [] -> pure $ L.IndentMany Nothing (pure . header) (pugNode what)
+        _ -> pure $ L.IndentNone $ header [PugText Normal template]
 
 -- | Parse lines of text, indented more than `ref`.
 -- E.g.:
@@ -134,8 +134,8 @@ realign xs = map (T.drop n) xs
 pugPipe :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugPipe = do
   _ <- lexeme $ string "|"
-  mcontent <- optional pugText
-  pure $ L.IndentNone $ PugText Pipe $ maybe "" id mcontent
+  template <- Inline.parseInlines
+  pure $ L.IndentNone $ PugText Pipe template
 
 pugCode' :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugCode' = do
@@ -520,6 +520,15 @@ pugReadJson = do
   path <- T.unpack <$> lexeme pugDoubleQuoteString
   _ <- lexeme (string ")")
   pure $ L.IndentNone $ PugReadJson name path Nothing
+
+pugAssignVar :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugAssignVar = do
+  _ <- lexeme (string "-")
+  _ <- lexeme (string "var")
+  name <- lexeme pugName
+  _ <- lexeme (string "=")
+  val <- lexeme pugDoubleQuoteString
+  pure $ L.IndentNone $ PugAssignVar name val
 
 --------------------------------------------------------------------------------
 scn :: Parser ()

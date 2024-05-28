@@ -7,13 +7,15 @@
 
 module Pughs.Inline
   ( -- * The @Template@ type
-    Template
+    Template (..)
+  , Inline (..)
 
     -- * The @Context@ type
   , Context
 
     -- * Basic interface
   , parse
+  , parseInlines
 
     -- * Applicative interface
   , render
@@ -34,11 +36,11 @@ import Prelude hiding (takeWhile)
 -- rendering. Use 'parse' to create a template from a text containing
 -- placeholders.
 newtype Template = Template [Inline]
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- | A template fragment.
 data Inline = Lit {-# UNPACK #-} !Text | Var {-# UNPACK #-} !Text !Bool
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- | A mapping from placeholders in the template to values with an applicative
 -- lookup function. For instance the lookup function can fail, returning
@@ -52,10 +54,7 @@ type Context f = Text -> f Text
 -- string will cause 'parse' to return a parse error.
 parse :: Text -> Either (M.ParseErrorBundle Text Void) Template
 parse =
-  either Left (Right . templateFromInlines) . M.parse parseInlines "-"
-
-templateFromInlines :: [Inline] -> Template
-templateFromInlines = Template . combineLits
+  either Left (Right . Template) . M.parse (parseInlines <* M.eof) "-"
 
 combineLits :: [Inline] -> [Inline]
 combineLits [] = []
@@ -103,21 +102,32 @@ render (Template frags) context = TL.fromChunks <$> traverse renderInline frags
 type Parser = M.Parsec Void Text
 
 parseInlines :: Parser [Inline]
-parseInlines = M.many parseInline
+parseInlines = combineLits <$> M.many parseInline
 
 parseInline :: Parser Inline
 parseInline =
   M.choice
     [ parseLit
+    , parseLitEntity
     , parseEscape
     , parseBracketVar
     , parseVar
     ]
 
+-- TODO The \n condition could be optional if we want this module to be useful
+-- outside Pughs.
 parseLit :: Parser Inline
 parseLit = do
-  s <- M.takeWhile1P (Just "literal") (/= '#')
+  s <- M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n' && c /= '&')
   pure $ Lit s
+
+-- Allow # to appear for character entities using numeric references.
+parseLitEntity :: Parser Inline
+parseLitEntity = do
+  _ <- C.string $ T.pack "&#"
+  n <- M.some C.digitChar
+  _ <- C.string $ T.pack ";"
+  pure $ Lit $ T.pack $ "&#" <> n <> ";"
 
 parseEscape :: Parser Inline
 parseEscape = do

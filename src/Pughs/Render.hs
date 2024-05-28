@@ -8,6 +8,7 @@ import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
+import Pughs.Inline qualified as Inline
 import Pughs.Syntax qualified as Syntax
 import Text.Blaze.Html.Renderer.Pretty qualified as Pretty (renderHtml)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
@@ -93,9 +94,12 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
   g (a, Just (Syntax.Int b)) = [(T.unpack a, T.pack $ show b)]
   g (_, Just _) = error "The attribute is not a string"
   g (a, Nothing) = [(T.unpack a, a)]
-pugNodeToHtml (Syntax.PugText _ s)
+pugNodeToHtml (Syntax.PugText _ []) =
+  H.preEscapedText "\n" -- This allows to force some whitespace.
+pugNodeToHtml (Syntax.PugText _ [Inline.Lit s])
   | s == T.empty = H.preEscapedText "\n" -- This allows to force some whitespace.
   | otherwise = H.preEscapedText s -- TODO
+pugNodeToHtml (Syntax.PugText _ _) = error "Template is not rendered."
 pugNodeToHtml (Syntax.PugCode (Syntax.SingleQuoteString s))
   | s == T.empty = mempty
   | otherwise = H.text s -- Should be already escaped in the AST ?
@@ -125,6 +129,7 @@ pugNodeToHtml (Syntax.PugBlock _ _ nodes) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugExtends _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugExtends path Nothing) = H.stringComment $ "extends " <> path
 pugNodeToHtml (Syntax.PugReadJson _ _ _) = mempty
+pugNodeToHtml (Syntax.PugAssignVar _ _) = mempty
 pugNodeToHtml (Syntax.PugIf _ as bs) = do
   -- The evaluation code remove the non-taken branch.
   mapM_ pugNodeToHtml as
@@ -136,7 +141,8 @@ pugTextsToHtml xs = H.preEscapedText xs'
   xs' = T.intercalate "\n" $ map f xs
   f Syntax.PugDoctype = error "pugTextsToHtml called on a PugDoctype"
   f (Syntax.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
-  f (Syntax.PugText _ s) = s
+  f (Syntax.PugText _ [Inline.Lit s]) = s
+  f (Syntax.PugText _ _) = error "pugTextsToHtml called on unevaluated PugText"
   f (Syntax.PugCode _) = error "pugTextsToHtml called on a PugCode"
   f (Syntax.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
   f (Syntax.PugMixinDef _ _) = error "pugTextsToHtml called on a PugMixinDef"
@@ -150,6 +156,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugBlock _ _ _) = error "pugTextsToHtml called on a PugBlock"
   f (Syntax.PugExtends _ _) = error "pugTextsToHtml called on a PugExtends"
   f (Syntax.PugReadJson _ _ _) = error "pugTextsToHtml called on a PugReadJson"
+  f (Syntax.PugAssignVar _ _) = error "pugTextsToHtml called on a PugAssignVar"
   f (Syntax.PugIf _ _ _) = error "pugTextsToHtml called on a PugIf"
 
 pugElemToHtml :: Syntax.Elem -> Html -> Html

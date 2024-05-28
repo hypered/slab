@@ -22,13 +22,14 @@ import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.List (nub, sort)
 import Data.Text (Text)
 import Data.Vector qualified as V
+import Pughs.Inline
 
 --------------------------------------------------------------------------------
 data PugNode
   = -- | Only @doctype html@ for now.
     PugDoctype
   | PugElem Elem TrailingSym [Attr] [PugNode]
-  | PugText TextSyntax Text
+  | PugText TextSyntax [Inline]
   | -- | Recognize only strings for now.
     PugCode Code
   | -- | @Nothing@ when the template is parsed, then @Just nodes@ after
@@ -53,6 +54,8 @@ data PugNode
   | -- | Allow to assign the content of a JSON file to a variable. The syntax
     -- is specific to how Struct has a @require@ function in scope.
     PugReadJson Text FilePath (Maybe Aeson.Value)
+  | -- | Only support assigning a string for now.
+    PugAssignVar Text Text
   | PugIf Code [PugNode] [PugNode]
   deriving (Show, Eq)
 
@@ -170,6 +173,7 @@ extractClasses = nub . sort . concatMap f
   f (PugBlock _ _ children) = extractClasses children
   f (PugExtends _ children) = maybe [] extractClasses children
   f (PugReadJson _ _ _) = []
+  f (PugAssignVar _ _) = []
   f (PugIf _ as bs) = extractClasses as <> extractClasses bs
 
   g (AttrList xs) = concatMap h xs
@@ -206,6 +210,7 @@ extractMixins = concatMap f
   f (PugBlock _ _ children) = extractMixins children
   f (PugExtends _ children) = maybe [] extractMixins children
   f (PugReadJson _ _ _) = []
+  f (PugAssignVar _ _) = []
   f (PugIf _ as bs) = extractMixins as <> extractMixins bs
 
 findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
@@ -239,6 +244,7 @@ extractCombinators = concatMap f
   f (PugBlock _ _ _) = []
   f (PugExtends _ _) = []
   f (PugReadJson _ _ _) = []
+  f (PugAssignVar _ _) = []
   f (PugIf _ _ _) = []
 
 -- Extract variable assignments. We don't extract them recursively.
@@ -263,6 +269,7 @@ extractAssignments = concatMap f
   f (PugExtends _ _) = []
   f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
   f (PugReadJson _ _ Nothing) = []
+  f (PugAssignVar name s) = [(name, SingleQuoteString s)]
   f (PugIf _ _ _) = []
 
 jsonToCode :: Aeson.Value -> Code

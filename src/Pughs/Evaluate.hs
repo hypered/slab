@@ -17,7 +17,9 @@ import Data.ByteString.Lazy qualified as BL
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
+import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
+import Pughs.Inline qualified as Inline
 import Pughs.Parse qualified as Parse
 import Pughs.Syntax
 import System.Directory (doesFileExist)
@@ -120,7 +122,7 @@ preProcessNodeE ctx@Context {..} = \case
       then do
         -- Include the file content as-is.
         content <- liftIO $ T.readFile includedPath
-        let nodes' = map (PugText Include) $ T.lines content
+        let nodes' = map (PugText Include . (: []) . Inline.Lit) $ T.lines content
         pure $ PugInclude path (Just nodes')
       else do
         -- Parse and process the .pug file.
@@ -151,6 +153,7 @@ preProcessNodeE ctx@Context {..} = \case
         pure $ PugReadJson name path $ Just val
       Left err ->
         throwE $ PreProcessError $ "Can't decode JSON: " <> T.pack err
+  node@(PugAssignVar _ _) -> pure node
   PugIf cond as bs -> do
     -- File inclusion is done right away, without checking the condition.
     as' <- preProcessNodesE ctx as
@@ -163,7 +166,9 @@ eval env = \case
   PugElem name mdot attrs nodes -> do
     nodes' <- evaluate env nodes
     pure $ PugElem name mdot attrs nodes'
-  node@(PugText _ _) -> pure node
+  PugText syn template -> do
+    template' <- evalTemplate env template
+    pure $ PugText syn template'
   PugCode code -> do
     code' <- evalCode env code
     pure $ PugCode code'
@@ -229,6 +234,7 @@ eval env = \case
   PugExtends _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
   node@(PugReadJson _ _ _) -> pure node
+  node@(PugAssignVar _ _) -> pure node
   PugIf cond as bs -> do
     cond' <- evalCode env cond
     case cond' of
@@ -263,3 +269,17 @@ evalCode env = \case
       Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
       Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
   code -> pure code
+
+-- After evaluation, the template should be either empty or contain a single literal.
+evalTemplate :: Env -> [Inline.Inline] -> ExceptT PreProcessError IO [Inline.Inline]
+evalTemplate env inlines = case Inline.render (Inline.Template inlines) context of
+  Right t -> pure [Inline.Lit $ TL.toStrict t]
+  Left err -> throwE $ PreProcessError $ "Interpolation error: " <> err
+ where
+  context name = case lookupVariable name env of
+    Just val -> Right $ stringCode val
+    Nothing -> Left $ "Can't find variable \"" <> name <> "\""
+
+stringCode :: Code -> Text
+stringCode = \case
+  SingleQuoteString s -> s
