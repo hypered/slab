@@ -151,6 +151,7 @@ data Code
   | Object [(Code, Code)]
   | -- The object[key] lookup. This is quite restrive as a start.
     Lookup Text Code
+  | Add Code Code
   deriving (Show, Eq)
 
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting

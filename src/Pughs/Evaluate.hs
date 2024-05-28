@@ -205,7 +205,7 @@ eval env = \case
         zero = 0
     values' <- evalCode env values
     let collection = case values' of
-          List xs -> zip xs $ map (SingleQuoteString . T.pack . show) [zero ..]
+          List xs -> zip xs $ map Int [zero ..]
           Object xs -> map (\(k, v) -> (v, k)) xs
     nodes' <- forM collection $ \(value, index) -> do
       let env' = case mindex of
@@ -269,6 +269,13 @@ evalCode env = \case
       -- throwE $ PreProcessError $ "Key lookup failed. Key: " <> T.pack (show key) <> T.pack (show obj)
       Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
       Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
+  Add a b -> do
+    a' <- evalCode env a
+    b' <- evalCode env b
+    case (a', b') of
+      (Int i, Int j) -> pure . Int $ i + j
+      (Int i, SingleQuoteString s) -> pure . SingleQuoteString $ T.pack (show i) <> s
+      _ -> throwE $ PreProcessError $ "Unimplemented: " <> T.pack (show (Add a' b'))
   code -> pure code
 
 -- After evaluation, the template should be either empty or contain a single literal.

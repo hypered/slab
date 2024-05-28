@@ -182,7 +182,7 @@ pugExpression = do
   n <- lexeme $ pugNumber
   _ <- lexeme $ string "+"
   s <- lexeme $ pugSingleQuoteString
-  pure $ Variable name
+  pure $ Add (Add (Variable name) (Int n)) (SingleQuoteString s)
 
 --------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
