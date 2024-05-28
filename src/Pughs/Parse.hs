@@ -15,6 +15,7 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
+import Pughs.Inline
 import Pughs.Syntax
 import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
 import Text.Megaparsec qualified as M

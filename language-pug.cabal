@@ -52,6 +52,7 @@ library
     Pughs.Build
     Pughs.Command
     Pughs.Evaluate
+    Pughs.Inline
     Pughs.Parse
     Pughs.Render
     Pughs.Run
