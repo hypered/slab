@@ -17,7 +17,6 @@ import Data.ByteString.Lazy qualified as BL
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
-import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
 import Pughs.Parse qualified as Parse
 import Pughs.Syntax
@@ -238,13 +237,16 @@ eval env = \case
     cond' <- evalCode env cond
     case cond' of
       SingleQuoteString s
-        | not (T.null s) ->
-            pure $ PugIf cond as []
+        | not (T.null s) -> do
+            as' <- evaluate env as
+            pure $ PugIf cond as' []
       Int n
-        | n /= 0 ->
-            pure $ PugIf cond as []
-      _ ->
-        pure $ PugIf cond [] bs
+        | n /= 0 -> do
+            as' <- evaluate env as
+            pure $ PugIf cond as' []
+      _ -> do
+        bs' <- evaluate env bs
+        pure $ PugIf cond [] bs'
 
 namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m (Text, [PugNode])
 namedBlock (PugBlock _ name content) = pure (name, content)
@@ -271,37 +273,16 @@ evalCode env = \case
 
 -- After evaluation, the template should be either empty or contain a single literal.
 evalTemplate :: Env -> [Inline] -> ExceptT PreProcessError IO [Inline]
-evalTemplate env inlines = case render inlines context of
-  Right t -> pure [Lit $ TL.toStrict t]
-  Left err -> throwE $ PreProcessError $ "Interpolation error: " <> err
- where
-  context name = case lookupVariable name env of
-    Just val -> Right $ stringCode val
-    Nothing -> Left $ "Can't find variable \"" <> name <> "\""
+evalTemplate env inlines = do
+  t <- T.concat <$> traverse (evalInline env) inlines
+  pure [Lit t]
 
-stringCode :: Code -> Text
-stringCode = \case
-  SingleQuoteString s -> s
-
---------------------------------------------------------------------------------
-
--- Text interpolation stuff
-
--- | Perform the template substitution, returning a new Text. The lookup can
--- have side effects.  The lookups are performed in order that they are needed
--- to generate the resulting text.
---
--- You can use this e.g. to report errors when a lookup cannot be made
--- successfully.  For example, given a list @context@ of key-value pairs
--- and a 'Template' @template@:
---
--- > render template (flip lookup context)
---
--- will return 'Nothing' if any of the placeholders in the template
--- don't appear in @ctx@ and @Just text@ otherwise.
-render :: Applicative f => [Inline] -> Parse.InterpolationContext f -> f TL.Text
-render inlines context = TL.fromChunks <$> traverse renderInline inlines
- where
-  renderInline (Lit s) = pure s
-  renderInline (Place (SingleQuoteString x)) = pure x
-  renderInline (Place (Variable x)) = context x
+evalInline :: Env -> Inline -> ExceptT PreProcessError IO Text
+evalInline env = \case
+  Lit s -> pure s
+  Place code -> do
+    code' <- evalCode env code
+    case code' of
+      SingleQuoteString s -> pure s
+      -- Variable x -> context x -- Should not happen after evalCode
+      x -> error $ "render: unhandled value: " <> show x
