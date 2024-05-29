@@ -1,0 +1,12 @@
+//- TODO This demonstrates dynamic scope, which is bad and must be fixed.
+
+frag page
+  h1 A title
+  content
+
+frag content
+  p A paragraph.
+
+page
+  frag content
+    p Another paragraph.
