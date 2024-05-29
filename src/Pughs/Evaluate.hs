@@ -14,6 +14,7 @@ import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
 import Data.Aeson qualified as Aeson
 import Data.Bifunctor (first)
 import Data.ByteString.Lazy qualified as BL
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
@@ -195,7 +196,7 @@ eval env = \case
       Just body -> do
         -- TODO Either evaluate the args before constructing the env, or capture
         -- the env in a thunk.
-        env' <- mapM namedBlock args
+        env' <- namedBlocks args
         let env'' = augmentFragments env env'
         body' <- evaluate env'' body
         pure $ PugFragmentCall name body'
@@ -249,10 +250,25 @@ eval env = \case
         bs' <- evaluate env bs
         pure $ PugIf cond [] bs'
 
-namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m (Text, [PugNode])
-namedBlock (PugBlock _ name content) = pure (name, content)
-namedBlock (PugFragmentDef name content) = pure (name, content)
-namedBlock _ = throwE $ PreProcessError $ "Not a named block argument"
+namedBlocks :: Monad m => [PugNode] -> ExceptT PreProcessError m [(Text, [PugNode])]
+namedBlocks nodes = do
+  named <- concat <$> mapM namedBlock nodes
+  unnamed <- concat <$> mapM unnamedBlock nodes
+  let content = if null unnamed then [] else [("content", unnamed)]
+  if isJust (lookup "content" named) && not (null unnamed)
+    then
+      throwE $ PreProcessError $ "A block of content and a content argument are provided"
+    else pure $ named <> content
+
+namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m [(Text, [PugNode])]
+namedBlock (PugBlock _ name content) = pure [(name, content)]
+namedBlock (PugFragmentDef name content) = pure [(name, content)]
+namedBlock _ = pure []
+
+unnamedBlock :: Monad m => PugNode -> ExceptT PreProcessError m [PugNode]
+unnamedBlock (PugBlock _ _ _) = pure []
+unnamedBlock (PugFragmentDef _ _) = pure []
+unnamedBlock node = pure [node]
 
 evalCode :: Env -> Code -> ExceptT PreProcessError IO Code
 evalCode env = \case
