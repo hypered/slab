@@ -16,6 +16,7 @@ module Pughs.Parse
   ) where
 
 import Control.Monad (void)
+import Data.List (intercalate)
 import Data.List.NonEmpty qualified as NE (toList)
 import Data.Maybe (isJust)
 import Data.Set qualified as S (toList)
@@ -139,11 +140,32 @@ realign xs = map (T.drop n) xs
  where
   n = minimum $ map (T.length . T.takeWhile (== ' ')) xs
 
+-- | Parse multiple lines starting each with a pipe prefix. Most of our parsers
+-- parse a single line (and optional indented child lines) and most nodes map
+-- to a single line, but here we want to be able to view such blocks as a
+-- single node, and we make sur to add newlines between each when rendered.
 pugPipe :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugPipe = do
-  _ <- lexeme $ string "|"
-  template <- parseInlines
-  pure $ L.IndentNone $ PugText Pipe template
+  ref <- L.indentLevel
+  template <- p
+  templates <- go ref
+  pure $ L.IndentNone $ PugText Pipe $ intercalate [Lit "\n"] (template : templates)
+ where
+  go ref = do
+    scn
+    pos <- L.indentLevel
+    done <- isJust <$> optional eof
+    if done
+      then return []
+      else do
+        cont <- isJust <$> (lookAhead $ optional $ string "|")
+        if pos /= ref || not cont
+          then return []
+          else (:) <$> p <*> go ref
+  p = do
+    _ <- lexeme $ string "|"
+    template <- parseInlines
+    pure template
 
 pugCode' :: Parser (L.IndentOpt Parser PugNode PugNode)
 pugCode' = do

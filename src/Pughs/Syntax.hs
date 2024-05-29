@@ -127,7 +127,8 @@ data Attr = AttrList [(Text, Maybe Code)] | Id Text | Class Text
 data TextSyntax
   = -- | The text follows an element on the same line.
     Normal
-  | -- | The text follows a pipe character.
+  | -- | The text follows a pipe character. Multiple lines each introduced by a
+    -- pipe symbol are grouped as a single 'PugText' node.
     Pipe
   | -- | The text is part of a text block following a trailing dot.
     Dot
