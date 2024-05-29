@@ -8,11 +8,19 @@ fragment post
   h1 Post.
   block content
 
+fragment card
+  h1 Card.
+  content
+
 body
   list
 
   post
 
   post
+    block content
+      p Some content.
+
+  card
     block content
       p Some content.

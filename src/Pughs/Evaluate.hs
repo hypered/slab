@@ -134,7 +134,9 @@ preProcessNodeE ctx@Context {..} = \case
   PugFragmentDef name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugFragmentDef name nodes'
-  node@(PugFragmentCall _ _) -> pure node
+  PugFragmentCall name nodes -> do
+    nodes' <- preProcessNodesE ctx nodes
+    pure $ PugFragmentCall name nodes'
   node@(PugEach _ _ _ _) -> pure node
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
@@ -186,9 +188,8 @@ eval env = \case
         body' <- evaluate env body
         pure $ PugMixinCall name (Just body')
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
-  PugFragmentDef name nodes -> do
-    nodes' <- evaluate env nodes
-    pure $ PugFragmentDef name nodes'
+  PugFragmentDef name nodes ->
+    pure $ PugFragmentDef name nodes
   PugFragmentCall name args -> do
     case lookupFragment name env of
       Just body -> do
