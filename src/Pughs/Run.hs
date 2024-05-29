@@ -18,7 +18,7 @@ import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
-run (Command.Build dir renderMode) = Build.buildDir dir renderMode
+run (Command.Build srcDir renderMode distDir) = Build.buildDir srcDir renderMode distDir
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
   evaluated <- evaluateWithMode path pmode
   case evaluated of

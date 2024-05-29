@@ -17,12 +17,12 @@ import Text.Megaparsec hiding (parse)
 import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
-buildDir :: FilePath -> Command.RenderMode -> IO ()
-buildDir dir mode = do
-  templates <- listTemplates dir
+buildDir :: FilePath -> Command.RenderMode -> FilePath -> IO ()
+buildDir srcDir mode distDir = do
+  templates <- listTemplates srcDir
 
   let build path = do
-        let path' = "_site" </> replaceExtension (makeRelative dir path) ".html"
+        let path' = distDir </> replaceExtension (makeRelative srcDir path) ".html"
             dir' = takeDirectory path'
         putStrLn $ "Building " <> path' <> "..."
         createDirectoryIfMissing True dir'

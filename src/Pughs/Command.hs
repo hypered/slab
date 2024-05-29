@@ -14,7 +14,7 @@ import Options.Applicative qualified as A
 
 --------------------------------------------------------------------------------
 data Command
-  = Build FilePath RenderMode
+  = Build FilePath RenderMode FilePath
   | CommandWithPath FilePath ParseMode CommandWithPath
 
 -- | Commands operating on a path.
@@ -89,7 +89,7 @@ parser =
 --------------------------------------------------------------------------------
 parserBuild :: A.Parser Command
 parserBuild = do
-  dir <-
+  srcDir <-
     A.argument
       A.str
       (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Pug templates.")
@@ -99,7 +99,15 @@ parserBuild = do
       RenderPretty
       ( A.long "pretty" <> A.help "Use pretty-printing"
       )
-  pure $ Build dir mode
+  distDir
+    <- A.strOption
+      ( A.long "dist"
+          <> A.value "./_site"
+          <> A.metavar "DIR"
+          <> A.help
+            "A destination directory for the generated HTML files."
+      )
+  pure $ Build srcDir mode distDir
 
 parserRender :: A.Parser Command
 parserRender = do
