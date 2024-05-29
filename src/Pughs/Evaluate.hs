@@ -251,6 +251,7 @@ eval env = \case
 
 namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m (Text, [PugNode])
 namedBlock (PugBlock _ name content) = pure (name, content)
+namedBlock (PugFragmentDef name content) = pure (name, content)
 namedBlock _ = throwE $ PreProcessError $ "Not a named block argument"
 
 evalCode :: Env -> Code -> ExceptT PreProcessError IO Code
