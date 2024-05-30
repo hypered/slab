@@ -46,6 +46,16 @@ suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases). The
 expected HTML is not exactly the same: we pretty print it differently, or some
 tags are explicitely closed in Pug.js (e.g. `<source>` vs. `<source/>`.
 
+# Why the name
+
+In the context of [memory
+management](https://en.wikipedia.org/wiki/Slab_allocation), slab allocation is
+a mechanism designed to reduce fragmentation caused by allocations and
+deallocations.
+
+Slab the language is designed to define, combine and, eventually evaluate
+fragments to HTML.
+
 # Acknowledgement
 
 Slab was initially a port to Haskell of the [Pug.js](https://pugjs.org)
