@@ -56,7 +56,7 @@ preProcessPugFileE path = do
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
 preProcessNodesE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
-preProcessNodesE ctx@Context {..} (PugExtends path _ nodes: []) = do
+preProcessNodesE ctx@Context {..} (PugExtends path _ nodes : []) = do
   -- An extends is treated like an include used to define a fragment, then
   -- directly calling that fragment.
   let includedPath = takeDirectory ctxStartPath </> path
@@ -125,9 +125,9 @@ preProcessNodeE ctx@Context {..} = \case
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
-  PugBlock what name nodes -> do
+  PugBlock name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
-    pure $ PugBlock what name nodes'
+    pure $ PugBlock name nodes'
   PugExtends _ _ _ ->
     throwE $ PreProcessError $ "Extends must be the first node in a file\""
   PugReadJson name path _ -> do
@@ -199,19 +199,16 @@ eval env stack = \case
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
-  PugBlock WithinDef name nodes -> do
+  PugBlock name nodes -> do
     -- If the block is not given as an argument, we return the default block,
     -- but recursively trying to replace the blocks found within its own body.
     case lookupVariable name env of
       Nothing -> do
         nodes' <- evaluate env ("?block" : stack) nodes
-        pure $ PugBlock WithinDef name nodes'
+        pure $ PugBlock name nodes'
       Just (Frag capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
-        pure $ PugBlock WithinDef name nodes''
-  PugBlock WithinCall name nodes -> do
-    nodes' <- evaluate env ("block" : stack) nodes
-    pure $ PugBlock WithinCall name nodes'
+        pure $ PugBlock name nodes''
   PugExtends _ _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
   node@(PugReadJson _ _ _) -> pure node
@@ -251,12 +248,10 @@ namedBlocks nodes = do
     else pure $ named <> content
 
 namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m [(Text, [PugNode])]
-namedBlock (PugBlock _ name content) = pure [(name, content)]
 namedBlock (PugFragmentDef name content) = pure [(name, content)]
 namedBlock _ = pure []
 
 unnamedBlock :: Monad m => PugNode -> ExceptT PreProcessError m [PugNode]
-unnamedBlock (PugBlock _ _ _) = pure []
 unnamedBlock (PugFragmentDef _ _) = pure []
 unnamedBlock node = pure [node]
 
@@ -322,7 +317,7 @@ extractVariables env = concatMap f
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
-  f (PugBlock _ _ _) = []
+  f (PugBlock _ _) = []
   f (PugExtends _ _ _) = []
   f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
   f (PugReadJson _ _ Nothing) = []

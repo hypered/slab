@@ -529,7 +529,7 @@ pugBlock :: What -> Parser (L.IndentOpt Parser PugNode PugNode)
 pugBlock what = do
   _ <- lexeme (string "block")
   name <- pugText
-  pure $ L.IndentMany Nothing (pure . PugBlock what name) (pugNode what)
+  pure $ L.IndentMany Nothing (pure . PugBlock name) (pugNode what)
 
 --------------------------------------------------------------------------------
 pugExtends :: What -> Parser (L.IndentOpt Parser PugNode PugNode)

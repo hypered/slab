@@ -46,7 +46,7 @@ data PugNode
   | PugRawElem Text [PugNode]
   | -- | @block@ defines an optional formal parameter. Its content is used
     -- when the argument is not given.
-    PugBlock What Text [PugNode]
+    PugBlock Text [PugNode]
   | -- | Similar to PugInclude. The named block arguments are the contained nodes.
     -- This is not enforced by the parser.
     PugExtends FilePath (Maybe [PugNode]) [PugNode]
@@ -190,7 +190,7 @@ extractClasses = nub . sort . concatMap f
   f (PugFilter _ _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
-  f (PugBlock _ _ children) = extractClasses children
+  f (PugBlock _ children) = extractClasses children
   f (PugExtends _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
@@ -227,7 +227,7 @@ extractMixins = concatMap f
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
-  f (PugBlock _ _ children) = extractMixins children
+  f (PugBlock _ children) = extractMixins children
   f (PugExtends _ children blocks) = maybe [] extractMixins children <> extractMixins blocks
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []

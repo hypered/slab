@@ -18,9 +18,11 @@ body
   post
 
   post
-    block content
+    frag content
       p Some content.
 
+  //- Note that this doesn't pass `content`, but instead pass `block content`
+  //- as an unnamed fragment. This results in twice `block content` in the AST.
   card
     block content
       p Some content.
