@@ -76,24 +76,17 @@ preProcessNodesE ctx@Context {..} (PugExtends path _ : nodes) = do
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
 
 evaluatePugFile :: FilePath -> IO (Either PreProcessError [PugNode])
-evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate defaultEnv)
-
-defaultEnv :: Env
-defaultEnv = Env [("true", Int 1), ("false", Int 0)]
-
-lookupVariable :: Text -> Env -> Maybe Code
-lookupVariable name Env {..} = lookup name envVariables
-
-augmentVariables :: Env -> [(Text, Code)] -> Env
-augmentVariables Env {..} xs = Env { envVariables = xs <> envVariables }
+evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate defaultEnv ["toplevel"])
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
-evaluate :: Env -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
-evaluate env nodes = do
-  let vars = extractVariables nodes
-  let env' = augmentVariables env vars
-  mapM (eval env') nodes
+evaluate :: Env -> [Text] -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
+evaluate env stack nodes = do
+  -- Note that we pass the environment that we are constructing, so that each
+  -- definition sees all definitions (including later ones and itself).
+  let vars = extractVariables env' nodes
+      env' = augmentVariables env vars
+  mapM (eval env' stack) nodes
 
 preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
 preProcessNodeE ctx@Context {..} = \case
@@ -151,11 +144,11 @@ preProcessNodeE ctx@Context {..} = \case
     bs' <- preProcessNodesE ctx bs
     pure $ PugIf cond as' bs'
 
-eval :: Env -> PugNode -> ExceptT PreProcessError IO PugNode
-eval env = \case
+eval :: Env -> [Text] -> PugNode -> ExceptT PreProcessError IO PugNode
+eval env stack = \case
   node@PugDoctype -> pure node
   PugElem name mdot attrs nodes -> do
-    nodes' <- evaluate env nodes
+    nodes' <- evaluate env stack nodes
     pure $ PugElem name mdot attrs nodes'
   PugText syn template -> do
     template' <- evalTemplate env template
@@ -166,29 +159,27 @@ eval env = \case
   PugInclude path mnodes -> do
     case mnodes of
       Just nodes -> do
-        nodes' <- evaluate env nodes
+        nodes' <- evaluate env ("inlcude" : stack) nodes
         pure $ PugInclude path (Just nodes')
       Nothing ->
         pure $ PugInclude path Nothing
   PugMixinDef name nodes -> do
-    nodes' <- evaluate env nodes
+    nodes' <- evaluate env ("mixin" : stack) nodes
     pure $ PugMixinDef name nodes'
   PugMixinCall name _ ->
     case lookupVariable name env of
-      Just (Frag cenv body) -> do -- TODO use captured env
-        body' <- evaluate env body
+      Just (Frag capturedEnv body) -> do
+        body' <- evaluate capturedEnv ("+mixin " <> name: stack) body
         pure $ PugMixinCall name (Just body')
-      Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
+      Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\" in " <> T.pack (show stack)
   PugFragmentDef name nodes ->
     pure $ PugFragmentDef name nodes
   PugFragmentCall name args -> do
     case lookupVariable name env of
-      Just (Frag cenv body) -> do -- TODO use captured env
-        -- TODO Either evaluate the args before constructing the env, or capture
-        -- the env in a thunk.
-        env' <- map (\(a,b) -> (a, Frag emptyEnv b)) <$> namedBlocks args -- TODO Real env
-        let env'' = augmentVariables env env'
-        body' <- evaluate env'' body
+      Just (Frag capturedEnv body) -> do
+        env' <- map (\(a,b) -> (a, Frag env b)) <$> namedBlocks args
+        let env'' = augmentVariables capturedEnv env'
+        body' <- evaluate env'' ("frag" : stack) body
         pure $ PugFragmentCall name body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
   PugEach name mindex values nodes -> do
@@ -203,7 +194,7 @@ eval env = \case
       let env' = case mindex of
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
             Nothing -> augmentVariables env [(name, value)]
-      evaluate env' nodes
+      evaluate env' ("each" : stack) nodes
     pure $ PugEach name mindex values $ concat nodes'
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
@@ -213,13 +204,13 @@ eval env = \case
     -- but recursively trying to replace the blocks found within its own body.
     case lookupVariable name env of
       Nothing -> do
-        nodes' <- evaluate env nodes
+        nodes' <- evaluate env ("?block" : stack) nodes
         pure $ PugBlock WithinDef name nodes'
-      Just (Frag cenv nodes') -> do -- TODO Use captured env
-        nodes'' <- evaluate env nodes'
+      Just (Frag capturedEnv nodes') -> do
+        nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
         pure $ PugBlock WithinDef name nodes''
   PugBlock WithinCall name nodes -> do
-    nodes' <- evaluate env nodes
+    nodes' <- evaluate env ("block" : stack) nodes
     pure $ PugBlock WithinCall name nodes'
   PugExtends _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
@@ -230,15 +221,24 @@ eval env = \case
     case cond' of
       SingleQuoteString s
         | not (T.null s) -> do
-            as' <- evaluate env as
+            as' <- evaluate env ("then" : stack) as
             pure $ PugIf cond as' []
       Int n
         | n /= 0 -> do
-            as' <- evaluate env as
+            as' <- evaluate env ("then" : stack) as
             pure $ PugIf cond as' []
       _ -> do
-        bs' <- evaluate env bs
+        bs' <- evaluate env ("else" : stack) bs
         pure $ PugIf cond [] bs'
+
+defaultEnv :: Env
+defaultEnv = Env [("true", Int 1), ("false", Int 0)]
+
+lookupVariable :: Text -> Env -> Maybe Code
+lookupVariable name Env {..} = lookup name envVariables
+
+augmentVariables :: Env -> [(Text, Code)] -> Env
+augmentVariables Env {..} xs = Env { envVariables = xs <> envVariables }
 
 namedBlocks :: Monad m => [PugNode] -> ExceptT PreProcessError m [(Text, [PugNode])]
 namedBlocks nodes = do
@@ -303,18 +303,21 @@ evalInline env = \case
       x -> error $ "render: unhandled value: " <> show x
 
 -- Extract both fragments and assignments.
-extractVariables :: [PugNode] -> [(Text, Code)]
-extractVariables = concatMap f
+-- TODO This should be merged with namedBlocks.
+-- TODO We could filter the env, keeping only the free variables that appear
+-- in the bodies.
+extractVariables :: Env -> [PugNode] -> [(Text, Code)]
+extractVariables env = concatMap f
  where
   f PugDoctype = []
   f (PugElem _ _ _ _) = []
   f (PugText _ _) = []
   f (PugCode _) = []
-  f (PugInclude _ children) = maybe [] extractVariables children
-  f (PugMixinDef name children) = [(name, Frag emptyEnv children)] -- TODO Real env.
+  f (PugInclude _ children) = maybe [] (extractVariables env) children
+  f (PugMixinDef name children) = [(name, Frag env children)]
   f (PugMixinCall _ _) = []
   f (PugEach _ _ _ _) = []
-  f (PugFragmentDef name children) = [(name, Frag emptyEnv children)] -- TODO Real env.
+  f (PugFragmentDef name children) = [(name, Frag env children)]
   f (PugFragmentCall _ _) = []
   f (PugComment _ _) = []
   f (PugFilter _ _) = []

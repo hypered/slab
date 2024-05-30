@@ -82,5 +82,5 @@ evaluateWithMode path pmode = do
   case parsed of
     Left err -> pure $ Left err
     Right nodes -> do
-      evaluated <- runExceptT $ Evaluate.evaluate Evaluate.defaultEnv nodes
+      evaluated <- runExceptT $ Evaluate.evaluate Evaluate.defaultEnv ["toplevel"] nodes
       pure evaluated
