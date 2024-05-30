@@ -130,7 +130,8 @@ pugNodeToHtml (Syntax.PugExtends path Nothing _) = H.stringComment $ "extends " 
 pugNodeToHtml (Syntax.PugReadJson _ _ _) = mempty
 pugNodeToHtml (Syntax.PugAssignVar _ _) = mempty
 pugNodeToHtml (Syntax.PugIf _ as bs) = do
-  -- The evaluation code remove the non-taken branch.
+  -- The evaluation code transforms a PugIf into a PugList, so this should
+  -- not be called.
   mapM_ pugNodeToHtml as
   mapM_ pugNodeToHtml bs
 pugNodeToHtml (Syntax.PugList nodes) =

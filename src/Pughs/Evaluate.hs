@@ -222,14 +222,14 @@ eval env stack = \case
       SingleQuoteString s
         | not (T.null s) -> do
             as' <- evaluate env ("then" : stack) as
-            pure $ PugIf cond as' []
+            pure $ PugList as'
       Int n
         | n /= 0 -> do
             as' <- evaluate env ("then" : stack) as
-            pure $ PugIf cond as' []
+            pure $ PugList as'
       _ -> do
         bs' <- evaluate env ("else" : stack) bs
-        pure $ PugIf cond [] bs'
+        pure $ PugList bs'
   PugList nodes -> do
     nodes' <- evaluate env stack nodes
     pure $ PugList nodes'
