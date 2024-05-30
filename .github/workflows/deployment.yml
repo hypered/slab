@@ -1,0 +1,24 @@
+name: deployment
+on:
+  push:
+    branches:
+    - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Nix
+      uses: cachix/install-nix-action@v25
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - name: Checkout this repository
+      uses: actions/checkout@v2
+    - name: Build the static site
+      run: scripts/build-ci.sh
+    - name: Add CNAME
+      run: echo slab-lang.org > _site/CNAME
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./_site
