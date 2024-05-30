@@ -3,8 +3,8 @@ module Main
   ) where
 
 import Options.Applicative qualified as A
-import Pughs.Command qualified as Command
-import Pughs.Run qualified as Run
+import Slab.Command qualified as Command
+import Slab.Run qualified as Run
 
 --------------------------------------------------------------------------------
 main :: IO ()

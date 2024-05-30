@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Pughs.Command
+module Slab.Command
   ( Command (..)
   , CommandWithPath (..)
   , RenderMode (..)
@@ -40,9 +40,9 @@ parserInfo :: A.ParserInfo Command
 parserInfo =
   A.info (parser <**> A.helper) $
     A.fullDesc
-      <> A.header "pughs - parses the Pug syntax"
+      <> A.header "slab - A programmable markup language to generate HTML"
       <> A.progDesc
-        "pughs tries to implement the Pug syntax."
+        "Slab is a programmable markup language to generate HTML."
 
 --------------------------------------------------------------------------------
 parser :: A.Parser Command

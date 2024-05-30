@@ -1,11 +1,11 @@
-module Pughs.Runner
+module Slab.Runner
   ( runExamples
   ) where
 
 import Data.List (sort)
 import Data.Text (Text)
-import Pughs.Evaluate qualified as Evaluate
-import Pughs.Render qualified as Render
+import Slab.Evaluate qualified as Evaluate
+import Slab.Render qualified as Render
 import System.FilePath
 import System.FilePath.Glob qualified as Glob
 import Test.Tasty

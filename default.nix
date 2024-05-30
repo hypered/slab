@@ -5,7 +5,7 @@ let
 in rec
   {
     # Build with nix-build -A <attr>
-    binaries = nixpkgs.haskellPackages.language-pug;
+    binaries = nixpkgs.haskellPackages.slab;
 
     # A shell to try out our binaries
     # Run with nix-shell default.nix -A shell
@@ -16,7 +16,7 @@ in rec
         nixpkgs.dart-sass
       ];
       shellHook = ''
-        source <(pughs --bash-completion-script `which pughs`)
+        source <(slab --bash-completion-script `which slab`)
       '';
     };
   }

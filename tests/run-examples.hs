@@ -1,4 +1,4 @@
-import Pughs.Runner (runExamples)
+import Slab.Runner (runExamples)
 
 --------------------------------------------------------------------------------
 main :: IO ()

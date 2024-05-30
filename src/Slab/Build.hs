@@ -1,4 +1,4 @@
-module Pughs.Build
+module Slab.Build
   ( buildDir
   ) where
 
@@ -6,9 +6,9 @@ import Data.List (sort)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy.IO qualified as TL
-import Pughs.Command qualified as Command
-import Pughs.Evaluate qualified as Evaluate
-import Pughs.Render qualified as Render
+import Slab.Command qualified as Command
+import Slab.Evaluate qualified as Evaluate
+import Slab.Render qualified as Render
 import System.Directory (createDirectoryIfMissing)
 import System.Exit (exitFailure)
 import System.FilePath (makeRelative, replaceExtension, takeDirectory, (</>))

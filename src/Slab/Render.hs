@@ -1,4 +1,4 @@
-module Pughs.Render
+module Slab.Render
   ( prettyHtmls
   , renderHtmls
   , pugNodesToHtml
@@ -8,7 +8,7 @@ import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as TL
-import Pughs.Syntax qualified as Syntax
+import Slab.Syntax qualified as Syntax
 import Text.Blaze.Html.Renderer.Pretty qualified as Pretty (renderHtml)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Text.Blaze.Html5 (Html, (!))

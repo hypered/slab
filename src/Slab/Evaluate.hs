@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Pughs.Evaluate
+module Slab.Evaluate
   ( PreProcessError (..)
   , preProcessPugFile
   , evaluatePugFile
@@ -22,8 +22,8 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Vector qualified as V
 import Data.Void (Void)
-import Pughs.Parse qualified as Parse
-import Pughs.Syntax
+import Slab.Parse qualified as Parse
+import Slab.Syntax
 import System.Directory (doesFileExist)
 import System.FilePath (takeDirectory, takeExtension, (<.>), (</>))
 import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)

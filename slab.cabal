@@ -1,5 +1,5 @@
 cabal-version:      2.2
-name:               language-pug
+name:               slab
 version:            0.1.0.0
 category:           web
 
@@ -49,28 +49,28 @@ library
     , transformers
     , vector
   exposed-modules:
-    Pughs.Build
-    Pughs.Command
-    Pughs.Evaluate
-    Pughs.Parse
-    Pughs.Render
-    Pughs.Run
-    Pughs.Syntax
+    Slab.Build
+    Slab.Command
+    Slab.Evaluate
+    Slab.Parse
+    Slab.Render
+    Slab.Run
+    Slab.Syntax
 
-executable pughs
+executable slab
   import: common-extensions, common-options, common-dependencies
-  main-is: pughs.hs
+  main-is: slab.hs
   hs-source-dirs: bin
   build-depends:
-    language-pug
+    slab
   ghc-options:
     -threaded
 
-test-suite pughs-examples
+test-suite slab-examples
   import: common-extensions, common-options, common-dependencies
   build-depends:
     , hspec
-    , language-pug
+    , slab
     , filepath
     , Glob
     , lens
@@ -80,7 +80,7 @@ test-suite pughs-examples
     , tasty-silver
     , text
   other-modules:
-    Pughs.Runner
+    Slab.Runner
   type: exitcode-stdio-1.0
   main-is: run-examples.hs
   hs-source-dirs:

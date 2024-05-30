@@ -1,4 +1,4 @@
-module Pughs.Run
+module Slab.Run
   ( run
   ) where
 
@@ -7,12 +7,12 @@ import Data.Bifunctor (first)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy.IO qualified as TL
-import Pughs.Build qualified as Build
-import Pughs.Command qualified as Command
-import Pughs.Evaluate qualified as Evaluate
-import Pughs.Parse qualified as Parse
-import Pughs.Render qualified as Render
-import Pughs.Syntax qualified as Syntax
+import Slab.Build qualified as Build
+import Slab.Command qualified as Command
+import Slab.Evaluate qualified as Evaluate
+import Slab.Parse qualified as Parse
+import Slab.Render qualified as Render
+import Slab.Syntax qualified as Syntax
 import Text.Megaparsec hiding (parse)
 import Text.Pretty.Simple (pShowNoColor)
 

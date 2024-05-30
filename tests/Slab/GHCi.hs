@@ -2,15 +2,15 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 -- | This module is loaded only in the GHCi session.
-module Pughs.GHCi
+module Slab.GHCi
   (
   ) where
 
 import Data.Text qualified as T
-import Pughs.Command qualified as Command
-import Pughs.Parse qualified as Parse
-import Pughs.Render qualified as Render
-import Pughs.Run qualified as Run
+import Slab.Command qualified as Command
+import Slab.Parse qualified as Parse
+import Slab.Render qualified as Render
+import Slab.Run qualified as Run
 import System.Process (callCommand)
 
 -- This import is present to set -interactive-print in ghci.conf.

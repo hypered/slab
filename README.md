@@ -1,6 +1,6 @@
-A programmable markup language to generate HTML.
+# Slab
 
-This is initially inspired by [Pug.js](https://pugjs.org) but deviates from it.
+Slab is a programmable markup language to generate HTML.
 
 ```
 frag page
@@ -8,17 +8,17 @@ frag page
   content
 
 page
-  p Another paragraph.
+  p A paragraph.
 ```
 
 ```
 $ scripts/ghci.sh
 ghci> :main --help
-pughs - parses the Pug syntax
+slab - A programmable markup language to generate HTML
 
-Usage: pughs COMMAND
+Usage: slab COMMAND
 
-  pughs tries to implement the Pug syntax.
+  Slab is a programmable markup language to generate HTML.
 
 Available options:
   -h,--help                Show this help text
@@ -45,3 +45,8 @@ The test cases in `examples/cases/` come from the [original test
 suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases). The
 expected HTML is not exactly the same: we pretty print it differently, or some
 tags are explicitely closed in Pug.js (e.g. `<source>` vs. `<source/>`.
+
+# Acknowledgement
+
+Slab was initially a port to Haskell of the [Pug.js](https://pugjs.org)
+templating language.

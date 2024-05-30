@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Pughs.Syntax
+module Slab.Syntax
   ( PugNode (..)
   , Elem (..)
   , TrailingSym (..)

@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Pughs.Parse
+module Slab.Parse
   ( parsePugFile
   , parsePug
   , parseErrorPretty
@@ -25,7 +25,7 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
-import Pughs.Syntax
+import Slab.Syntax
 import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
 import Text.Megaparsec qualified as M
 import Text.Megaparsec.Char
@@ -675,7 +675,7 @@ parseInline =
     ]
 
 -- TODO The \n condition could be optional if we want this module to be useful
--- outside Pughs.
+-- outside Slab.
 parseLit :: Parser Inline
 parseLit = do
   s <- M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n')

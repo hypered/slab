@@ -1,5 +1,5 @@
 
-Welcome to Pughs's GHCi environment.
+Welcome to Slab's GHCi environment.
 
 Type :about to see this help text.
 
@@ -11,4 +11,4 @@ Other interesting commands and expressions include:
 Discover the code base with e.g.:
 
     :i about
-    :e tests/Pughs/GHCi.hs
+    :e tests/Slab/GHCi.hs

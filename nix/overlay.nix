@@ -13,11 +13,11 @@ let
 
     in mapAttrs callCabalOn contents.pkgList;
 
-  # Don't build profiling version for Pughs. This reduces the build time
+  # Don't build profiling version for Slab. This reduces the build time
   # from 2m40s to 1m40s.
   theseOverrides = self: superh: rec {
     mkDerivation = args: superh.mkDerivation (
-      if args.pname == "language-pug"
+      if args.pname == "slab"
       then args // {
         doCheck = false;
         doHaddock = false;
