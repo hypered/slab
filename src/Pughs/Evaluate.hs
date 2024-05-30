@@ -56,23 +56,6 @@ preProcessPugFileE path = do
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
 preProcessNodesE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
-preProcessNodesE ctx@Context {..} (PugExtends path _ nodes : []) = do
-  -- An extends is treated like an include used to define a fragment, then
-  -- directly calling that fragment.
-  let includedPath = takeDirectory ctxStartPath </> path
-      pugExt = takeExtension includedPath == ".pug"
-  exists <- liftIO $ doesFileExist includedPath
-  if exists && not pugExt
-    then throwE $ PreProcessError $ "Extends requires a .pug file"
-    else do
-      -- Parse and process the .pug file.
-      let includedPath' = if pugExt then includedPath else includedPath <.> ".pug"
-      nodes' <- preProcessPugFileE includedPath'
-      let def = PugFragmentDef (T.pack path) nodes'
-      nodes'' <- mapM (preProcessNodeE ctx) nodes
-      -- Maybe we should set the blocks as WithinCall here?
-      let call = PugFragmentCall (T.pack path) nodes''
-      pure [def, call]
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
 
 evaluatePugFile :: FilePath -> IO (Either PreProcessError [PugNode])
@@ -128,8 +111,23 @@ preProcessNodeE ctx@Context {..} = \case
   PugDefault name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugDefault name nodes'
-  PugExtends _ _ _ ->
-    throwE $ PreProcessError $ "Extends must be the first node in a file\""
+  PugExtends path _ nodes -> do
+    -- An extends is treated like an include used to define a fragment, then
+    -- directly calling that fragment.
+    let includedPath = takeDirectory ctxStartPath </> path
+        pugExt = takeExtension includedPath == ".pug"
+    exists <- liftIO $ doesFileExist includedPath
+    if exists && not pugExt
+      then throwE $ PreProcessError $ "Extends requires a .pug file"
+      else do
+        -- Parse and process the .pug file.
+        let includedPath' = if pugExt then includedPath else includedPath <.> ".pug"
+        nodes' <- preProcessPugFileE includedPath'
+        let def = PugFragmentDef (T.pack path) nodes'
+        nodes'' <- mapM (preProcessNodeE ctx) nodes
+        -- Maybe we should set the blocks as WithinCall here?
+        let call = PugFragmentCall (T.pack path) nodes''
+        pure $ PugList [def, call]
   PugReadJson name path _ -> do
     content <- liftIO $ BL.readFile path
     case Aeson.eitherDecode content of
