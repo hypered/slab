@@ -125,9 +125,9 @@ preProcessNodeE ctx@Context {..} = \case
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
-  PugBlock name nodes -> do
+  PugDefault name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
-    pure $ PugBlock name nodes'
+    pure $ PugDefault name nodes'
   PugExtends _ _ _ ->
     throwE $ PreProcessError $ "Extends must be the first node in a file\""
   PugReadJson name path _ -> do
@@ -199,16 +199,16 @@ eval env stack = \case
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
-  PugBlock name nodes -> do
-    -- If the block is not given as an argument, we return the default block,
+  PugDefault name nodes -> do
+    -- If the fragment is not given as an argument, we return the default block,
     -- but recursively trying to replace the blocks found within its own body.
     case lookupVariable name env of
       Nothing -> do
         nodes' <- evaluate env ("?block" : stack) nodes
-        pure $ PugBlock name nodes'
+        pure $ PugDefault name nodes'
       Just (Frag capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
-        pure $ PugBlock name nodes''
+        pure $ PugDefault name nodes''
   PugExtends _ _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
   node@(PugReadJson _ _ _) -> pure node
@@ -317,7 +317,7 @@ extractVariables env = concatMap f
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
-  f (PugBlock _ _) = []
+  f (PugDefault _ _) = []
   f (PugExtends _ _ _) = []
   f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
   f (PugReadJson _ _ Nothing) = []

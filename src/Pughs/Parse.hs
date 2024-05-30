@@ -60,7 +60,7 @@ pugNode = do
         , pugComment
         , pugFilter
         , pugRawElement
-        , pugBlock
+        , pugDefault
         , pugExtends
         , (try pugReadJson <|> pugAssignVar)
         , pugEach
@@ -525,11 +525,11 @@ pugAngleBracket = do
   pure $ PugRawElem $ "<" <> content
 
 --------------------------------------------------------------------------------
-pugBlock :: Parser (L.IndentOpt Parser PugNode PugNode)
-pugBlock = do
+pugDefault :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugDefault = do
   _ <- lexeme (string "default")
   name <- pugText
-  pure $ L.IndentMany Nothing (pure . PugBlock name) pugNode
+  pure $ L.IndentMany Nothing (pure . PugDefault name) pugNode
 
 --------------------------------------------------------------------------------
 pugExtends :: Parser (L.IndentOpt Parser PugNode PugNode)

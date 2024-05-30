@@ -45,7 +45,7 @@ data PugNode
   | PugRawElem Text [PugNode]
   | -- | @default@ defines an optional formal parameter with a default content.
     -- Its content is used when the argument is not given.
-    PugBlock Text [PugNode]
+    PugDefault Text [PugNode]
   | -- | Similar to an anonymous fragment call, where the fragment body is the
     -- content of the referenced file.
     PugExtends FilePath (Maybe [PugNode]) [PugNode]
@@ -182,7 +182,7 @@ extractClasses = nub . sort . concatMap f
   f (PugFilter _ _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
-  f (PugBlock _ children) = extractClasses children
+  f (PugDefault _ children) = extractClasses children
   f (PugExtends _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
@@ -219,7 +219,7 @@ extractMixins = concatMap f
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
-  f (PugBlock _ children) = extractMixins children
+  f (PugDefault _ children) = extractMixins children
   f (PugExtends _ children args) = maybe [] extractMixins children <> extractMixins args
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
