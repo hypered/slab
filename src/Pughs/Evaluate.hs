@@ -76,33 +76,25 @@ evaluatePugFile :: FilePath -> IO (Either PreProcessError [PugNode])
 evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate emptyEnv)
 
 data Env = Env
-  { envFragments :: [(Text, [PugNode])]
-  , envVariables :: [(Text, Code)]
+  { envVariables :: [(Text, Code)]
   }
   deriving (Show)
 
 emptyEnv :: Env
-emptyEnv = Env [] [("true", Int 1), ("false", Int 0)]
-
-lookupFragment :: Text -> Env -> Maybe [PugNode]
-lookupFragment name Env {..} = lookup name envFragments
+emptyEnv = Env [("true", Int 1), ("false", Int 0)]
 
 lookupVariable :: Text -> Env -> Maybe Code
 lookupVariable name Env {..} = lookup name envVariables
 
-augmentFragments :: Env -> [(Text, [PugNode])] -> Env
-augmentFragments Env {..} xs = Env {envFragments = xs <> envFragments, ..}
-
 augmentVariables :: Env -> [(Text, Code)] -> Env
-augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables, ..}
+augmentVariables Env {..} xs = Env { envVariables = xs <> envVariables }
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
 evaluate :: Env -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
 evaluate env nodes = do
-  let combs = extractCombinators nodes
-      assigns = extractAssignments nodes
-  let env' = augmentVariables (augmentFragments env combs) assigns
+  let vars = extractVariables nodes
+  let env' = augmentVariables env vars
   mapM (eval env') nodes
 
 preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
@@ -184,20 +176,20 @@ eval env = \case
     nodes' <- evaluate env nodes
     pure $ PugMixinDef name nodes'
   PugMixinCall name _ ->
-    case lookupFragment name env of
-      Just body -> do
+    case lookupVariable name env of
+      Just (Frag body) -> do
         body' <- evaluate env body
         pure $ PugMixinCall name (Just body')
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
   PugFragmentDef name nodes ->
     pure $ PugFragmentDef name nodes
   PugFragmentCall name args -> do
-    case lookupFragment name env of
-      Just body -> do
+    case lookupVariable name env of
+      Just (Frag body) -> do
         -- TODO Either evaluate the args before constructing the env, or capture
         -- the env in a thunk.
-        env' <- namedBlocks args
-        let env'' = augmentFragments env env'
+        env' <- map (\(a,b) -> (a, Frag b)) <$> namedBlocks args
+        let env'' = augmentVariables env env'
         body' <- evaluate env'' body
         pure $ PugFragmentCall name body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
@@ -221,11 +213,11 @@ eval env = \case
   PugBlock WithinDef name nodes -> do
     -- If the block is not given as an argument, we return the default block,
     -- but recursively trying to replace the blocks found within its own body.
-    case lookupFragment name env of
+    case lookupVariable name env of
       Nothing -> do
         nodes' <- evaluate env nodes
         pure $ PugBlock WithinDef name nodes'
-      Just nodes' -> do
+      Just (Frag nodes') -> do
         nodes'' <- evaluate env nodes'
         pure $ PugBlock WithinDef name nodes''
   PugBlock WithinCall name nodes -> do

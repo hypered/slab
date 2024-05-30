@@ -13,8 +13,7 @@ module Pughs.Syntax
   , extractClasses
   , extractMixins
   , findMixin
-  , extractCombinators
-  , extractAssignments
+  , extractVariables
   ) where
 
 import Data.Aeson qualified as Aeson
@@ -153,6 +152,8 @@ data Code
   | -- The object[key] lookup. This is quite restrive as a start.
     Lookup Text Code
   | Add Code Code
+  | -- Code can be a fragment, so we can manipulate them with code later.
+    Frag [PugNode]
   deriving (Show, Eq)
 
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting
@@ -233,44 +234,19 @@ findMixin name ms = case filter f ms of
   f (PugFragmentDef' name' _) = name == name'
   f _ = False
 
--- Extract mixin and fragment definitions, in a single namespace. We don't
--- extract them recursively.
-extractCombinators :: [PugNode] -> [(Text, [PugNode])]
-extractCombinators = concatMap f
+-- Extract both fragments and assignments.
+extractVariables :: [PugNode] -> [(Text, Code)]
+extractVariables = concatMap f
  where
   f PugDoctype = []
   f (PugElem _ _ _ _) = []
   f (PugText _ _) = []
   f (PugCode _) = []
-  f (PugInclude _ children) = maybe [] extractCombinators children
-  f (PugMixinDef name children) = [(name, children)]
+  f (PugInclude _ children) = maybe [] extractVariables children
+  f (PugMixinDef name children) = [(name, Frag children)]
   f (PugMixinCall _ _) = []
   f (PugEach _ _ _ _) = []
-  f (PugFragmentDef name children) = [(name, children)]
-  f (PugFragmentCall _ _) = []
-  f (PugComment _ _) = []
-  f (PugFilter _ _) = []
-  f (PugRawElem _ _) = []
-  f (PugBlock _ _ _) = []
-  f (PugExtends _ _) = []
-  f (PugReadJson _ _ _) = []
-  f (PugAssignVar _ _) = []
-  f (PugIf _ _ _) = []
-
--- Extract variable assignments. We don't extract them recursively.
--- This doens't extract @each@ loops.
-extractAssignments :: [PugNode] -> [(Text, Code)]
-extractAssignments = concatMap f
- where
-  f PugDoctype = []
-  f (PugElem _ _ _ _) = []
-  f (PugText _ _) = []
-  f (PugCode _) = []
-  f (PugInclude _ _) = []
-  f (PugMixinDef _ _) = []
-  f (PugMixinCall _ _) = []
-  f (PugEach _ _ _ _) = []
-  f (PugFragmentDef _ _) = []
+  f (PugFragmentDef name children) = [(name, Frag children)]
   f (PugFragmentCall _ _) = []
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
