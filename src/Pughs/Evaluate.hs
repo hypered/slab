@@ -160,28 +160,26 @@ eval env stack = \case
   PugInclude path mnodes -> do
     case mnodes of
       Just nodes -> do
-        nodes' <- evaluate env ("inlcude" : stack) nodes
-        pure $ PugInclude path (Just nodes')
+        nodes' <- evaluate env ("include" : stack) nodes
+        pure $ PugList nodes'
       Nothing ->
         pure $ PugInclude path Nothing
-  PugMixinDef name nodes -> do
-    nodes' <- evaluate env ("mixin" : stack) nodes
-    pure $ PugMixinDef name nodes'
+  PugMixinDef name nodes ->
+    pure $ PugList []
   PugMixinCall name _ ->
     case lookupVariable name env of
       Just (Frag capturedEnv body) -> do
         body' <- evaluate capturedEnv ("+mixin " <> name: stack) body
-        pure $ PugMixinCall name (Just body')
+        pure $ PugList body'
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\" in " <> T.pack (show stack)
-  PugFragmentDef name nodes ->
-    pure $ PugFragmentDef name nodes
+  PugFragmentDef name nodes -> pure $ PugList []
   PugFragmentCall name args -> do
     case lookupVariable name env of
       Just (Frag capturedEnv body) -> do
         env' <- map (\(a,b) -> (a, Frag env b)) <$> namedBlocks args
         let env'' = augmentVariables capturedEnv env'
         body' <- evaluate env'' ("frag" : stack) body
-        pure $ PugFragmentCall name body'
+        pure $ PugList body'
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
   PugEach name mindex values nodes -> do
     -- Re-use PugEach to construct a single node to return.
@@ -196,7 +194,7 @@ eval env stack = \case
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
             Nothing -> augmentVariables env [(name, value)]
       evaluate env' ("each" : stack) nodes
-    pure $ PugEach name mindex values $ concat nodes'
+    pure $ PugList $ concat nodes'
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
@@ -206,14 +204,14 @@ eval env stack = \case
     case lookupVariable name env of
       Nothing -> do
         nodes' <- evaluate env ("?block" : stack) nodes
-        pure $ PugDefault name nodes'
+        pure $ PugList nodes'
       Just (Frag capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
-        pure $ PugDefault name nodes''
+        pure $ PugList nodes''
   PugImport _ _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
-  node@(PugReadJson _ _ _) -> pure node
-  node@(PugAssignVar _ _) -> pure node
+  PugReadJson _ _ _ -> pure $ PugList []
+  PugAssignVar _ _ -> pure $ PugList []
   PugIf cond as bs -> do
     cond' <- evalCode env cond
     case cond' of
