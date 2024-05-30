@@ -61,7 +61,7 @@ pugNode = do
         , pugFilter
         , pugRawElement
         , pugDefault
-        , pugExtends
+        , pugImport
         , (try pugReadJson <|> pugAssignVar)
         , pugEach
         , pugIf
@@ -532,11 +532,11 @@ pugDefault = do
   pure $ L.IndentMany Nothing (pure . PugDefault name) pugNode
 
 --------------------------------------------------------------------------------
-pugExtends :: Parser (L.IndentOpt Parser PugNode PugNode)
-pugExtends = do
-  _ <- lexeme (string "extends")
+pugImport :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugImport = do
+  _ <- lexeme (string "import")
   path <- pugPath
-  pure $ L.IndentMany Nothing (pure . PugExtends path Nothing) pugNode
+  pure $ L.IndentMany Nothing (pure . PugImport path Nothing) pugNode
 
 --------------------------------------------------------------------------------
 pugReadJson :: Parser (L.IndentOpt Parser PugNode PugNode)

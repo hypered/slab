@@ -125,8 +125,8 @@ pugNodeToHtml (Syntax.PugRawElem content children) = do
   H.preEscapedText content -- TODO Construct a proper tag ?
   mapM_ pugNodeToHtml children
 pugNodeToHtml (Syntax.PugDefault _ nodes) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Syntax.PugExtends _ (Just nodes) _) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Syntax.PugExtends path Nothing _) = H.stringComment $ "extends " <> path
+pugNodeToHtml (Syntax.PugImport _ (Just nodes) _) = mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.PugImport path Nothing _) = H.stringComment $ "extends " <> path
 pugNodeToHtml (Syntax.PugReadJson _ _ _) = mempty
 pugNodeToHtml (Syntax.PugAssignVar _ _) = mempty
 pugNodeToHtml (Syntax.PugIf _ as bs) = do
@@ -156,7 +156,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugFilter _ _) = error "pugTextsToHtml called on a PugFilter"
   f (Syntax.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
   f (Syntax.PugDefault _ _) = error "pugTextsToHtml called on a PugDefault"
-  f (Syntax.PugExtends _ _ _) = error "pugTextsToHtml called on a PugExtends"
+  f (Syntax.PugImport _ _ _) = error "pugTextsToHtml called on a PugImport"
   f (Syntax.PugReadJson _ _ _) = error "pugTextsToHtml called on a PugReadJson"
   f (Syntax.PugAssignVar _ _) = error "pugTextsToHtml called on a PugAssignVar"
   f (Syntax.PugIf _ _ _) = error "pugTextsToHtml called on a PugIf"

@@ -111,8 +111,8 @@ preProcessNodeE ctx@Context {..} = \case
   PugDefault name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugDefault name nodes'
-  PugExtends path _ nodes -> do
-    -- An extends is treated like an include used to define a fragment, then
+  PugImport path _ nodes -> do
+    -- An import is treated like an include used to define a fragment, then
     -- directly calling that fragment.
     let includedPath = takeDirectory ctxStartPath </> path
         pugExt = takeExtension includedPath == ".pug"
@@ -210,7 +210,7 @@ eval env stack = \case
       Just (Frag capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
         pure $ PugDefault name nodes''
-  PugExtends _ _ _ ->
+  PugImport _ _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
   node@(PugReadJson _ _ _) -> pure node
   node@(PugAssignVar _ _) -> pure node
@@ -322,7 +322,7 @@ extractVariables env = concatMap f
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
   f (PugDefault _ _) = []
-  f (PugExtends _ _ _) = []
+  f (PugImport _ _ _) = []
   f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
   f (PugReadJson _ _ Nothing) = []
   f (PugAssignVar name s) = [(name, SingleQuoteString s)]
