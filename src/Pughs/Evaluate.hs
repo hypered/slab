@@ -56,7 +56,7 @@ preProcessPugFileE path = do
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
 preProcessNodesE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
-preProcessNodesE ctx@Context {..} (PugExtends path _ : nodes) = do
+preProcessNodesE ctx@Context {..} (PugExtends path _ nodes: []) = do
   -- An extends is treated like an include used to define a fragment, then
   -- directly calling that fragment.
   let includedPath = takeDirectory ctxStartPath </> path
@@ -128,7 +128,7 @@ preProcessNodeE ctx@Context {..} = \case
   PugBlock what name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugBlock what name nodes'
-  PugExtends _ _ ->
+  PugExtends _ _ _ ->
     throwE $ PreProcessError $ "Extends must be the first node in a file\""
   PugReadJson name path _ -> do
     content <- liftIO $ BL.readFile path
@@ -212,7 +212,7 @@ eval env stack = \case
   PugBlock WithinCall name nodes -> do
     nodes' <- evaluate env ("block" : stack) nodes
     pure $ PugBlock WithinCall name nodes'
-  PugExtends _ _ ->
+  PugExtends _ _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
   node@(PugReadJson _ _ _) -> pure node
   node@(PugAssignVar _ _) -> pure node
@@ -323,7 +323,7 @@ extractVariables env = concatMap f
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
   f (PugBlock _ _ _) = []
-  f (PugExtends _ _) = []
+  f (PugExtends _ _ _) = []
   f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
   f (PugReadJson _ _ Nothing) = []
   f (PugAssignVar name s) = [(name, SingleQuoteString s)]

@@ -44,10 +44,12 @@ data PugNode
     PugComment Bool Text
   | PugFilter Text Text
   | PugRawElem Text [PugNode]
-  | PugBlock What Text [PugNode]
-  | -- | Similar to PugInclude. The named block arguments are the following nodes.
+  | -- | @block@ defines an optional formal parameter. Its content is used
+    -- when the argument is not given.
+    PugBlock What Text [PugNode]
+  | -- | Similar to PugInclude. The named block arguments are the contained nodes.
     -- This is not enforced by the parser.
-    PugExtends FilePath (Maybe [PugNode])
+    PugExtends FilePath (Maybe [PugNode]) [PugNode]
   | -- | Allow to assign the content of a JSON file to a variable. The syntax
     -- is specific to how Struct has a @require@ function in scope.
     PugReadJson Text FilePath (Maybe Aeson.Value)
@@ -189,7 +191,7 @@ extractClasses = nub . sort . concatMap f
   -- TODO Would be nice to extract classes from verbatim HTML too.
   f (PugRawElem _ _) = []
   f (PugBlock _ _ children) = extractClasses children
-  f (PugExtends _ children) = maybe [] extractClasses children
+  f (PugExtends _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
   f (PugIf _ as bs) = extractClasses as <> extractClasses bs
@@ -226,7 +228,7 @@ extractMixins = concatMap f
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
   f (PugBlock _ _ children) = extractMixins children
-  f (PugExtends _ children) = maybe [] extractMixins children
+  f (PugExtends _ children blocks) = maybe [] extractMixins children <> extractMixins blocks
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
   f (PugIf _ as bs) = extractMixins as <> extractMixins bs
