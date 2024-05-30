@@ -143,6 +143,9 @@ preProcessNodeE ctx@Context {..} = \case
     as' <- preProcessNodesE ctx as
     bs' <- preProcessNodesE ctx bs
     pure $ PugIf cond as' bs'
+  PugList nodes -> do
+    nodes' <- preProcessNodesE ctx nodes
+    pure $ PugList nodes'
 
 eval :: Env -> [Text] -> PugNode -> ExceptT PreProcessError IO PugNode
 eval env stack = \case
@@ -227,6 +230,9 @@ eval env stack = \case
       _ -> do
         bs' <- evaluate env ("else" : stack) bs
         pure $ PugIf cond [] bs'
+  PugList nodes -> do
+    nodes' <- evaluate env stack nodes
+    pure $ PugList nodes'
 
 defaultEnv :: Env
 defaultEnv = Env [("true", Int 1), ("false", Int 0)]
@@ -323,6 +329,7 @@ extractVariables env = concatMap f
   f (PugReadJson _ _ Nothing) = []
   f (PugAssignVar name s) = [(name, SingleQuoteString s)]
   f (PugIf _ _ _) = []
+  f (PugList _) = []
 
 jsonToCode :: Aeson.Value -> Code
 jsonToCode = \case

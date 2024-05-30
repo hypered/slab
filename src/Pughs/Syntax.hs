@@ -55,6 +55,7 @@ data PugNode
   | -- | Only support assigning a string for now.
     PugAssignVar Text Text
   | PugIf Code [PugNode] [PugNode]
+  | PugList [PugNode]
   deriving (Show, Eq)
 
 trailingSym :: PugNode -> TrailingSym
@@ -187,6 +188,7 @@ extractClasses = nub . sort . concatMap f
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
   f (PugIf _ as bs) = extractClasses as <> extractClasses bs
+  f (PugList children) = extractClasses children
 
   g (AttrList xs) = concatMap h xs
   g (Id _) = []
@@ -224,6 +226,7 @@ extractMixins = concatMap f
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
   f (PugIf _ as bs) = extractMixins as <> extractMixins bs
+  f (PugList children) = extractMixins children
 
 findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
 findMixin name ms = case filter f ms of

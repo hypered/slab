@@ -133,6 +133,8 @@ pugNodeToHtml (Syntax.PugIf _ as bs) = do
   -- The evaluation code remove the non-taken branch.
   mapM_ pugNodeToHtml as
   mapM_ pugNodeToHtml bs
+pugNodeToHtml (Syntax.PugList nodes) =
+  mapM_ pugNodeToHtml nodes
 
 pugTextsToHtml :: [Syntax.PugNode] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
