@@ -9,19 +9,17 @@ module Pughs.Syntax
   , What (..)
   , Code (..)
   , Inline (..)
+  , Env (..)
+  , emptyEnv
   , trailingSym
   , extractClasses
   , extractMixins
   , findMixin
-  , extractVariables
   ) where
 
 import Data.Aeson qualified as Aeson
-import Data.Aeson.Key qualified as Aeson.Key
-import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.List (nub, sort)
 import Data.Text (Text)
-import Data.Vector qualified as V
 
 --------------------------------------------------------------------------------
 data PugNode
@@ -153,14 +151,23 @@ data Code
     Lookup Text Code
   | Add Code Code
   | -- Code can be a fragment, so we can manipulate them with code later.
-    Frag [PugNode]
+    -- We also capture the current environment.
+    Frag Env [PugNode]
   deriving (Show, Eq)
 
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting
 -- efficient rendering. Use 'parse' to create a template from a text containing
 -- placeholders.
-data Inline = Lit {-# UNPACK #-} !Text | Place {-# UNPACK #-} !Code
+data Inline = Lit {-# UNPACK #-} !Text | Place !Code
   deriving (Eq, Show)
+
+data Env = Env
+  { envVariables :: [(Text, Code)]
+  }
+  deriving (Eq, Show)
+
+emptyEnv :: Env
+emptyEnv = Env []
 
 --------------------------------------------------------------------------------
 
@@ -233,37 +240,3 @@ findMixin name ms = case filter f ms of
   f (PugMixinDef' name' _) = name == name'
   f (PugFragmentDef' name' _) = name == name'
   f _ = False
-
--- Extract both fragments and assignments.
-extractVariables :: [PugNode] -> [(Text, Code)]
-extractVariables = concatMap f
- where
-  f PugDoctype = []
-  f (PugElem _ _ _ _) = []
-  f (PugText _ _) = []
-  f (PugCode _) = []
-  f (PugInclude _ children) = maybe [] extractVariables children
-  f (PugMixinDef name children) = [(name, Frag children)]
-  f (PugMixinCall _ _) = []
-  f (PugEach _ _ _ _) = []
-  f (PugFragmentDef name children) = [(name, Frag children)]
-  f (PugFragmentCall _ _) = []
-  f (PugComment _ _) = []
-  f (PugFilter _ _) = []
-  f (PugRawElem _ _) = []
-  f (PugBlock _ _ _) = []
-  f (PugExtends _ _) = []
-  f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
-  f (PugReadJson _ _ Nothing) = []
-  f (PugAssignVar name s) = [(name, SingleQuoteString s)]
-  f (PugIf _ _ _) = []
-
-jsonToCode :: Aeson.Value -> Code
-jsonToCode = \case
-  Aeson.String s -> SingleQuoteString s
-  Aeson.Array xs ->
-    List $ map jsonToCode (V.toList xs)
-  Aeson.Object kvs ->
-    let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToCode v)
-     in Object $ map f (Aeson.KeyMap.toList kvs)
-  x -> error $ "jsonToCode: " <> show x

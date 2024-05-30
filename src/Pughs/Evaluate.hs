@@ -5,19 +5,22 @@ module Pughs.Evaluate
   , preProcessPugFile
   , evaluatePugFile
   , evaluate
-  , emptyEnv
+  , defaultEnv
   ) where
 
 import Control.Monad (forM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
 import Data.Aeson qualified as Aeson
+import Data.Aeson.Key qualified as Aeson.Key
+import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.Bifunctor (first)
 import Data.ByteString.Lazy qualified as BL
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
+import Data.Vector qualified as V
 import Data.Void (Void)
 import Pughs.Parse qualified as Parse
 import Pughs.Syntax
@@ -73,15 +76,10 @@ preProcessNodesE ctx@Context {..} (PugExtends path _ : nodes) = do
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
 
 evaluatePugFile :: FilePath -> IO (Either PreProcessError [PugNode])
-evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate emptyEnv)
+evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate defaultEnv)
 
-data Env = Env
-  { envVariables :: [(Text, Code)]
-  }
-  deriving (Show)
-
-emptyEnv :: Env
-emptyEnv = Env [("true", Int 1), ("false", Int 0)]
+defaultEnv :: Env
+defaultEnv = Env [("true", Int 1), ("false", Int 0)]
 
 lookupVariable :: Text -> Env -> Maybe Code
 lookupVariable name Env {..} = lookup name envVariables
@@ -177,7 +175,7 @@ eval env = \case
     pure $ PugMixinDef name nodes'
   PugMixinCall name _ ->
     case lookupVariable name env of
-      Just (Frag body) -> do
+      Just (Frag cenv body) -> do -- TODO use captured env
         body' <- evaluate env body
         pure $ PugMixinCall name (Just body')
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\""
@@ -185,10 +183,10 @@ eval env = \case
     pure $ PugFragmentDef name nodes
   PugFragmentCall name args -> do
     case lookupVariable name env of
-      Just (Frag body) -> do
+      Just (Frag cenv body) -> do -- TODO use captured env
         -- TODO Either evaluate the args before constructing the env, or capture
         -- the env in a thunk.
-        env' <- map (\(a,b) -> (a, Frag b)) <$> namedBlocks args
+        env' <- map (\(a,b) -> (a, Frag emptyEnv b)) <$> namedBlocks args -- TODO Real env
         let env'' = augmentVariables env env'
         body' <- evaluate env'' body
         pure $ PugFragmentCall name body'
@@ -217,7 +215,7 @@ eval env = \case
       Nothing -> do
         nodes' <- evaluate env nodes
         pure $ PugBlock WithinDef name nodes'
-      Just (Frag nodes') -> do
+      Just (Frag cenv nodes') -> do -- TODO Use captured env
         nodes'' <- evaluate env nodes'
         pure $ PugBlock WithinDef name nodes''
   PugBlock WithinCall name nodes -> do
@@ -303,3 +301,37 @@ evalInline env = \case
       SingleQuoteString s -> pure s
       -- Variable x -> context x -- Should not happen after evalCode
       x -> error $ "render: unhandled value: " <> show x
+
+-- Extract both fragments and assignments.
+extractVariables :: [PugNode] -> [(Text, Code)]
+extractVariables = concatMap f
+ where
+  f PugDoctype = []
+  f (PugElem _ _ _ _) = []
+  f (PugText _ _) = []
+  f (PugCode _) = []
+  f (PugInclude _ children) = maybe [] extractVariables children
+  f (PugMixinDef name children) = [(name, Frag emptyEnv children)] -- TODO Real env.
+  f (PugMixinCall _ _) = []
+  f (PugEach _ _ _ _) = []
+  f (PugFragmentDef name children) = [(name, Frag emptyEnv children)] -- TODO Real env.
+  f (PugFragmentCall _ _) = []
+  f (PugComment _ _) = []
+  f (PugFilter _ _) = []
+  f (PugRawElem _ _) = []
+  f (PugBlock _ _ _) = []
+  f (PugExtends _ _) = []
+  f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
+  f (PugReadJson _ _ Nothing) = []
+  f (PugAssignVar name s) = [(name, SingleQuoteString s)]
+  f (PugIf _ _ _) = []
+
+jsonToCode :: Aeson.Value -> Code
+jsonToCode = \case
+  Aeson.String s -> SingleQuoteString s
+  Aeson.Array xs ->
+    List $ map jsonToCode (V.toList xs)
+  Aeson.Object kvs ->
+    let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToCode v)
+     in Object $ map f (Aeson.KeyMap.toList kvs)
+  x -> error $ "jsonToCode: " <> show x
