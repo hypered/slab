@@ -6,7 +6,6 @@ module Pughs.Syntax
   , TrailingSym (..)
   , Attr (..)
   , TextSyntax (..)
-  , What (..)
   , Code (..)
   , Inline (..)
   , Env (..)
@@ -44,11 +43,11 @@ data PugNode
     PugComment Bool Text
   | PugFilter Text Text
   | PugRawElem Text [PugNode]
-  | -- | @block@ defines an optional formal parameter. Its content is used
-    -- when the argument is not given.
+  | -- | @default@ defines an optional formal parameter with a default content.
+    -- Its content is used when the argument is not given.
     PugBlock Text [PugNode]
-  | -- | Similar to PugInclude. The named block arguments are the contained nodes.
-    -- This is not enforced by the parser.
+  | -- | Similar to an anonymous fragment call, where the fragment body is the
+    -- content of the referenced file.
     PugExtends FilePath (Maybe [PugNode]) [PugNode]
   | -- | Allow to assign the content of a JSON file to a variable. The syntax
     -- is specific to how Struct has a @require@ function in scope.
@@ -133,13 +132,6 @@ data TextSyntax
     Dot
   | -- | The text is the content of an include statement without a .pug extension.
     Include
-  deriving (Show, Eq)
-
--- | Because we use the same syntax to define named blocks, and to pass them as
--- arguments, we want to keep track of whether we're parsing a fragment
--- definition (where we "use" blocks), or fragment calls (where we "pass"
--- block arguments).
-data What = WithinDef | WithinCall
   deriving (Show, Eq)
 
 -- Minimal support for some JS expressions.
@@ -228,7 +220,7 @@ extractMixins = concatMap f
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
   f (PugBlock _ children) = extractMixins children
-  f (PugExtends _ children blocks) = maybe [] extractMixins children <> extractMixins blocks
+  f (PugExtends _ children args) = maybe [] extractMixins children <> extractMixins args
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
   f (PugIf _ as bs) = extractMixins as <> extractMixins bs
