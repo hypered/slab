@@ -1,5 +1,28 @@
 doctype html
-html
-  body
-    h1 Slab
-    p Welcome.
+html(dir="ltr", lang="en")
+    head
+        meta(charset="utf-8")
+        meta(name="viewport" content="width=device-width, initial-scale=1")
+        link(rel="stylesheet", href="/static/css/struct.css")
+        title The Slab markup language
+    body.u-container-vertical
+        header
+            .u-container
+                .u-bar
+                    .u-bar__left
+                        style.
+                          .a-logo { color: black; text-decoration: none; }
+                        a.a-logo(href="/")
+                            div
+                                span.logo Slab
+                    .u-bar__right
+                        //- empty
+
+        main
+            .u-container.u-flow-c-4
+                .switcher
+                    .flow
+                        p Slab is a programmable markup language to generate HTML.
+
+                    .c-content.flow
+                        p This site is not ready for prime time yet. You can check out <a href="https://github.com/hypered/slab">the project on GitHub</a> instead.

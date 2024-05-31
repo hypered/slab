@@ -6,3 +6,4 @@
 set -e
 
 slab build content/
+cp -r static/ _site/
