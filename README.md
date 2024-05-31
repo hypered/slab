@@ -33,12 +33,12 @@ Available commands:
 ```
 
 ```
-ghci> :main parse examples/a.pug
-ghci> :main parse --shallow examples/a.pug
-ghci> :main eval examples/a.pug
-ghci> :main render --pretty examples/a.pug
-ghci> :main render examples/a.pug
-ghci> :main classes examples/a.pug
+ghci> :main parse examples/a.slab
+ghci> :main parse --shallow examples/a.slab
+ghci> :main eval examples/a.slab
+ghci> :main render --pretty examples/a.slab
+ghci> :main render examples/a.slab
+ghci> :main classes examples/a.slab
 ```
 
 The test cases in `examples/cases/` come from the [original test

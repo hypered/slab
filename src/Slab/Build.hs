@@ -48,4 +48,4 @@ buildDir srcDir mode distDir = do
 listTemplates :: FilePath -> IO [FilePath]
 listTemplates templatesDir = sort <$> Glob.globDir1 pat templatesDir
  where
-  pat = Glob.compile "**/*.pug"
+  pat = Glob.compile "**/*.slab"

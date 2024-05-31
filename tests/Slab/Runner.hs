@@ -30,12 +30,12 @@ runExamples = do
 listExamples :: FilePath -> IO [FilePath]
 listExamples examplesDir = sort <$> Glob.globDir1 pat examplesDir
  where
-  pat = Glob.compile "*.pug"
+  pat = Glob.compile "*.slab"
 
 --------------------------------------------------------------------------------
 mkGoldenTest :: FilePath -> IO TestTree
 mkGoldenTest path = do
-  -- `path` looks like @examples/a.pug@.
+  -- `path` looks like @examples/a.slab@.
   -- `testName` looks like @a@.
   -- `goldenPath` looks like @examples/a.html@.
   let testName = takeBaseName path

@@ -1,4 +1,4 @@
-import body.pug
+import body.slab
 
   frag content
     p Some other content.

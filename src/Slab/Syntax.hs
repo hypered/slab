@@ -131,7 +131,7 @@ data TextSyntax
     Pipe
   | -- | The text is part of a text block following a trailing dot.
     Dot
-  | -- | The text is the content of an include statement without a .pug extension.
+  | -- | The text is the content of an include statement without a .slab extension.
     Include
   deriving (Show, Eq)
 

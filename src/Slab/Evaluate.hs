@@ -81,17 +81,17 @@ preProcessNodeE ctx@Context {..} = \case
   node@(PugCode _) -> pure node
   PugInclude path _ -> do
     let includedPath = takeDirectory ctxStartPath </> path
-        pugExt = takeExtension includedPath == ".pug"
+        slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
-    if exists && not pugExt
+    if exists && not slabExt
       then do
         -- Include the file content as-is.
         content <- liftIO $ T.readFile includedPath
         let nodes' = map (PugText Include . (: []) . Lit) $ T.lines content
         pure $ PugInclude path (Just nodes')
       else do
-        -- Parse and process the .pug file.
-        let includedPath' = if pugExt then includedPath else includedPath <.> ".pug"
+        -- Parse and process the .slab file.
+        let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"
         nodes' <- preProcessPugFileE includedPath'
         pure $ PugInclude path (Just nodes')
   PugMixinDef name nodes -> do
@@ -115,13 +115,13 @@ preProcessNodeE ctx@Context {..} = \case
     -- An import is treated like an include used to define a fragment, then
     -- directly calling that fragment.
     let includedPath = takeDirectory ctxStartPath </> path
-        pugExt = takeExtension includedPath == ".pug"
+        slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
-    if exists && not pugExt
-      then throwE $ PreProcessError $ "Extends requires a .pug file"
+    if exists && not slabExt
+      then throwE $ PreProcessError $ "Extends requires a .slab file"
       else do
-        -- Parse and process the .pug file.
-        let includedPath' = if pugExt then includedPath else includedPath <.> ".pug"
+        -- Parse and process the .slab file.
+        let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"
         nodes' <- preProcessPugFileE includedPath'
         let def = PugFragmentDef (T.pack path) nodes'
         nodes'' <- mapM (preProcessNodeE ctx) nodes
