@@ -4,8 +4,7 @@ module Slab.Parse
   ( parsePugFile
   , parsePug
   , parseErrorPretty
-
-    -- Inline parsing stuff
+  -- Inline parsing stuff
 
     -- * The @InterpolationContext@ type
   , InterpolationContext

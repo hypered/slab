@@ -169,14 +169,14 @@ eval env stack = \case
   PugMixinCall name _ ->
     case lookupVariable name env of
       Just (Frag capturedEnv body) -> do
-        body' <- evaluate capturedEnv ("+mixin " <> name: stack) body
+        body' <- evaluate capturedEnv ("+mixin " <> name : stack) body
         pure $ PugList body'
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\" in " <> T.pack (show stack)
   PugFragmentDef name nodes -> pure $ PugList []
   PugFragmentCall name args -> do
     case lookupVariable name env of
       Just (Frag capturedEnv body) -> do
-        env' <- map (\(a,b) -> (a, Frag env b)) <$> namedBlocks args
+        env' <- map (\(a, b) -> (a, Frag env b)) <$> namedBlocks args
         let env'' = augmentVariables capturedEnv env'
         body' <- evaluate env'' ("frag" : stack) body
         pure $ PugList body'
@@ -237,7 +237,7 @@ lookupVariable :: Text -> Env -> Maybe Code
 lookupVariable name Env {..} = lookup name envVariables
 
 augmentVariables :: Env -> [(Text, Code)] -> Env
-augmentVariables Env {..} xs = Env { envVariables = xs <> envVariables }
+augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables}
 
 namedBlocks :: Monad m => [PugNode] -> ExceptT PreProcessError m [(Text, [PugNode])]
 namedBlocks nodes = do
@@ -245,8 +245,7 @@ namedBlocks nodes = do
   unnamed <- concat <$> mapM unnamedBlock nodes
   let content = if null unnamed then [] else [("content", unnamed)]
   if isJust (lookup "content" named) && not (null unnamed)
-    then
-      throwE $ PreProcessError $ "A block of content and a content argument are provided"
+    then throwE $ PreProcessError $ "A block of content and a content argument are provided"
     else pure $ named <> content
 
 namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m [(Text, [PugNode])]

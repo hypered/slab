@@ -99,8 +99,8 @@ parserBuild = do
       RenderPretty
       ( A.long "pretty" <> A.help "Use pretty-printing"
       )
-  distDir
-    <- A.strOption
+  distDir <-
+    A.strOption
       ( A.long "dist"
           <> A.value "./_site"
           <> A.metavar "DIR"
