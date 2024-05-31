@@ -296,6 +296,7 @@ evalInline env = \case
     code' <- evalCode env code
     case code' of
       SingleQuoteString s -> pure s
+      Int x -> pure . T.pack $ show x
       -- Variable x -> context x -- Should not happen after evalCode
       x -> error $ "render: unhandled value: " <> show x
 
