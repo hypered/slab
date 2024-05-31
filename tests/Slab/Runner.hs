@@ -48,7 +48,7 @@ mkGoldenTest path = do
     case evaluated of
       Left _ -> pure "TODO"
       Right nodes -> do
-        let output = Render.prettyHtmls . Render.pugNodesToHtml $ nodes
+        let output = Render.prettyHtmls . Render.nodesToHtml $ nodes
         pure output
 
   convert = id

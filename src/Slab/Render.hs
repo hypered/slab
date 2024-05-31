@@ -1,7 +1,7 @@
 module Slab.Render
   ( prettyHtmls
   , renderHtmls
-  , pugNodesToHtml
+  , nodesToHtml
   ) where
 
 import Data.String (fromString)
@@ -24,20 +24,20 @@ renderHtmls :: [Html] -> TL.Text
 renderHtmls = TL.concat . map renderHtml
 
 --------------------------------------------------------------------------------
-pugNodesToHtml :: [Syntax.Block] -> [H.Html]
-pugNodesToHtml = map pugNodeToHtml
+nodesToHtml :: [Syntax.Block] -> [H.Html]
+nodesToHtml = map nodeToHtml
 
-pugNodeToHtml :: Syntax.Block -> H.Html
-pugNodeToHtml Syntax.BlockDoctype = H.docType
-pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
+nodeToHtml :: Syntax.Block -> H.Html
+nodeToHtml Syntax.BlockDoctype = H.docType
+nodeToHtml (Syntax.PugElem name mdot attrs children) =
   mAddAttr $
     mAddId $
       mAddClass $
-        pugElemToHtml name $
+        elemToHtml name $
           mconcat $
             if mdot == Syntax.HasDot
-              then [pugTextsToHtml children]
-              else map pugNodeToHtml children
+              then [textsToHtml children]
+              else map nodeToHtml children
  where
   mAddId :: H.Html -> H.Html
   mAddId e =
@@ -93,73 +93,73 @@ pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
   g (a, Just (Syntax.Int b)) = [(T.unpack a, T.pack $ show b)]
   g (_, Just _) = error "The attribute is not a string"
   g (a, Nothing) = [(T.unpack a, a)]
-pugNodeToHtml (Syntax.PugText _ []) =
+nodeToHtml (Syntax.PugText _ []) =
   H.preEscapedText "\n" -- This allows to force some whitespace.
-pugNodeToHtml (Syntax.PugText _ [Syntax.Lit s])
+nodeToHtml (Syntax.PugText _ [Syntax.Lit s])
   | s == T.empty = H.preEscapedText "\n" -- This allows to force some whitespace.
   | otherwise = H.preEscapedText s -- TODO
-pugNodeToHtml (Syntax.PugText _ _) = error "Template is not rendered."
-pugNodeToHtml (Syntax.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
-pugNodeToHtml (Syntax.PugFragmentDef _ _) = mempty
-pugNodeToHtml (Syntax.PugFragmentCall _ nodes) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Syntax.PugEach _ _ _ nodes) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Syntax.PugComment b content) =
+nodeToHtml (Syntax.PugText _ _) = error "Template is not rendered."
+nodeToHtml (Syntax.PugInclude _ (Just nodes)) = mapM_ nodeToHtml nodes
+nodeToHtml (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
+nodeToHtml (Syntax.PugFragmentDef _ _) = mempty
+nodeToHtml (Syntax.PugFragmentCall _ nodes) = mapM_ nodeToHtml nodes
+nodeToHtml (Syntax.PugEach _ _ _ nodes) = mapM_ nodeToHtml nodes
+nodeToHtml (Syntax.PugComment b content) =
   if b then H.textComment content else mempty
-pugNodeToHtml (Syntax.PugFilter "escape-html" content) =
+nodeToHtml (Syntax.PugFilter "escape-html" content) =
   H.text content
-pugNodeToHtml (Syntax.PugFilter name _) = error $ "Unknown filter name " <> T.unpack name
-pugNodeToHtml (Syntax.PugRawElem content children) = do
+nodeToHtml (Syntax.PugFilter name _) = error $ "Unknown filter name " <> T.unpack name
+nodeToHtml (Syntax.PugRawElem content children) = do
   H.preEscapedText content -- TODO Construct a proper tag ?
-  mapM_ pugNodeToHtml children
-pugNodeToHtml (Syntax.PugDefault _ nodes) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Syntax.PugImport _ (Just nodes) _) = mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Syntax.PugImport path Nothing _) = H.stringComment $ "extends " <> path
-pugNodeToHtml (Syntax.PugReadJson _ _ _) = mempty
-pugNodeToHtml (Syntax.PugAssignVar _ _) = mempty
-pugNodeToHtml (Syntax.PugIf _ as bs) = do
+  mapM_ nodeToHtml children
+nodeToHtml (Syntax.PugDefault _ nodes) = mapM_ nodeToHtml nodes
+nodeToHtml (Syntax.PugImport _ (Just nodes) _) = mapM_ nodeToHtml nodes
+nodeToHtml (Syntax.PugImport path Nothing _) = H.stringComment $ "extends " <> path
+nodeToHtml (Syntax.PugReadJson _ _ _) = mempty
+nodeToHtml (Syntax.PugAssignVar _ _) = mempty
+nodeToHtml (Syntax.PugIf _ as bs) = do
   -- The evaluation code transforms a PugIf into a PugList, so this should
   -- not be called.
-  mapM_ pugNodeToHtml as
-  mapM_ pugNodeToHtml bs
-pugNodeToHtml (Syntax.PugList nodes) =
-  mapM_ pugNodeToHtml nodes
-pugNodeToHtml (Syntax.BlockCode (Syntax.SingleQuoteString s))
+  mapM_ nodeToHtml as
+  mapM_ nodeToHtml bs
+nodeToHtml (Syntax.PugList nodes) =
+  mapM_ nodeToHtml nodes
+nodeToHtml (Syntax.BlockCode (Syntax.SingleQuoteString s))
   | s == T.empty = mempty
   | otherwise = H.text s -- Should be already escaped in the AST ?
-pugNodeToHtml (Syntax.BlockCode (Syntax.Variable s)) =
+nodeToHtml (Syntax.BlockCode (Syntax.Variable s)) =
   H.textComment $ "code variable " <> s
-pugNodeToHtml (Syntax.BlockCode (Syntax.Int i)) =
+nodeToHtml (Syntax.BlockCode (Syntax.Int i)) =
   H.string $ show i
-pugNodeToHtml (Syntax.BlockCode (Syntax.Object _)) =
+nodeToHtml (Syntax.BlockCode (Syntax.Object _)) =
   H.text "<Object>"
-pugNodeToHtml (Syntax.BlockCode c) = error $ "pugNodeToHtml called on BlockCode " <> show c
+nodeToHtml (Syntax.BlockCode c) = error $ "nodeToHtml called on BlockCode " <> show c
 
-pugTextsToHtml :: [Syntax.Block] -> H.Markup
-pugTextsToHtml xs = H.preEscapedText xs'
+textsToHtml :: [Syntax.Block] -> H.Markup
+textsToHtml xs = H.preEscapedText xs'
  where
   xs' = T.intercalate "\n" $ map f xs
-  f Syntax.BlockDoctype = error "pugTextsToHtml called on a BlockDoctype"
-  f (Syntax.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
+  f Syntax.BlockDoctype = error "textsToHtml called on a BlockDoctype"
+  f (Syntax.PugElem _ _ _ _) = error "textsToHtml called on a PugElem"
   f (Syntax.PugText _ [Syntax.Lit s]) = s
-  f (Syntax.PugText _ _) = error "pugTextsToHtml called on unevaluated PugText"
-  f (Syntax.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
-  f (Syntax.PugFragmentDef _ _) = error "pugTextsToHtml called on a PugFragmentDef"
-  f (Syntax.PugFragmentCall _ _) = error "pugTextsToHtml called on a PugFragmentCall"
-  f (Syntax.PugEach _ _ _ _) = error "pugTextsToHtml called on a PugEach"
-  f (Syntax.PugComment _ _) = error "pugTextsToHtml called on a PugComment"
-  f (Syntax.PugFilter _ _) = error "pugTextsToHtml called on a PugFilter"
-  f (Syntax.PugRawElem _ _) = error "pugTextsToHtml called on a PugRawElem"
-  f (Syntax.PugDefault _ _) = error "pugTextsToHtml called on a PugDefault"
-  f (Syntax.PugImport _ _ _) = error "pugTextsToHtml called on a PugImport"
-  f (Syntax.PugReadJson _ _ _) = error "pugTextsToHtml called on a PugReadJson"
-  f (Syntax.PugAssignVar _ _) = error "pugTextsToHtml called on a PugAssignVar"
-  f (Syntax.PugIf _ _ _) = error "pugTextsToHtml called on a PugIf"
-  f (Syntax.PugList _) = error "pugTextsToHtml called on a PugList"
-  f (Syntax.BlockCode _) = error "pugTextsToHtml called on a BlockCode"
+  f (Syntax.PugText _ _) = error "textsToHtml called on unevaluated PugText"
+  f (Syntax.PugInclude _ _) = error "textsToHtml called on a PugInclude"
+  f (Syntax.PugFragmentDef _ _) = error "textsToHtml called on a PugFragmentDef"
+  f (Syntax.PugFragmentCall _ _) = error "textsToHtml called on a PugFragmentCall"
+  f (Syntax.PugEach _ _ _ _) = error "textsToHtml called on a PugEach"
+  f (Syntax.PugComment _ _) = error "textsToHtml called on a PugComment"
+  f (Syntax.PugFilter _ _) = error "textsToHtml called on a PugFilter"
+  f (Syntax.PugRawElem _ _) = error "textsToHtml called on a PugRawElem"
+  f (Syntax.PugDefault _ _) = error "textsToHtml called on a PugDefault"
+  f (Syntax.PugImport _ _ _) = error "textsToHtml called on a PugImport"
+  f (Syntax.PugReadJson _ _ _) = error "textsToHtml called on a PugReadJson"
+  f (Syntax.PugAssignVar _ _) = error "textsToHtml called on a PugAssignVar"
+  f (Syntax.PugIf _ _ _) = error "textsToHtml called on a PugIf"
+  f (Syntax.PugList _) = error "textsToHtml called on a PugList"
+  f (Syntax.BlockCode _) = error "textsToHtml called on a BlockCode"
 
-pugElemToHtml :: Syntax.Elem -> Html -> Html
-pugElemToHtml = \case
+elemToHtml :: Syntax.Elem -> Html -> Html
+elemToHtml = \case
   Syntax.Html -> H.html
   Syntax.Body -> H.body
   Syntax.Div -> H.div

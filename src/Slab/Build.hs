@@ -38,9 +38,9 @@ buildDir srcDir mode distDir = do
           Right nodes ->
             case mode of
               Command.RenderNormal ->
-                TL.writeFile path' . Render.renderHtmls $ Render.pugNodesToHtml nodes
+                TL.writeFile path' . Render.renderHtmls $ Render.nodesToHtml nodes
               Command.RenderPretty ->
-                T.writeFile path' . Render.prettyHtmls $ Render.pugNodesToHtml nodes
+                T.writeFile path' . Render.prettyHtmls $ Render.nodesToHtml nodes
 
   mapM_ build templates
 
