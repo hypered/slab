@@ -3,13 +3,36 @@
 Slab is a programmable markup language to generate HTML.
 
 ```
-frag page
-  h1 A title
-  content
+$ cat data/values.json
+[
+  {
+    "username": "Alice",
+    "email": "alice@example.com"
+  },
+  {
+    "username": "Bob",
+    "email": "bob@example.com"
+  }
+]
 
-page
-  p A paragraph.
+$ cat example.slab
+let values = data/values.json
+ul
+  for value in values
+    li Hello, #{value['username']}.
+
+$ slab render --pretty example.slab
+<ul>
+    <li>
+        Hello, Alice.
+    </li>
+    <li>
+        Hello, Bob.
+    </li>
+</ul>
 ```
+
+# Devlopment
 
 ```
 $ scripts/ghci.sh
@@ -41,7 +64,7 @@ ghci> :main render examples/a.slab
 ghci> :main classes examples/a.slab
 ```
 
-The test cases in `examples/cases/` come from the [original test
+The test cases in `examples/cases/` come from the [original Pug test
 suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases). The
 expected HTML is not exactly the same: we pretty print it differently, or some
 tags are explicitely closed in Pug.js (e.g. `<source>` vs. `<source/>`.
