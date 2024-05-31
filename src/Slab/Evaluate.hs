@@ -164,15 +164,15 @@ eval env stack = \case
         pure $ PugList nodes'
       Nothing ->
         pure $ PugInclude path Nothing
-  PugMixinDef name nodes ->
-    pure $ PugList []
+  PugMixinDef _ _ -> pure $ PugList []
   PugMixinCall name _ ->
     case lookupVariable name env of
       Just (Frag capturedEnv body) -> do
         body' <- evaluate capturedEnv ("+mixin " <> name : stack) body
         pure $ PugList body'
+      Just _ -> throwE $ PreProcessError $ "Calling something that is not a mixin \"" <> name <> "\" in " <> T.pack (show stack)
       Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\" in " <> T.pack (show stack)
-  PugFragmentDef name nodes -> pure $ PugList []
+  PugFragmentDef _ _ -> pure $ PugList []
   PugFragmentCall name args -> do
     case lookupVariable name env of
       Just (Frag capturedEnv body) -> do
@@ -180,15 +180,17 @@ eval env stack = \case
         let env'' = augmentVariables capturedEnv env'
         body' <- evaluate env'' ("frag" : stack) body
         pure $ PugList body'
+      Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
       Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
   PugEach name mindex values nodes -> do
     -- Re-use PugEach to construct a single node to return.
     let zero :: Int
         zero = 0
     values' <- evalCode env values
-    let collection = case values' of
-          List xs -> zip xs $ map Int [zero ..]
-          Object xs -> map (\(k, v) -> (v, k)) xs
+    collection <- case values' of
+      List xs -> pure $ zip xs $ map Int [zero ..]
+      Object xs -> pure $ map (\(k, v) -> (v, k)) xs
+      _ -> throwE $ PreProcessError $ "Iterating on something that is not a collection"
     nodes' <- forM collection $ \(value, index) -> do
       let env' = case mindex of
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
@@ -208,6 +210,7 @@ eval env stack = \case
       Just (Frag capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
         pure $ PugList nodes''
+      Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
   PugImport _ _ _ ->
     throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
   PugReadJson _ _ _ -> pure $ PugList []

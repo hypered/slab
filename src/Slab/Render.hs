@@ -108,6 +108,7 @@ pugNodeToHtml (Syntax.PugCode (Syntax.Int i)) =
   H.string $ show i
 pugNodeToHtml (Syntax.PugCode (Syntax.Object _)) =
   H.text "<Object>"
+pugNodeToHtml (Syntax.PugCode c) = error $ "pugNodeToHtml called on PugCode " <> show c
 pugNodeToHtml (Syntax.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
 pugNodeToHtml (Syntax.PugMixinDef _ _) = mempty
@@ -160,6 +161,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugReadJson _ _ _) = error "pugTextsToHtml called on a PugReadJson"
   f (Syntax.PugAssignVar _ _) = error "pugTextsToHtml called on a PugAssignVar"
   f (Syntax.PugIf _ _ _) = error "pugTextsToHtml called on a PugIf"
+  f (Syntax.PugList _) = error "pugTextsToHtml called on a PugList"
 
 pugElemToHtml :: Syntax.Elem -> Html -> Html
 pugElemToHtml = \case
