@@ -2,4 +2,4 @@ import body.slab
 
   frag content
     include mixins-def
-    +list
+    list

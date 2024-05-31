@@ -1,7 +1,7 @@
 include mixins-def
 
-mixin card
+frag card
   h1 Card
-  +list
+  list
 
-+card
+card

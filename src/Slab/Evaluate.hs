@@ -94,10 +94,6 @@ preProcessNodeE ctx@Context {..} = \case
         let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"
         nodes' <- preProcessPugFileE includedPath'
         pure $ PugInclude path (Just nodes')
-  PugMixinDef name nodes -> do
-    nodes' <- preProcessNodesE ctx nodes
-    pure $ PugMixinDef name nodes'
-  node@(PugMixinCall _ _) -> pure node
   PugFragmentDef name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugFragmentDef name nodes'
@@ -164,14 +160,6 @@ eval env stack = \case
         pure $ PugList nodes'
       Nothing ->
         pure $ PugInclude path Nothing
-  PugMixinDef _ _ -> pure $ PugList []
-  PugMixinCall name _ ->
-    case lookupVariable name env of
-      Just (Frag capturedEnv body) -> do
-        body' <- evaluate capturedEnv ("+mixin " <> name : stack) body
-        pure $ PugList body'
-      Just _ -> throwE $ PreProcessError $ "Calling something that is not a mixin \"" <> name <> "\" in " <> T.pack (show stack)
-      Nothing -> throwE $ PreProcessError $ "Can't find mixin \"" <> name <> "\" in " <> T.pack (show stack)
   PugFragmentDef _ _ -> pure $ PugList []
   PugFragmentCall name args -> do
     case lookupVariable name env of
@@ -314,8 +302,6 @@ extractVariables env = concatMap f
   f (PugText _ _) = []
   f (PugCode _) = []
   f (PugInclude _ children) = maybe [] (extractVariables env) children
-  f (PugMixinDef name children) = [(name, Frag env children)]
-  f (PugMixinCall _ _) = []
   f (PugEach _ _ _ _) = []
   f (PugFragmentDef name children) = [(name, Frag env children)]
   f (PugFragmentCall _ _) = []

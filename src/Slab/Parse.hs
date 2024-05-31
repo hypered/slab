@@ -53,8 +53,6 @@ pugNode = do
         , pugElement
         , pugPipe
         , pugCode'
-        , pugMixinDef
-        , pugMixinCall
         , pugFragmentDef
         , pugComment
         , pugFilter
@@ -385,19 +383,6 @@ pugInclude = do
 
 pugPath :: Parser FilePath
 pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
-
---------------------------------------------------------------------------------
-pugMixinDef :: Parser (L.IndentOpt Parser PugNode PugNode)
-pugMixinDef = do
-  _ <- lexeme (string "mixin")
-  name <- pugText
-  pure $ L.IndentMany Nothing (pure . PugMixinDef name) pugNode
-
---------------------------------------------------------------------------------
-pugMixinCall :: Parser (L.IndentOpt Parser PugNode PugNode)
-pugMixinCall = do
-  name <- lexeme (char '+') *> pugText
-  pure $ L.IndentNone $ PugMixinCall name Nothing
 
 --------------------------------------------------------------------------------
 pugFragmentDef :: Parser (L.IndentOpt Parser PugNode PugNode)

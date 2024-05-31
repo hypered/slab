@@ -51,16 +51,16 @@ run (Command.CommandWithPath path pmode Command.Classes) = do
   case parsed of
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> mapM_ T.putStrLn $ Syntax.extractClasses nodes
-run (Command.CommandWithPath path pmode (Command.Mixins mname)) = do
+run (Command.CommandWithPath path pmode (Command.Fragments mname)) = do
   parsed <- parseWithMode path pmode
   case parsed of
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> do
-      let ms = Syntax.extractMixins nodes
+      let ms = Syntax.extractFragments nodes
       case mname of
-        Just name -> case Syntax.findMixin name ms of
+        Just name -> case Syntax.findFragment name ms of
           Just m -> TL.putStrLn $ pShowNoColor m
-          Nothing -> putStrLn "No such mixin."
+          Nothing -> putStrLn "No such fragment."
         Nothing -> TL.putStrLn $ pShowNoColor ms
 
 --------------------------------------------------------------------------------

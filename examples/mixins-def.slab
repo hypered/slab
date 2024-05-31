@@ -1,4 +1,4 @@
-mixin list
+frag list
   ul
     li foo
     li bar

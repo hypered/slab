@@ -24,8 +24,8 @@ data CommandWithPath
   | Parse
   | -- | List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes.
     Classes
-  | -- | List the mixins used in a template. If a name is given, extract that definition.
-    Mixins (Maybe Text)
+  | -- | List the fragments used in a template. If a name is given, extract that definition.
+    Fragments (Maybe Text)
 
 data RenderMode = RenderNormal | RenderPretty
 
@@ -79,10 +79,10 @@ parser =
                 "Parse a Pug template and report its CSS classes"
           )
         <> A.command
-          "mixins"
-          ( A.info (parserMixins <**> A.helper) $
+          "fragments"
+          ( A.info (parserFragments <**> A.helper) $
               A.progDesc
-                "Parse a Pug template and report its mixins"
+                "Parse a Pug template and report its fragments"
           )
     )
 
@@ -135,15 +135,15 @@ parserClasses = do
   pathAndmode <- parserWithPath
   pure $ uncurry CommandWithPath pathAndmode Classes
 
-parserMixins :: A.Parser Command
-parserMixins = do
+parserFragments :: A.Parser Command
+parserFragments = do
   pathAndmode <- parserWithPath
   mname <-
     A.optional $
       A.argument
         A.str
-        (A.metavar "NAME" <> A.help "Mixin name to extract.")
-  pure $ uncurry CommandWithPath pathAndmode $ Mixins mname
+        (A.metavar "NAME" <> A.help "Fragment name to extract.")
+  pure $ uncurry CommandWithPath pathAndmode $ Fragments mname
 
 --------------------------------------------------------------------------------
 parserWithPath :: A.Parser (FilePath, ParseMode)

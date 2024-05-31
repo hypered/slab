@@ -12,8 +12,8 @@ module Slab.Syntax
   , emptyEnv
   , trailingSym
   , extractClasses
-  , extractMixins
-  , findMixin
+  , extractFragments
+  , findFragment
   ) where
 
 import Data.Aeson qualified as Aeson
@@ -31,9 +31,6 @@ data PugNode
   | -- | @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
     PugInclude FilePath (Maybe [PugNode])
-  | PugMixinDef Text [PugNode]
-  | -- | The Maybe works similarly to `PugInclude`.
-    PugMixinCall Text (Maybe [PugNode])
   | -- | This doesn't exit in Pug. This is like a mixin than receive block arguments.
     -- Or like a parent template that can be @extended@ by a child template.
     PugFragmentDef Text [PugNode]
@@ -175,8 +172,6 @@ extractClasses = nub . sort . concatMap f
   f (PugText _ _) = []
   f (PugCode _) = []
   f (PugInclude _ children) = maybe [] extractClasses children
-  f (PugMixinDef _ _) = [] -- We extract them in PugMixinCall instead.
-  f (PugMixinCall _ children) = maybe [] extractClasses children
   f (PugFragmentDef _ _) = [] -- We extract them in PugFragmentCall instead.
   f (PugFragmentCall _ children) = extractClasses children
   f (PugEach _ _ _ children) = extractClasses children
@@ -198,43 +193,37 @@ extractClasses = nub . sort . concatMap f
   h ("class", _) = error "The class is not a string"
   h _ = []
 
--- Return type used for `extractMixins`.
+-- Return type used for `extractFragments`.
 data PugMixin
-  = PugMixinDef' Text [PugNode]
-  | PugMixinCall' Text
-  | PugFragmentDef' Text [PugNode]
+  = PugFragmentDef' Text [PugNode]
   | PugFragmentCall' Text
   deriving (Show, Eq)
 
-extractMixins :: [PugNode] -> [PugMixin]
-extractMixins = concatMap f
+extractFragments :: [PugNode] -> [PugMixin]
+extractFragments = concatMap f
  where
   f PugDoctype = []
-  f (PugElem _ _ _ children) = extractMixins children
+  f (PugElem _ _ _ children) = extractFragments children
   f (PugText _ _) = []
   f (PugCode _) = []
-  f (PugInclude _ children) = maybe [] extractMixins children
-  f (PugMixinDef name children) = [PugMixinDef' name children]
-  f (PugMixinCall name children) = [PugMixinCall' name] <> maybe [] extractMixins children
+  f (PugInclude _ children) = maybe [] extractFragments children
   f (PugFragmentDef name children) = [PugFragmentDef' name children]
-  f (PugFragmentCall name children) = [PugFragmentCall' name] <> extractMixins children
-  f (PugEach _ _ _ children) = extractMixins children
+  f (PugFragmentCall name children) = [PugFragmentCall' name] <> extractFragments children
+  f (PugEach _ _ _ children) = extractFragments children
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
-  f (PugDefault _ children) = extractMixins children
-  f (PugImport _ children args) = maybe [] extractMixins children <> extractMixins args
+  f (PugDefault _ children) = extractFragments children
+  f (PugImport _ children args) = maybe [] extractFragments children <> extractFragments args
   f (PugReadJson _ _ _) = []
   f (PugAssignVar _ _) = []
-  f (PugIf _ as bs) = extractMixins as <> extractMixins bs
-  f (PugList children) = extractMixins children
+  f (PugIf _ as bs) = extractFragments as <> extractFragments bs
+  f (PugList children) = extractFragments children
 
-findMixin :: Text -> [PugMixin] -> Maybe [PugNode]
-findMixin name ms = case filter f ms of
-  [PugMixinDef' _ nodes] -> Just nodes
+findFragment :: Text -> [PugMixin] -> Maybe [PugNode]
+findFragment name ms = case filter f ms of
   [PugFragmentDef' _ nodes] -> Just nodes
   _ -> Nothing
  where
-  f (PugMixinDef' name' _) = name == name'
   f (PugFragmentDef' name' _) = name == name'
   f _ = False

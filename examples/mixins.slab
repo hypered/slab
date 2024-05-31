@@ -1,9 +1,9 @@
-mixin list
+frag list
   ul
     li foo
     li bar
     li baz
 
 body
-  +list
-  + list
+  list
+  list
