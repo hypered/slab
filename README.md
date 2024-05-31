@@ -24,12 +24,12 @@ Available options:
   -h,--help                Show this help text
 
 Available commands:
-  build                    Build a library of Pug templates
-  render                   Render a Pug template to HTML
-  eval                     Parse a Pug template to AST and evaluate it
-  parse                    Parse a Pug template to AST
-  classes                  Parse a Pug template and report its CSS classes
-  mixins                   Parse a Pug template and report its mixins
+  build                    Build a library of Slab templates
+  render                   Render a Slab template to HTML
+  eval                     Parse a Slab template to AST and evaluate it
+  parse                    Parse a Slab template to AST
+  classes                  Parse a Slab template and report its CSS classes
+  fragments                Parse a Slab template and report its fragments
 ```
 
 ```

@@ -52,37 +52,37 @@ parser =
         "build"
         ( A.info (parserBuild <**> A.helper) $
             A.progDesc
-              "Build a library of Pug templates"
+              "Build a library of Slab templates"
         )
         <> A.command
           "render"
           ( A.info (parserRender <**> A.helper) $
               A.progDesc
-                "Render a Pug template to HTML"
+                "Render a Slab template to HTML"
           )
         <> A.command
           "eval"
           ( A.info (parserEvaluate <**> A.helper) $
               A.progDesc
-                "Parse a Pug template to AST and evaluate it"
+                "Parse a Slab template to AST and evaluate it"
           )
         <> A.command
           "parse"
           ( A.info (parserParse <**> A.helper) $
               A.progDesc
-                "Parse a Pug template to AST"
+                "Parse a Slab template to AST"
           )
         <> A.command
           "classes"
           ( A.info (parserClasses <**> A.helper) $
               A.progDesc
-                "Parse a Pug template and report its CSS classes"
+                "Parse a Slab template and report its CSS classes"
           )
         <> A.command
           "fragments"
           ( A.info (parserFragments <**> A.helper) $
               A.progDesc
-                "Parse a Pug template and report its fragments"
+                "Parse a Slab template and report its fragments"
           )
     )
 
@@ -92,7 +92,7 @@ parserBuild = do
   srcDir <-
     A.argument
       A.str
-      (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Pug templates.")
+      (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Slab templates to build.")
   mode <-
     A.flag
       RenderNormal
@@ -153,12 +153,12 @@ parserTemplatePath :: A.Parser FilePath
 parserTemplatePath =
   A.argument
     A.str
-    (A.metavar "FILE" <> A.action "file" <> A.help "Pug template to parse.")
+    (A.metavar "FILE" <> A.action "file" <> A.help "Slab template to parse.")
 
 parserShallowFlag :: A.Parser ParseMode
 parserShallowFlag =
   A.flag
     ParseDeep
     ParseShallow
-    ( A.long "shallow" <> A.help "Don't parse recursively the included Pug files"
+    ( A.long "shallow" <> A.help "Don't parse recursively the included Slab files"
     )
