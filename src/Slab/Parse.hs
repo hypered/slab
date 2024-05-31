@@ -60,7 +60,7 @@ pugNode = do
         , pugDefault
         , pugImport
         , (try pugReadJson <|> pugAssignVar)
-        , pugEach
+        , try pugEach
         , pugIf
         , pugFragmentCall
         ]
@@ -400,7 +400,7 @@ pugFragmentCall = do
 --------------------------------------------------------------------------------
 pugEach :: Parser (L.IndentOpt Parser Block Block)
 pugEach = do
-  _ <- lexeme (string "each")
+  _ <- lexeme (string "for")
   name <- lexeme pugName
   mindex <- optional $ do
     _ <- lexeme $ string ","
@@ -525,14 +525,10 @@ pugImport = do
 --------------------------------------------------------------------------------
 pugReadJson :: Parser (L.IndentOpt Parser Block Block)
 pugReadJson = do
-  _ <- lexeme (string "-")
-  _ <- lexeme (string "var")
+  _ <- lexeme (string "let")
   name <- lexeme pugName
   _ <- lexeme (string "=")
-  _ <- lexeme (string "require")
-  _ <- lexeme (string "(")
-  path <- T.unpack <$> lexeme pugDoubleQuoteString
-  _ <- lexeme (string ")")
+  path <- pugPath
   pure $ L.IndentNone $ PugReadJson name path Nothing
 
 pugAssignVar :: Parser (L.IndentOpt Parser Block Block)

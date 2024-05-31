@@ -1,0 +1,23 @@
+ul
+  for val in [1, 2, 3]
+    li= val
+
+ul
+  for val, index in [1, 2]
+    li
+      span= val
+      p= index
+
+ul
+  for val in {1: 'one', 2: 'two'}
+    li= val
+
+ul
+  for val, key in {1: 'one', 2: 'two'}
+    li
+      span= val
+      p= key
+
+ul
+  for val in [{'a': 'one', 'b': 'two'}]
+    li= val['b']

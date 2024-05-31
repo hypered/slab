@@ -1,4 +1,4 @@
-- var values = require("./data/values.json")
+let values = ./data/values.json
 ul
-  each val in values
-    li= val['username']
+  for value in values
+    li= value['username']
