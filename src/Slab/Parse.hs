@@ -32,18 +32,18 @@ import Text.Megaparsec.Char.Lexer qualified as L
 import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
-parsePugFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [PugNode])
+parsePugFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [Block])
 parsePugFile path = do
   pugContent <- T.readFile path
   pure $ parsePug path pugContent
 
-parsePug :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [PugNode]
+parsePug :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Block]
 parsePug fn = runParser (many pugNode <* eof) fn
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
 
-pugNode :: Parser PugNode
+pugNode :: Parser Block
 pugNode = do
   node <-
     L.indentBlock scn $
@@ -70,18 +70,18 @@ pugNode = do
       pure $ PugIf cond as $ maybe [] id mbs
     _ -> pure node
 
-pugIf :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugIf :: Parser (L.IndentOpt Parser Block Block)
 pugIf = do
   _ <- lexeme $ string "if"
   cond <- pugCode
   pure $ L.IndentMany Nothing (pure . (\as -> PugIf cond as [])) pugNode
 
-pugElse :: Parser (L.IndentOpt Parser [PugNode] PugNode)
+pugElse :: Parser (L.IndentOpt Parser [Block] Block)
 pugElse = do
   _ <- lexeme $ string "else"
   pure $ L.IndentMany Nothing pure pugNode
 
-pugElement :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugElement :: Parser (L.IndentOpt Parser Block Block)
 pugElement = do
   ref <- L.indentLevel
   header <- pugDiv
@@ -98,11 +98,11 @@ pugElement = do
     HasEqual -> do
       mcontent <- optional pugCode
       case mcontent of
-        Just content -> pure $ L.IndentNone $ header [PugCode content]
+        Just content -> pure $ L.IndentNone $ header [BlockCode content]
         Nothing -> do
           scn
           content <- pugCode
-          pure $ L.IndentNone $ header [PugCode content]
+          pure $ L.IndentNone $ header [BlockCode content]
     NoSym -> do
       template <- parseInlines
       case template of
@@ -141,7 +141,7 @@ realign xs = map (T.drop n) xs
 -- parse a single line (and optional indented child lines) and most nodes map
 -- to a single line, but here we want to be able to view such blocks as a
 -- single node, and we make sur to add newlines between each when rendered.
-pugPipe :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugPipe :: Parser (L.IndentOpt Parser Block Block)
 pugPipe = do
   ref <- L.indentLevel
   template <- p
@@ -164,11 +164,11 @@ pugPipe = do
     template <- parseInlines
     pure template
 
-pugCode' :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugCode' :: Parser (L.IndentOpt Parser Block Block)
 pugCode' = do
   _ <- lexeme $ string "="
   content <- pugCode
-  pure $ L.IndentNone $ PugCode content
+  pure $ L.IndentNone $ BlockCode content
 
 pugCode :: Parser Code
 pugCode =
@@ -204,20 +204,20 @@ pugExpression = do
   pure $ Add (Add (Variable name) (Int n)) (SingleQuoteString s)
 
 --------------------------------------------------------------------------------
-pugDoctype :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugDoctype :: Parser (L.IndentOpt Parser Block Block)
 pugDoctype = do
   _ <- lexeme (string "doctype")
   _ <- lexeme (string "html")
-  pure $ L.IndentNone PugDoctype
+  pure $ L.IndentNone BlockDoctype
 
 --------------------------------------------------------------------------------
 -- E.g. div, div.a, .a
-pugDiv :: Parser ([PugNode] -> PugNode)
+pugDiv :: Parser ([Block] -> Block)
 pugDiv =
   pugElemWithAttrs <|> pugAttrs
 
 -- E.g. div, div.a, div()
-pugElemWithAttrs :: Parser ([PugNode] -> PugNode)
+pugElemWithAttrs :: Parser ([Block] -> Block)
 pugElemWithAttrs = do
   (name, attrs, mdot) <-
     lexeme
@@ -304,7 +304,7 @@ pugElem =
     <?> "element name"
 
 -- E.g. .a, ()
-pugAttrs :: Parser ([PugNode] -> PugNode)
+pugAttrs :: Parser ([Block] -> Block)
 pugAttrs = do
   (attrs, mdot) <-
     lexeme
@@ -375,7 +375,7 @@ pugIdentifier :: Parser Text
 pugIdentifier = T.pack <$> lexeme (some (noneOf (" \n" :: String))) <?> "identifier"
 
 --------------------------------------------------------------------------------
-pugInclude :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugInclude :: Parser (L.IndentOpt Parser Block Block)
 pugInclude = do
   _ <- lexeme (string "include")
   path <- pugPath
@@ -385,20 +385,20 @@ pugPath :: Parser FilePath
 pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
 
 --------------------------------------------------------------------------------
-pugFragmentDef :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugFragmentDef :: Parser (L.IndentOpt Parser Block Block)
 pugFragmentDef = do
   _ <- lexeme (string "fragment" <|> string "frag")
   name <- pugText
   pure $ L.IndentMany Nothing (pure . PugFragmentDef name) pugNode
 
 --------------------------------------------------------------------------------
-pugFragmentCall :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugFragmentCall :: Parser (L.IndentOpt Parser Block Block)
 pugFragmentCall = do
   name <- pugIdentifier
   pure $ L.IndentMany Nothing (pure . PugFragmentCall name) pugNode
 
 --------------------------------------------------------------------------------
-pugEach :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugEach :: Parser (L.IndentOpt Parser Block Block)
 pugEach = do
   _ <- lexeme (string "each")
   name <- lexeme pugName
@@ -446,7 +446,7 @@ pugObject = do
   pure kvs
 
 --------------------------------------------------------------------------------
-pugComment :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugComment :: Parser (L.IndentOpt Parser Block Block)
 pugComment = do
   ref <- L.indentLevel
   b <-
@@ -465,7 +465,7 @@ pugComment = do
       pure $ L.IndentNone $ PugComment b $ T.intercalate "\n" items'
 
 --------------------------------------------------------------------------------
-pugFilter :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugFilter :: Parser (L.IndentOpt Parser Block Block)
 pugFilter = do
   ref <- L.indentLevel
   name <-
@@ -497,33 +497,33 @@ pugName =
     <?> "name"
 
 --------------------------------------------------------------------------------
-pugRawElement :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugRawElement :: Parser (L.IndentOpt Parser Block Block)
 pugRawElement = do
   header <- pugAngleBracket
   pure $ L.IndentMany Nothing (pure . header) pugNode
 
-pugAngleBracket :: Parser ([PugNode] -> PugNode)
+pugAngleBracket :: Parser ([Block] -> Block)
 pugAngleBracket = do
   _ <- char '<'
   content <- pugText
   pure $ PugRawElem $ "<" <> content
 
 --------------------------------------------------------------------------------
-pugDefault :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugDefault :: Parser (L.IndentOpt Parser Block Block)
 pugDefault = do
   _ <- lexeme (string "default")
   name <- pugText
   pure $ L.IndentMany Nothing (pure . PugDefault name) pugNode
 
 --------------------------------------------------------------------------------
-pugImport :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugImport :: Parser (L.IndentOpt Parser Block Block)
 pugImport = do
   _ <- lexeme (string "import")
   path <- pugPath
   pure $ L.IndentMany Nothing (pure . PugImport path Nothing) pugNode
 
 --------------------------------------------------------------------------------
-pugReadJson :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugReadJson :: Parser (L.IndentOpt Parser Block Block)
 pugReadJson = do
   _ <- lexeme (string "-")
   _ <- lexeme (string "var")
@@ -535,7 +535,7 @@ pugReadJson = do
   _ <- lexeme (string ")")
   pure $ L.IndentNone $ PugReadJson name path Nothing
 
-pugAssignVar :: Parser (L.IndentOpt Parser PugNode PugNode)
+pugAssignVar :: Parser (L.IndentOpt Parser Block Block)
 pugAssignVar = do
   _ <- lexeme (string "-")
   _ <- lexeme (string "var")

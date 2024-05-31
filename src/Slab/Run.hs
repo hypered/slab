@@ -67,7 +67,7 @@ run (Command.CommandWithPath path pmode (Command.Fragments mname)) = do
 parseWithMode
   :: FilePath
   -> Command.ParseMode
-  -> IO (Either Evaluate.PreProcessError [Syntax.PugNode])
+  -> IO (Either Evaluate.PreProcessError [Syntax.Block])
 parseWithMode path pmode =
   case pmode of
     Command.ParseShallow -> first Evaluate.PreProcessParseError <$> Parse.parsePugFile path
@@ -76,7 +76,7 @@ parseWithMode path pmode =
 evaluateWithMode
   :: FilePath
   -> Command.ParseMode
-  -> IO (Either Evaluate.PreProcessError [Syntax.PugNode])
+  -> IO (Either Evaluate.PreProcessError [Syntax.Block])
 evaluateWithMode path pmode = do
   parsed <- parseWithMode path pmode
   case parsed of

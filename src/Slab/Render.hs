@@ -24,11 +24,11 @@ renderHtmls :: [Html] -> TL.Text
 renderHtmls = TL.concat . map renderHtml
 
 --------------------------------------------------------------------------------
-pugNodesToHtml :: [Syntax.PugNode] -> [H.Html]
+pugNodesToHtml :: [Syntax.Block] -> [H.Html]
 pugNodesToHtml = map pugNodeToHtml
 
-pugNodeToHtml :: Syntax.PugNode -> H.Html
-pugNodeToHtml Syntax.PugDoctype = H.docType
+pugNodeToHtml :: Syntax.Block -> H.Html
+pugNodeToHtml Syntax.BlockDoctype = H.docType
 pugNodeToHtml (Syntax.PugElem name mdot attrs children) =
   mAddAttr $
     mAddId $
@@ -99,16 +99,6 @@ pugNodeToHtml (Syntax.PugText _ [Syntax.Lit s])
   | s == T.empty = H.preEscapedText "\n" -- This allows to force some whitespace.
   | otherwise = H.preEscapedText s -- TODO
 pugNodeToHtml (Syntax.PugText _ _) = error "Template is not rendered."
-pugNodeToHtml (Syntax.PugCode (Syntax.SingleQuoteString s))
-  | s == T.empty = mempty
-  | otherwise = H.text s -- Should be already escaped in the AST ?
-pugNodeToHtml (Syntax.PugCode (Syntax.Variable s)) =
-  H.textComment $ "code variable " <> s
-pugNodeToHtml (Syntax.PugCode (Syntax.Int i)) =
-  H.string $ show i
-pugNodeToHtml (Syntax.PugCode (Syntax.Object _)) =
-  H.text "<Object>"
-pugNodeToHtml (Syntax.PugCode c) = error $ "pugNodeToHtml called on PugCode " <> show c
 pugNodeToHtml (Syntax.PugInclude _ (Just nodes)) = mapM_ pugNodeToHtml nodes
 pugNodeToHtml (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
 pugNodeToHtml (Syntax.PugFragmentDef _ _) = mempty
@@ -134,16 +124,25 @@ pugNodeToHtml (Syntax.PugIf _ as bs) = do
   mapM_ pugNodeToHtml bs
 pugNodeToHtml (Syntax.PugList nodes) =
   mapM_ pugNodeToHtml nodes
+pugNodeToHtml (Syntax.BlockCode (Syntax.SingleQuoteString s))
+  | s == T.empty = mempty
+  | otherwise = H.text s -- Should be already escaped in the AST ?
+pugNodeToHtml (Syntax.BlockCode (Syntax.Variable s)) =
+  H.textComment $ "code variable " <> s
+pugNodeToHtml (Syntax.BlockCode (Syntax.Int i)) =
+  H.string $ show i
+pugNodeToHtml (Syntax.BlockCode (Syntax.Object _)) =
+  H.text "<Object>"
+pugNodeToHtml (Syntax.BlockCode c) = error $ "pugNodeToHtml called on BlockCode " <> show c
 
-pugTextsToHtml :: [Syntax.PugNode] -> H.Markup
+pugTextsToHtml :: [Syntax.Block] -> H.Markup
 pugTextsToHtml xs = H.preEscapedText xs'
  where
   xs' = T.intercalate "\n" $ map f xs
-  f Syntax.PugDoctype = error "pugTextsToHtml called on a PugDoctype"
+  f Syntax.BlockDoctype = error "pugTextsToHtml called on a BlockDoctype"
   f (Syntax.PugElem _ _ _ _) = error "pugTextsToHtml called on a PugElem"
   f (Syntax.PugText _ [Syntax.Lit s]) = s
   f (Syntax.PugText _ _) = error "pugTextsToHtml called on unevaluated PugText"
-  f (Syntax.PugCode _) = error "pugTextsToHtml called on a PugCode"
   f (Syntax.PugInclude _ _) = error "pugTextsToHtml called on a PugInclude"
   f (Syntax.PugFragmentDef _ _) = error "pugTextsToHtml called on a PugFragmentDef"
   f (Syntax.PugFragmentCall _ _) = error "pugTextsToHtml called on a PugFragmentCall"
@@ -157,6 +156,7 @@ pugTextsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugAssignVar _ _) = error "pugTextsToHtml called on a PugAssignVar"
   f (Syntax.PugIf _ _ _) = error "pugTextsToHtml called on a PugIf"
   f (Syntax.PugList _) = error "pugTextsToHtml called on a PugList"
+  f (Syntax.BlockCode _) = error "pugTextsToHtml called on a BlockCode"
 
 pugElemToHtml :: Syntax.Elem -> Html -> Html
 pugElemToHtml = \case

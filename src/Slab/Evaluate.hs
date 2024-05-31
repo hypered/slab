@@ -39,10 +39,10 @@ data PreProcessError
   deriving (Show, Eq)
 
 -- Similarly to `parsePugFile` but pre-process the include statements.
-preProcessPugFile :: FilePath -> IO (Either PreProcessError [PugNode])
+preProcessPugFile :: FilePath -> IO (Either PreProcessError [Block])
 preProcessPugFile = runExceptT . preProcessPugFileE
 
-preProcessPugFileE :: FilePath -> ExceptT PreProcessError IO [PugNode]
+preProcessPugFileE :: FilePath -> ExceptT PreProcessError IO [Block]
 preProcessPugFileE path = do
   pugContent <- liftIO $ T.readFile path
   let mnodes = first PreProcessParseError $ Parse.parsePug path pugContent
@@ -55,15 +55,15 @@ preProcessPugFileE path = do
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
-preProcessNodesE :: Context -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
+preProcessNodesE :: Context -> [Block] -> ExceptT PreProcessError IO [Block]
 preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
 
-evaluatePugFile :: FilePath -> IO (Either PreProcessError [PugNode])
+evaluatePugFile :: FilePath -> IO (Either PreProcessError [Block])
 evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate defaultEnv ["toplevel"])
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
-evaluate :: Env -> [Text] -> [PugNode] -> ExceptT PreProcessError IO [PugNode]
+evaluate :: Env -> [Text] -> [Block] -> ExceptT PreProcessError IO [Block]
 evaluate env stack nodes = do
   -- Note that we pass the environment that we are constructing, so that each
   -- definition sees all definitions (including later ones and itself).
@@ -71,14 +71,13 @@ evaluate env stack nodes = do
       env' = augmentVariables env vars
   mapM (eval env' stack) nodes
 
-preProcessNodeE :: Context -> PugNode -> ExceptT PreProcessError IO PugNode
+preProcessNodeE :: Context -> Block -> ExceptT PreProcessError IO Block
 preProcessNodeE ctx@Context {..} = \case
-  node@PugDoctype -> pure node
+  node@BlockDoctype -> pure node
   PugElem name mdot attrs nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
-  node@(PugCode _) -> pure node
   PugInclude path _ -> do
     let includedPath = takeDirectory ctxStartPath </> path
         slabExt = takeExtension includedPath == ".slab"
@@ -140,19 +139,17 @@ preProcessNodeE ctx@Context {..} = \case
   PugList nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugList nodes'
+  node@(BlockCode _) -> pure node
 
-eval :: Env -> [Text] -> PugNode -> ExceptT PreProcessError IO PugNode
+eval :: Env -> [Text] -> Block -> ExceptT PreProcessError IO Block
 eval env stack = \case
-  node@PugDoctype -> pure node
+  node@BlockDoctype -> pure node
   PugElem name mdot attrs nodes -> do
     nodes' <- evaluate env stack nodes
     pure $ PugElem name mdot attrs nodes'
   PugText syn template -> do
     template' <- evalTemplate env template
     pure $ PugText syn template'
-  PugCode code -> do
-    code' <- evalCode env code
-    pure $ PugCode code'
   PugInclude path mnodes -> do
     case mnodes of
       Just nodes -> do
@@ -220,6 +217,9 @@ eval env stack = \case
   PugList nodes -> do
     nodes' <- evaluate env stack nodes
     pure $ PugList nodes'
+  BlockCode code -> do
+    code' <- evalCode env code
+    pure $ BlockCode code'
 
 defaultEnv :: Env
 defaultEnv = Env [("true", Int 1), ("false", Int 0)]
@@ -230,7 +230,7 @@ lookupVariable name Env {..} = lookup name envVariables
 augmentVariables :: Env -> [(Text, Code)] -> Env
 augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables}
 
-namedBlocks :: Monad m => [PugNode] -> ExceptT PreProcessError m [(Text, [PugNode])]
+namedBlocks :: Monad m => [Block] -> ExceptT PreProcessError m [(Text, [Block])]
 namedBlocks nodes = do
   named <- concat <$> mapM namedBlock nodes
   unnamed <- concat <$> mapM unnamedBlock nodes
@@ -239,11 +239,11 @@ namedBlocks nodes = do
     then throwE $ PreProcessError $ "A block of content and a content argument are provided"
     else pure $ named <> content
 
-namedBlock :: Monad m => PugNode -> ExceptT PreProcessError m [(Text, [PugNode])]
+namedBlock :: Monad m => Block -> ExceptT PreProcessError m [(Text, [Block])]
 namedBlock (PugFragmentDef name content) = pure [(name, content)]
 namedBlock _ = pure []
 
-unnamedBlock :: Monad m => PugNode -> ExceptT PreProcessError m [PugNode]
+unnamedBlock :: Monad m => Block -> ExceptT PreProcessError m [Block]
 unnamedBlock (PugFragmentDef _ _) = pure []
 unnamedBlock node = pure [node]
 
@@ -294,13 +294,12 @@ evalInline env = \case
 -- TODO This should be merged with namedBlocks.
 -- TODO We could filter the env, keeping only the free variables that appear
 -- in the bodies.
-extractVariables :: Env -> [PugNode] -> [(Text, Code)]
+extractVariables :: Env -> [Block] -> [(Text, Code)]
 extractVariables env = concatMap f
  where
-  f PugDoctype = []
+  f BlockDoctype = []
   f (PugElem _ _ _ _) = []
   f (PugText _ _) = []
-  f (PugCode _) = []
   f (PugInclude _ children) = maybe [] (extractVariables env) children
   f (PugEach _ _ _ _) = []
   f (PugFragmentDef name children) = [(name, Frag env children)]
@@ -315,6 +314,7 @@ extractVariables env = concatMap f
   f (PugAssignVar name s) = [(name, SingleQuoteString s)]
   f (PugIf _ _ _) = []
   f (PugList _) = []
+  f (BlockCode _) = []
 
 jsonToCode :: Aeson.Value -> Code
 jsonToCode = \case
