@@ -42,6 +42,7 @@ library
     , containers
     , directory
     , filepath
+    , fsnotify
     , Glob
     , megaparsec
     , pretty-simple
@@ -56,6 +57,7 @@ library
     Slab.Render
     Slab.Run
     Slab.Syntax
+    Slab.Watch
 
 executable slab
   import: common-extensions, common-options, common-dependencies
