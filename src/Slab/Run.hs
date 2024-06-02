@@ -12,6 +12,7 @@ import Slab.Command qualified as Command
 import Slab.Evaluate qualified as Evaluate
 import Slab.Parse qualified as Parse
 import Slab.Render qualified as Render
+import Slab.Serve qualified as Serve
 import Slab.Syntax qualified as Syntax
 import Slab.Watch qualified as Watch
 import Text.Megaparsec hiding (parse)
@@ -22,6 +23,7 @@ run :: Command.Command -> IO ()
 run (Command.Build srcDir renderMode distDir) = Build.buildDir srcDir renderMode distDir
 run (Command.Watch srcDir renderMode distDir) =
   Watch.run srcDir (Build.buildFile srcDir renderMode distDir)
+run (Command.Serve distDir) = Serve.run distDir
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
   evaluated <- evaluateWithMode path pmode
   case evaluated of

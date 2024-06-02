@@ -46,9 +46,15 @@ library
     , Glob
     , megaparsec
     , pretty-simple
+    , servant
+    , servant-blaze
+    , servant-server
     , text
     , transformers
     , vector
+    , wai
+    , wai-app-static
+    , warp
   exposed-modules:
     Slab.Build
     Slab.Command
@@ -56,6 +62,7 @@ library
     Slab.Parse
     Slab.Render
     Slab.Run
+    Slab.Serve
     Slab.Syntax
     Slab.Watch
 

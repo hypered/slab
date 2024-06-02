@@ -16,6 +16,7 @@ import Options.Applicative qualified as A
 data Command
   = Build FilePath RenderMode FilePath
   | Watch FilePath RenderMode FilePath
+  | Serve FilePath
   | CommandWithPath FilePath ParseMode CommandWithPath
 
 -- | Commands operating on a path.
@@ -60,6 +61,12 @@ parser =
           ( A.info (parserWatch <**> A.helper) $
               A.progDesc
                 "Watch and build a library of Slab templates to HTML"
+          )
+        <> A.command
+          "serve"
+          ( A.info (parserServe <**> A.helper) $
+              A.progDesc
+                "Watch and serve a library of Slab templates to HTML"
           )
         <> A.command
           "render"
@@ -115,6 +122,18 @@ parserBuild = do
             "A destination directory for the generated HTML files."
       )
   pure $ Build srcDir mode distDir
+
+parserServe :: A.Parser Command
+parserServe = do
+  distDir <-
+    A.strOption
+      ( A.long "dist"
+          <> A.value "./_site"
+          <> A.metavar "DIR"
+          <> A.help
+            "A destination directory for the generated HTML files."
+      )
+  pure $ Serve distDir
 
 parserWatch :: A.Parser Command
 parserWatch = do

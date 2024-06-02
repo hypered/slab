@@ -47,7 +47,9 @@ Available options:
   -h,--help                Show this help text
 
 Available commands:
-  build                    Build a library of Slab templates
+  build                    Build a library of Slab templates to HTML
+  watch                    Watch and build a library of Slab templates to HTML
+  serve                    Watch and serve a library of Slab templates to HTML
   render                   Render a Slab template to HTML
   eval                     Parse a Slab template to AST and evaluate it
   parse                    Parse a Slab template to AST
