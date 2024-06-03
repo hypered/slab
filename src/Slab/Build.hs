@@ -1,6 +1,7 @@
 module Slab.Build
   ( buildDir
   , buildFile
+  , listTemplates
   ) where
 
 import Data.List (sort)

@@ -17,6 +17,7 @@ data Command
   = Build FilePath RenderMode FilePath
   | Watch FilePath RenderMode FilePath
   | Serve FilePath
+  | Report FilePath
   | CommandWithPath FilePath ParseMode CommandWithPath
 
 -- | Commands operating on a path.
@@ -67,6 +68,12 @@ parser =
           ( A.info (parserServe <**> A.helper) $
               A.progDesc
                 "Watch and serve a library of Slab templates to HTML"
+          )
+        <> A.command
+          "report"
+          ( A.info (parserReport <**> A.helper) $
+              A.progDesc
+                "Analyse a library of Slab templates"
           )
         <> A.command
           "render"
@@ -134,6 +141,14 @@ parserServe = do
             "A destination directory for the generated HTML files."
       )
   pure $ Serve distDir
+
+parserReport :: A.Parser Command
+parserReport = do
+  srcDir <-
+    A.argument
+      A.str
+      (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Slab templates to analyse.")
+  pure $ Report srcDir
 
 parserWatch :: A.Parser Command
 parserWatch = do

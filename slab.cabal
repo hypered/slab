@@ -61,6 +61,7 @@ library
     Slab.Evaluate
     Slab.Parse
     Slab.Render
+    Slab.Report
     Slab.Run
     Slab.Serve
     Slab.Syntax
