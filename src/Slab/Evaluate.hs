@@ -63,7 +63,7 @@ evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate defaultE
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
-evaluate :: Env -> [Text] -> [Block] -> ExceptT PreProcessError IO [Block]
+evaluate :: Monad m => Env -> [Text] -> [Block] -> ExceptT PreProcessError m [Block]
 evaluate env stack nodes = do
   -- Note that we pass the environment that we are constructing, so that each
   -- definition sees all definitions (including later ones and itself).
@@ -141,7 +141,7 @@ preProcessNodeE ctx@Context {..} = \case
     pure $ PugList nodes'
   node@(BlockCode _) -> pure node
 
-eval :: Env -> [Text] -> Block -> ExceptT PreProcessError IO Block
+eval :: Monad m => Env -> [Text] -> Block -> ExceptT PreProcessError m Block
 eval env stack = \case
   node@BlockDoctype -> pure node
   PugElem name mdot attrs nodes -> do
@@ -247,7 +247,7 @@ unnamedBlock :: Monad m => Block -> ExceptT PreProcessError m [Block]
 unnamedBlock (PugFragmentDef _ _) = pure []
 unnamedBlock node = pure [node]
 
-evalCode :: Env -> Code -> ExceptT PreProcessError IO Code
+evalCode :: Monad m => Env -> Code -> ExceptT PreProcessError m Code
 evalCode env = \case
   Variable name ->
     case lookupVariable name env of
@@ -274,12 +274,12 @@ evalCode env = \case
   code -> pure code
 
 -- After evaluation, the template should be either empty or contain a single literal.
-evalTemplate :: Env -> [Inline] -> ExceptT PreProcessError IO [Inline]
+evalTemplate :: Monad m => Env -> [Inline] -> ExceptT PreProcessError m [Inline]
 evalTemplate env inlines = do
   t <- T.concat <$> traverse (evalInline env) inlines
   pure [Lit t]
 
-evalInline :: Env -> Inline -> ExceptT PreProcessError IO Text
+evalInline :: Monad m => Env -> Inline -> ExceptT PreProcessError m Text
 evalInline env = \case
   Lit s -> pure s
   Place code -> do
