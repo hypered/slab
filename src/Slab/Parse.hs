@@ -1,8 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Slab.Parse
-  ( parsePugFile
-  , parsePug
+  ( parseFile
+  , parse
   , parseErrorPretty
   -- Inline parsing stuff
 
@@ -10,7 +10,7 @@ module Slab.Parse
   , InterpolationContext
 
     -- * Basic interface
-  , parse
+  , parse'
   , parseInlines
   ) where
 
@@ -32,13 +32,13 @@ import Text.Megaparsec.Char.Lexer qualified as L
 import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
-parsePugFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [Block])
-parsePugFile path = do
+parseFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [Block])
+parseFile path = do
   pugContent <- T.readFile path
-  pure $ parsePug path pugContent
+  pure $ parse path pugContent
 
-parsePug :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Block]
-parsePug fn = runParser (many pugNode <* eof) fn
+parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Block]
+parse fn = runParser (many pugNode <* eof) fn
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
@@ -614,8 +614,8 @@ type InterpolationContext f = Text -> f Text
 
 -- | Create a template from a template string. A malformed template
 -- string will cause 'parse' to return a parse error.
-parse :: Text -> Either (M.ParseErrorBundle Text Void) [Inline]
-parse = M.parse (parseInlines <* M.eof) "-"
+parse' :: Text -> Either (M.ParseErrorBundle Text Void) [Inline]
+parse' = M.parse (parseInlines <* M.eof) "-"
 
 combineLits :: [Inline] -> [Inline]
 combineLits [] = []

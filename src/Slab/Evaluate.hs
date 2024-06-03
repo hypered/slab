@@ -2,7 +2,7 @@
 
 module Slab.Evaluate
   ( PreProcessError (..)
-  , preProcessPugFile
+  , preprocessFile
   , evaluatePugFile
   , evaluate
   , defaultEnv
@@ -39,28 +39,28 @@ data PreProcessError
   | PreProcessError Text -- TODO Add specific variants instead of using Text.
   deriving (Show, Eq)
 
--- Similarly to `parsePugFile` but pre-process the include statements.
-preProcessPugFile :: FilePath -> IO (Either PreProcessError [Block])
-preProcessPugFile = runExceptT . preProcessPugFileE
+-- | Similarly to `parseFile` but pre-process the include statements.
+preprocessFile :: FilePath -> IO (Either PreProcessError [Block])
+preprocessFile = runExceptT . preprocessFileE
 
-preProcessPugFileE :: FilePath -> ExceptT PreProcessError IO [Block]
-preProcessPugFileE path = do
+preprocessFileE :: FilePath -> ExceptT PreProcessError IO [Block]
+preprocessFileE path = do
   pugContent <- liftIO $ T.readFile path
-  let mnodes = first PreProcessParseError $ Parse.parsePug path pugContent
+  let mnodes = first PreProcessParseError $ Parse.parse path pugContent
   nodes <- except mnodes
   let ctx =
         Context
           { ctxStartPath = path
           }
-  preProcessNodesE ctx nodes
+  preprocessNodesE ctx nodes
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
-preProcessNodesE :: Context -> [Block] -> ExceptT PreProcessError IO [Block]
-preProcessNodesE ctx nodes = mapM (preProcessNodeE ctx) nodes
+preprocessNodesE :: Context -> [Block] -> ExceptT PreProcessError IO [Block]
+preprocessNodesE ctx nodes = mapM (preprocessNodeE ctx) nodes
 
 evaluatePugFile :: FilePath -> IO (Either PreProcessError [Block])
-evaluatePugFile path = runExceptT (preProcessPugFileE path >>= evaluate defaultEnv ["toplevel"])
+evaluatePugFile path = runExceptT (preprocessFileE path >>= evaluate defaultEnv ["toplevel"])
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
@@ -72,11 +72,11 @@ evaluate env stack nodes = do
       env' = augmentVariables env vars
   mapM (eval env' stack) nodes
 
-preProcessNodeE :: Context -> Block -> ExceptT PreProcessError IO Block
-preProcessNodeE ctx@Context {..} = \case
+preprocessNodeE :: Context -> Block -> ExceptT PreProcessError IO Block
+preprocessNodeE ctx@Context {..} = \case
   node@BlockDoctype -> pure node
   PugElem name mdot attrs nodes -> do
-    nodes' <- preProcessNodesE ctx nodes
+    nodes' <- preprocessNodesE ctx nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
   PugInclude path _ -> do
@@ -92,20 +92,20 @@ preProcessNodeE ctx@Context {..} = \case
       else do
         -- Parse and process the .slab file.
         let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"
-        nodes' <- preProcessPugFileE includedPath'
+        nodes' <- preprocessFileE includedPath'
         pure $ PugInclude path (Just nodes')
   PugFragmentDef name nodes -> do
-    nodes' <- preProcessNodesE ctx nodes
+    nodes' <- preprocessNodesE ctx nodes
     pure $ PugFragmentDef name nodes'
   PugFragmentCall name nodes -> do
-    nodes' <- preProcessNodesE ctx nodes
+    nodes' <- preprocessNodesE ctx nodes
     pure $ PugFragmentCall name nodes'
   node@(PugEach _ _ _ _) -> pure node
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
   PugDefault name nodes -> do
-    nodes' <- preProcessNodesE ctx nodes
+    nodes' <- preprocessNodesE ctx nodes
     pure $ PugDefault name nodes'
   PugImport path _ args -> do
     -- An import is treated like an include used to define a fragment, then
@@ -118,8 +118,8 @@ preProcessNodeE ctx@Context {..} = \case
       else do
         -- Parse and process the .slab file.
         let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"
-        body <- preProcessPugFileE includedPath'
-        args' <- mapM (preProcessNodeE ctx) args
+        body <- preprocessFileE includedPath'
+        args' <- mapM (preprocessNodeE ctx) args
         pure $ PugImport path (Just body) args'
   PugReadJson name path _ -> do
     content <- liftIO $ BL.readFile path
@@ -131,11 +131,11 @@ preProcessNodeE ctx@Context {..} = \case
   node@(PugAssignVar _ _) -> pure node
   PugIf cond as bs -> do
     -- File inclusion is done right away, without checking the condition.
-    as' <- preProcessNodesE ctx as
-    bs' <- preProcessNodesE ctx bs
+    as' <- preprocessNodesE ctx as
+    bs' <- preprocessNodesE ctx bs
     pure $ PugIf cond as' bs'
   PugList nodes -> do
-    nodes' <- preProcessNodesE ctx nodes
+    nodes' <- preprocessNodesE ctx nodes
     pure $ PugList nodes'
   node@(BlockCode _) -> pure node
 

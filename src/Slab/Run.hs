@@ -79,8 +79,8 @@ parseWithMode
   -> IO (Either Evaluate.PreProcessError [Syntax.Block])
 parseWithMode path pmode =
   case pmode of
-    Command.ParseShallow -> first Evaluate.PreProcessParseError <$> Parse.parsePugFile path
-    Command.ParseDeep -> Evaluate.preProcessPugFile path
+    Command.ParseShallow -> first Evaluate.PreProcessParseError <$> Parse.parseFile path
+    Command.ParseDeep -> Evaluate.preprocessFile path
 
 evaluateWithMode
   :: FilePath
