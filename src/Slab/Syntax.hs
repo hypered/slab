@@ -2,6 +2,7 @@
 
 module Slab.Syntax
   ( Block (..)
+  , isDoctype
   , Elem (..)
   , TrailingSym (..)
   , Attr (..)
@@ -53,6 +54,10 @@ data Block
   | PugList [Block]
   | BlockCode Code
   deriving (Show, Eq)
+
+isDoctype :: Block -> Bool
+isDoctype BlockDoctype = True
+isDoctype _ = False
 
 trailingSym :: Block -> TrailingSym
 trailingSym (PugElem _ sym _ _) = sym

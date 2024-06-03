@@ -17,12 +17,19 @@ run :: FilePath -> IO ()
 run srcDir = do
   modules <- buildDir srcDir
   putStrLn $ "Read " <> show (length modules) <> " modules."
+  let pages = filter isPage modules
+  putStrLn $ show (length pages) <> " pages."
+  mapM_ (putStrLn . modulePath) pages
 
 data Module = Module
   { modulePath :: FilePath
   , moduleNodes :: [Syntax.Block]
   }
   deriving Show
+
+isPage :: Module -> Bool
+isPage Module { moduleNodes = (x:_) } = Syntax.isDoctype x
+isPage _ = False
 
 --------------------------------------------------------------------------------
 -- Similar to Build.buildDir and buildFile, but don't render HTML to disk.
