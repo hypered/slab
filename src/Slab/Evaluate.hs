@@ -106,7 +106,7 @@ preProcessNodeE ctx@Context {..} = \case
   PugDefault name nodes -> do
     nodes' <- preProcessNodesE ctx nodes
     pure $ PugDefault name nodes'
-  PugImport path _ nodes -> do
+  PugImport path _ args -> do
     -- An import is treated like an include used to define a fragment, then
     -- directly calling that fragment.
     let includedPath = takeDirectory ctxStartPath </> path
@@ -117,12 +117,9 @@ preProcessNodeE ctx@Context {..} = \case
       else do
         -- Parse and process the .slab file.
         let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"
-        nodes' <- preProcessPugFileE includedPath'
-        let def = PugFragmentDef (T.pack path) nodes'
-        nodes'' <- mapM (preProcessNodeE ctx) nodes
-        -- Maybe we should set the blocks as WithinCall here?
-        let call = PugFragmentCall (T.pack path) nodes''
-        pure $ PugList [def, call]
+        body <- preProcessPugFileE includedPath'
+        args' <- mapM (preProcessNodeE ctx) args
+        pure $ PugImport path (Just body) args'
   PugReadJson name path _ -> do
     content <- liftIO $ BL.readFile path
     case Aeson.eitherDecode content of
@@ -196,8 +193,8 @@ eval env stack = \case
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
         pure $ PugList nodes''
       Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
-  PugImport _ _ _ ->
-    throwE $ PreProcessError $ "Extends must be preprocessed before evaluation\""
+  PugImport path _ args ->
+    eval env stack $ PugFragmentCall (T.pack path) args
   PugReadJson _ _ _ -> pure $ PugList []
   PugAssignVar _ _ -> pure $ PugList []
   PugIf cond as bs -> do
@@ -240,10 +237,12 @@ namedBlocks nodes = do
     else pure $ named <> content
 
 namedBlock :: Monad m => Block -> ExceptT PreProcessError m [(Text, [Block])]
+namedBlock (PugImport path (Just body) _) = pure [(T.pack path, body)]
 namedBlock (PugFragmentDef name content) = pure [(name, content)]
 namedBlock _ = pure []
 
 unnamedBlock :: Monad m => Block -> ExceptT PreProcessError m [Block]
+unnamedBlock (PugImport path _ args) = pure [PugFragmentCall (T.pack path) args]
 unnamedBlock (PugFragmentDef _ _) = pure []
 unnamedBlock node = pure [node]
 
@@ -308,6 +307,7 @@ extractVariables env = concatMap f
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
   f (PugDefault _ _) = []
+  f (PugImport path (Just body) _) = [(T.pack path, Frag env body)]
   f (PugImport _ _ _) = []
   f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
   f (PugReadJson _ _ Nothing) = []
