@@ -23,7 +23,8 @@ data Command
 -- | Commands operating on a path.
 data CommandWithPath
   = Render RenderMode
-  | Evaluate
+  | -- | If True, simplify the evaluated AST.
+    Evaluate Bool
   | Parse
   | -- | List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes.
     Classes
@@ -186,7 +187,11 @@ parserRender = do
 parserEvaluate :: A.Parser Command
 parserEvaluate = do
   pathAndmode <- parserWithPath
-  pure $ uncurry CommandWithPath pathAndmode Evaluate
+  simpl <-
+    A.switch
+      ( A.long "simplify" <> A.help "Simplify the AST"
+      )
+  pure $ uncurry CommandWithPath pathAndmode $ Evaluate simpl
 
 parserParse :: A.Parser Command
 parserParse = do

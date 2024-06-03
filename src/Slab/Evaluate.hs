@@ -6,6 +6,7 @@ module Slab.Evaluate
   , evaluatePugFile
   , evaluate
   , defaultEnv
+  , simplify
   ) where
 
 import Control.Monad (forM)
@@ -151,19 +152,13 @@ eval env stack = \case
     case mnodes of
       Just nodes -> do
         nodes' <- evaluate env ("include" : stack) nodes
-        pure $ PugList nodes'
+        pure $ PugInclude path (Just nodes')
       Nothing ->
         pure $ PugInclude path Nothing
-  PugFragmentDef _ _ -> pure $ PugList []
+  node@(PugFragmentDef _ _) -> pure node
   PugFragmentCall name args -> do
-    case lookupVariable name env of
-      Just (Frag capturedEnv body) -> do
-        env' <- map (\(a, b) -> (a, Frag env b)) <$> namedBlocks args
-        let env'' = augmentVariables capturedEnv env'
-        body' <- evaluate env'' ("frag" : stack) body
-        pure $ PugList body'
-      Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
-      Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
+    body <- call env stack name args
+    pure $ PugFragmentCall name body
   PugEach name mindex values nodes -> do
     -- Re-use PugEach to construct a single node to return.
     let zero :: Int
@@ -178,7 +173,7 @@ eval env stack = \case
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
             Nothing -> augmentVariables env [(name, value)]
       evaluate env' ("each" : stack) nodes
-    pure $ PugList $ concat nodes'
+    pure $ PugEach name mindex values $ concat nodes'
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
@@ -188,35 +183,47 @@ eval env stack = \case
     case lookupVariable name env of
       Nothing -> do
         nodes' <- evaluate env ("?block" : stack) nodes
-        pure $ PugList nodes'
+        pure $ PugDefault name nodes'
       Just (Frag capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
-        pure $ PugList nodes''
+        pure $ PugDefault name nodes''
       Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
-  PugImport path _ args ->
-    eval env stack $ PugFragmentCall (T.pack path) args
-  PugReadJson _ _ _ -> pure $ PugList []
-  PugAssignVar _ _ -> pure $ PugList []
+  PugImport path _ args -> do
+    body <- call env stack (T.pack path) args
+    pure $ PugImport path (Just body) args
+  node@(PugReadJson _ _ _) -> pure node
+  node@(PugAssignVar _ _) -> pure node
   PugIf cond as bs -> do
     cond' <- evalCode env cond
     case cond' of
       SingleQuoteString s
         | not (T.null s) -> do
             as' <- evaluate env ("then" : stack) as
-            pure $ PugList as'
+            pure $ PugIf cond as' []
       Int n
         | n /= 0 -> do
             as' <- evaluate env ("then" : stack) as
-            pure $ PugList as'
+            pure $ PugIf cond as' []
       _ -> do
         bs' <- evaluate env ("else" : stack) bs
-        pure $ PugList bs'
+        pure $ PugIf cond [] bs'
   PugList nodes -> do
     nodes' <- evaluate env stack nodes
     pure $ PugList nodes'
   BlockCode code -> do
     code' <- evalCode env code
     pure $ BlockCode code'
+
+call :: Monad m => Env -> [Text] -> Text -> [Block] -> ExceptT PreProcessError m [Block]
+call env stack name args =
+  case lookupVariable name env of
+    Just (Frag capturedEnv body) -> do
+      env' <- map (\(a, b) -> (a, Frag env b)) <$> namedBlocks args
+      let env'' = augmentVariables capturedEnv env'
+      body' <- evaluate env'' ("frag" : stack) body
+      pure body'
+    Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
+    Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
 
 defaultEnv :: Env
 defaultEnv = Env [("true", Int 1), ("false", Int 0)]
@@ -325,3 +332,28 @@ jsonToCode = \case
     let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToCode v)
      in Object $ map f (Aeson.KeyMap.toList kvs)
   x -> error $ "jsonToCode: " <> show x
+
+--------------------------------------------------------------------------------
+simplify :: [Block] -> [Block]
+simplify = concatMap simplify'
+
+simplify' :: Block -> [Block]
+simplify' = \case
+  node@BlockDoctype -> [node]
+  PugElem name mdot attrs nodes -> [PugElem name mdot attrs $ simplify nodes]
+  node@(PugText _ _) -> [node]
+  PugInclude _ mnodes -> maybe [] simplify mnodes
+  PugFragmentDef _ _ -> []
+  PugFragmentCall _ args -> simplify args
+  PugEach _ _ _ nodes -> simplify nodes
+  node@(PugComment _ _) -> [node]
+  node@(PugFilter _ _) -> [node]
+  node@(PugRawElem _ _) -> [node]
+  PugDefault _ nodes -> simplify nodes
+  PugImport _ mbody _ -> maybe [] simplify mbody
+  PugReadJson _ _ _ -> []
+  PugAssignVar _ _ -> []
+  PugIf _ [] bs -> simplify bs
+  PugIf _ as _ -> simplify as
+  PugList nodes -> simplify nodes
+  node@(BlockCode _) -> [node]
