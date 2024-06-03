@@ -1,12 +1,12 @@
-// A comment.
+--- A comment.
 
-//- Hidden comment.
+-- Hidden comment.
 
-//-
+--
   Another
   hidden
   comment.
 
-//
+---
   Another
   comment.

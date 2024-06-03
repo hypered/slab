@@ -16,7 +16,7 @@ html(dir="ltr", lang="en")
                             div
                                 span.logo Slab
                     .u-bar__right
-                        //- empty
+                        -- empty
 
         main
             .u-container.u-flow-c-4

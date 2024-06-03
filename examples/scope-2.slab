@@ -1,5 +1,5 @@
-//- This demonstrates lexical scope: the content used is the one in scope when
-//- page is defined.
+-- This demonstrates lexical scope: the content used is the one in scope when
+-- page is defined.
 
 frag page
   h1 A title

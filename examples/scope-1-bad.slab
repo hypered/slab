@@ -1,4 +1,4 @@
-//- TODO This demonstrates dynamic scope, which is bad and must be fixed.
+-- TODO This demonstrates dynamic scope, which is bad and must be fixed.
 
 frag page
   h1 A title

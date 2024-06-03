@@ -1,4 +1,4 @@
-//- Fragment definitions can refer to later definitions.
+-- Fragment definitions can refer to later definitions.
 
 frag page
   h1 A title
