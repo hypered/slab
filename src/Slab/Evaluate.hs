@@ -122,7 +122,8 @@ preprocessNodeE ctx@Context {..} = \case
         args' <- mapM (preprocessNodeE ctx) args
         pure $ PugImport path (Just body) args'
   PugReadJson name path _ -> do
-    content <- liftIO $ BL.readFile path
+    let path' = takeDirectory ctxStartPath </> path
+    content <- liftIO $ BL.readFile path'
     case Aeson.eitherDecode content of
       Right val ->
         pure $ PugReadJson name path $ Just val
