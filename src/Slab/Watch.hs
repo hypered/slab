@@ -18,7 +18,7 @@ run srcDir update = do
     -- amount of time on the same file. Typically saving a file with Vim will
     -- trigger two Modified events on a .slab file.
     _ <-
-      watchDir
+      watchTree
         mgr
         srcDir
         ( \e -> do
