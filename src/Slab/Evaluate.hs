@@ -27,7 +27,7 @@ import Data.Void (Void)
 import Slab.Parse qualified as Parse
 import Slab.Syntax
 import System.Directory (doesFileExist)
-import System.FilePath (takeDirectory, takeExtension, (<.>), (</>))
+import System.FilePath (takeDirectory, takeExtension, (</>))
 import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
 
 --------------------------------------------------------------------------------
@@ -115,14 +115,16 @@ preprocessNodeE ctx@Context {..} = \case
     let includedPath = takeDirectory ctxStartPath </> path
         slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
-    if exists && not slabExt
-      then throwE $ PreProcessError $ "Extends requires a .slab file"
-      else do
+    if
+      | exists && not slabExt ->
+        throwE $ PreProcessError $ "Extends requires a .slab file"
+      | exists -> do
         -- Parse and process the .slab file.
-        let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"
-        body <- preprocessFileE includedPath'
+        body <- preprocessFileE includedPath
         args' <- mapM (preprocessNodeE ctx) args
         pure $ PugImport path (Just body) args'
+      | otherwise ->
+        throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   PugReadJson name path _ -> do
     let path' = takeDirectory ctxStartPath </> path
     content <- liftIO $ BL.readFile path'
