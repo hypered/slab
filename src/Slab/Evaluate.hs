@@ -85,17 +85,17 @@ preprocessNodeE ctx@Context {..} = \case
         slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
     if
-      | exists && not slabExt -> do
-        -- Include the file content as-is.
-        content <- liftIO $ T.readFile includedPath
-        let node = Parse.pugTextInclude content
-        pure $ PugInclude path (Just [node])
-      | exists -> do
-        -- Parse and process the .slab file.
-        nodes' <- preprocessFileE includedPath
-        pure $ PugInclude path (Just nodes')
-      | otherwise ->
-        throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
+        | exists && not slabExt -> do
+            -- Include the file content as-is.
+            content <- liftIO $ T.readFile includedPath
+            let node = Parse.pugTextInclude content
+            pure $ PugInclude path (Just [node])
+        | exists -> do
+            -- Parse and process the .slab file.
+            nodes' <- preprocessFileE includedPath
+            pure $ PugInclude path (Just nodes')
+        | otherwise ->
+            throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   PugFragmentDef name nodes -> do
     nodes' <- preprocessNodesE ctx nodes
     pure $ PugFragmentDef name nodes'
@@ -116,15 +116,15 @@ preprocessNodeE ctx@Context {..} = \case
         slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
     if
-      | exists && not slabExt ->
-        throwE $ PreProcessError $ "Extends requires a .slab file"
-      | exists -> do
-        -- Parse and process the .slab file.
-        body <- preprocessFileE includedPath
-        args' <- mapM (preprocessNodeE ctx) args
-        pure $ PugImport path (Just body) args'
-      | otherwise ->
-        throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
+        | exists && not slabExt ->
+            throwE $ PreProcessError $ "Extends requires a .slab file"
+        | exists -> do
+            -- Parse and process the .slab file.
+            body <- preprocessFileE includedPath
+            args' <- mapM (preprocessNodeE ctx) args
+            pure $ PugImport path (Just body) args'
+        | otherwise ->
+            throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   PugReadJson name path _ -> do
     let path' = takeDirectory ctxStartPath </> path
     content <- liftIO $ BL.readFile path'

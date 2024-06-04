@@ -25,10 +25,10 @@ data Module = Module
   { modulePath :: FilePath
   , moduleNodes :: [Syntax.Block]
   }
-  deriving Show
+  deriving (Show)
 
 isPage :: Module -> Bool
-isPage Module { moduleNodes = (x:_) } = Syntax.isDoctype x
+isPage Module {moduleNodes = (x : _)} = Syntax.isDoctype x
 isPage _ = False
 
 --------------------------------------------------------------------------------
@@ -52,7 +52,8 @@ buildFile path = do
       TL.putStrLn $ pShowNoColor err
       exitFailure
     Right nodes ->
-      pure Module
-        { modulePath = path
-        , moduleNodes = nodes
-        }
+      pure
+        Module
+          { modulePath = path
+          , moduleNodes = nodes
+          }

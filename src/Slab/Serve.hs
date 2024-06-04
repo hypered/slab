@@ -1,16 +1,17 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Slab.Serve
   ( run
   ) where
 
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
+import Network.Wai qualified as Wai
+import Network.Wai.Handler.Warp qualified as Warp
 import Protolude hiding (Handler)
 import Servant hiding (serve)
-import qualified Servant.Server as Server
-import qualified Servant.HTML.Blaze as B
-import           Text.Blaze.Html5 ( Html )
+import Servant.HTML.Blaze qualified as B
+import Servant.Server qualified as Server
+import Text.Blaze.Html5 (Html)
 import WaiAppStatic.Storage.Filesystem
   ( defaultWebAppSettings
   )
@@ -24,14 +25,14 @@ run distDir =
 -- Warp.run.
 serve :: FilePath -> Wai.Application
 serve root =
-  Servant.serveWithContext appProxy Server.EmptyContext
-    $ Server.hoistServerWithContext appProxy settingsProxy identity
-    $ serverT root
+  Servant.serveWithContext appProxy Server.EmptyContext $
+    Server.hoistServerWithContext appProxy settingsProxy identity $
+      serverT root
 
 ------------------------------------------------------------------------------
 type ServerSettings = '[]
 
-settingsProxy ::Proxy ServerSettings
+settingsProxy :: Proxy ServerSettings
 settingsProxy = Proxy
 
 ------------------------------------------------------------------------------

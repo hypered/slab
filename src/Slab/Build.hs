@@ -39,8 +39,9 @@ buildFile srcDir mode distDir path = do
     Left err -> do
       TL.putStrLn $ pShowNoColor err
       exitFailure
-    Right nodes | Evaluate.simplify nodes == [] ->
-      putStrLn $ "No generated content for " <> path
+    Right nodes
+      | Evaluate.simplify nodes == [] ->
+          putStrLn $ "No generated content for " <> path
     Right nodes ->
       case mode of
         Command.RenderNormal ->
