@@ -87,8 +87,8 @@ preprocessNodeE ctx@Context {..} = \case
       then do
         -- Include the file content as-is.
         content <- liftIO $ T.readFile includedPath
-        let nodes' = map (PugText Include . (: []) . Lit) $ T.lines content
-        pure $ PugInclude path (Just nodes')
+        let node = Parse.pugTextInclude content
+        pure $ PugInclude path (Just [node])
       else do
         -- Parse and process the .slab file.
         let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"

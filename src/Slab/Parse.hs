@@ -4,6 +4,7 @@ module Slab.Parse
   ( parseFile
   , parse
   , parseErrorPretty
+  , pugTextInclude
   -- Inline parsing stuff
 
     -- * The @InterpolationContext@ type
@@ -163,6 +164,13 @@ pugPipe = do
     _ <- lexeme $ string "|"
     template <- parseInlines
     pure template
+
+-- | A parser to convert the content of an @include@d to 'Syntax'. The
+-- behavior w.r.t. to newlines should be the same as having each line
+-- directly preceded by a @|@ in the including file.
+pugTextInclude :: Text -> Block
+pugTextInclude content =
+  PugText Include [Lit $ T.intercalate "\n" $ T.lines content]
 
 pugCode' :: Parser (L.IndentOpt Parser Block Block)
 pugCode' = do
