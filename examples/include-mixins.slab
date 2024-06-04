@@ -1,4 +1,4 @@
-include mixins
+include mixins.slab
 
 p
   list

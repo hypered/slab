@@ -1,4 +1,4 @@
-include mixins-def
+include mixins-def.slab
 
 frag card
   h1 Card

@@ -1,4 +1,4 @@
-include mixins-def
+include mixins-def.slab
 
 body
   default content

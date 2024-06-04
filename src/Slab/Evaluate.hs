@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Slab.Evaluate
@@ -83,17 +84,18 @@ preprocessNodeE ctx@Context {..} = \case
     let includedPath = takeDirectory ctxStartPath </> path
         slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
-    if exists && not slabExt
-      then do
+    if
+      | exists && not slabExt -> do
         -- Include the file content as-is.
         content <- liftIO $ T.readFile includedPath
         let node = Parse.pugTextInclude content
         pure $ PugInclude path (Just [node])
-      else do
+      | exists -> do
         -- Parse and process the .slab file.
-        let includedPath' = if slabExt then includedPath else includedPath <.> ".slab"
-        nodes' <- preprocessFileE includedPath'
+        nodes' <- preprocessFileE includedPath
         pure $ PugInclude path (Just nodes')
+      | otherwise ->
+        throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   PugFragmentDef name nodes -> do
     nodes' <- preprocessNodesE ctx nodes
     pure $ PugFragmentDef name nodes'
