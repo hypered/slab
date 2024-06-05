@@ -16,6 +16,7 @@ module Slab.Parse
   ) where
 
 import Control.Monad (void)
+import Data.Char (isSpace)
 import Data.List (intercalate)
 import Data.List.NonEmpty qualified as NE (toList)
 import Data.Maybe (isJust)
@@ -120,7 +121,7 @@ textBlock :: Pos -> Parser Text -> Parser [Text]
 textBlock ref p = go
  where
   go = do
-    scn
+    n <- space'
     pos <- L.indentLevel
     done <- isJust <$> optional eof
     if done
@@ -128,7 +129,13 @@ textBlock ref p = go
       else
         if pos <= ref
           then return []
-          else ((:) . (T.replicate (unPos pos - unPos ref) " " <>)) <$> p <*> go
+          else do
+            l <- p
+            ls <- go
+            let prefix = T.replicate (unPos pos - unPos ref) " "
+                n' = replicate (n - 1) prefix
+                l' = prefix <> l
+            pure $ n' <> (l' : ls)
 
 -- | Considering all the given lines as a block, strip the leading whitespace of
 -- each line so that the left-most character of the block is in the first
@@ -564,6 +571,12 @@ pugAssignVar = do
 --------------------------------------------------------------------------------
 scn :: Parser ()
 scn = L.space space1 empty empty
+
+-- Similar to space, but counts newlines
+space' :: Parser Int
+space' = do
+  s <- takeWhileP (Just "white space") isSpace
+  pure . length $ filter (== '\n') $ T.unpack s
 
 sc :: Parser ()
 sc = L.space (void $ some (char ' ' <|> char '\t')) empty empty
