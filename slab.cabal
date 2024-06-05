@@ -45,6 +45,7 @@ library
     , fsnotify
     , Glob
     , megaparsec
+    , prettyprinter
     , pretty-simple
     , servant
     , servant-blaze
