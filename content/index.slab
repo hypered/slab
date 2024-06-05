@@ -26,3 +26,47 @@ html(dir="ltr", lang="en")
 
                     .c-content.flow
                         p This site is not ready for prime time yet. You can check out <a href="https://github.com/hypered/slab">the project on GitHub</a> instead.
+
+                .c-content.flow-all.u-flow-c-4.limit-42em
+                    h2 Introduction
+
+                    p Slab is an alternative syntax for writing HTML, plus some programming language features (often found in templating languages, like conditionals and loops). <code>slab</code> is a command-line tool to process <code>.slab</code> files and render them into HTML.
+
+                    p Slab revolves around the concept of fragments. Fragments are pieces of HTML that work like functions. You can define a fragment and then call it:
+
+                    pre
+                        code.
+                          frag page
+                            doctype html
+                            body
+                              content
+
+                          page
+                            h1 A title
+                            p A paragraph.
+
+                    p The example above defines a fragment named <code>page</code>. It then calls <code>page</code>, passing a block of HTML (containing a heading and a paragraph) as an argument (implicitly called <code>content</code>).
+
+                    p The <code>slab render --pretty</code> command can be used to transform the above code into the following HTML:
+
+                    pre
+                        code
+                            :escape-html
+                                <!DOCTYPE HTML>
+
+                                <body>
+                                    <h1>
+                                        A title
+                                    </h1>
+                                    <p>
+                                        A paragraph.
+                                    </p>
+                                </body>
+
+                    p When not pretty-printed, it looks like this instead:
+
+                    pre
+                        code
+                            :escape-html
+                                <!DOCTYPE HTML>
+                                <body><h1>A title</h1><p>A paragraph.</p></body>
