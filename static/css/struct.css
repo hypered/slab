@@ -1,6 +1,5 @@
 @charset "UTF-8";
-/*! Struct -- https://hypered.design/struct */
-/*  ----------------------------------------------------------------------------
+/*! Struct -- https://hypered.design/struct */ /*  ----------------------------------------------------------------------------
     Reset CSS (Eric Meyer's)
     ------------------------------------------------------------------------- */
 /* http://meyerweb.com/eric/tools/css/reset/
@@ -383,6 +382,10 @@ code {
   background-color: #f2f2f2;
   font-family: "DejaVu Sans Mono";
   font-size: 95%;
+}
+
+pre > code {
+  line-height: 120%;
 }
 
 hr {
