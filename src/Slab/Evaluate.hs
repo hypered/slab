@@ -96,12 +96,12 @@ preprocessNodeE ctx@Context {..} = \case
             pure $ PugInclude path (Just nodes')
         | otherwise ->
             throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
-  PugFragmentDef name nodes -> do
+  PugFragmentDef name params nodes -> do
     nodes' <- preprocessNodesE ctx nodes
-    pure $ PugFragmentDef name nodes'
-  PugFragmentCall name nodes -> do
+    pure $ PugFragmentDef name params nodes'
+  PugFragmentCall name values nodes -> do
     nodes' <- preprocessNodesE ctx nodes
-    pure $ PugFragmentCall name nodes'
+    pure $ PugFragmentCall name values nodes'
   node@(PugEach _ _ _ _) -> pure node
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
@@ -160,10 +160,10 @@ eval env stack = \case
         pure $ PugInclude path (Just nodes')
       Nothing ->
         pure $ PugInclude path Nothing
-  node@(PugFragmentDef _ _) -> pure node
-  PugFragmentCall name args -> do
-    body <- call env stack name args
-    pure $ PugFragmentCall name body
+  node@(PugFragmentDef _ _ _) -> pure node
+  PugFragmentCall name values args -> do
+    body <- call env stack name values args
+    pure $ PugFragmentCall name values body
   PugEach name mindex values nodes -> do
     -- Re-use PugEach to construct a single node to return.
     let zero :: Int
@@ -189,12 +189,12 @@ eval env stack = \case
       Nothing -> do
         nodes' <- evaluate env ("?block" : stack) nodes
         pure $ PugDefault name nodes'
-      Just (Frag capturedEnv nodes') -> do
+      Just (Frag _ capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
         pure $ PugDefault name nodes''
       Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
   PugImport path _ args -> do
-    body <- call env stack (T.pack path) args
+    body <- call env stack (T.pack path) [] args
     pure $ PugImport path (Just body) args
   node@(PugReadJson _ _ _) -> pure node
   node@(PugAssignVar _ _) -> pure node
@@ -219,13 +219,15 @@ eval env stack = \case
     code' <- evalCode env code
     pure $ BlockCode code'
 
-call :: Monad m => Env -> [Text] -> Text -> [Block] -> ExceptT PreProcessError m [Block]
-call env stack name args =
+call :: Monad m => Env -> [Text] -> Text -> [Code] -> [Block] -> ExceptT PreProcessError m [Block]
+call env stack name values args =
   case lookupVariable name env of
-    Just (Frag capturedEnv body) -> do
-      env' <- map (\(a, b) -> (a, Frag env b)) <$> namedBlocks args
+    Just (Frag names capturedEnv body) -> do
+      env' <- map (\(a, (as, b)) -> (a, Frag as env b)) <$> namedBlocks args
       let env'' = augmentVariables capturedEnv env'
-      body' <- evaluate env'' ("frag" : stack) body
+          arguments = zip names values
+          env''' = augmentVariables env'' arguments
+      body' <- evaluate env''' ("frag" : stack) body
       pure body'
     Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
     Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
@@ -239,23 +241,24 @@ lookupVariable name Env {..} = lookup name envVariables
 augmentVariables :: Env -> [(Text, Code)] -> Env
 augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables}
 
-namedBlocks :: Monad m => [Block] -> ExceptT PreProcessError m [(Text, [Block])]
+namedBlocks :: Monad m => [Block] -> ExceptT PreProcessError m [(Text, ([Text], [Block]))]
 namedBlocks nodes = do
   named <- concat <$> mapM namedBlock nodes
   unnamed <- concat <$> mapM unnamedBlock nodes
-  let content = if null unnamed then [] else [("content", unnamed)]
+  let content = if null unnamed then [] else [("content", ([], unnamed))]
   if isJust (lookup "content" named) && not (null unnamed)
     then throwE $ PreProcessError $ "A block of content and a content argument are provided"
     else pure $ named <> content
 
-namedBlock :: Monad m => Block -> ExceptT PreProcessError m [(Text, [Block])]
-namedBlock (PugImport path (Just body) _) = pure [(T.pack path, body)]
-namedBlock (PugFragmentDef name content) = pure [(name, content)]
+namedBlock :: Monad m => Block -> ExceptT PreProcessError m [(Text, ([Text], [Block]))]
+namedBlock (PugImport path (Just body) _) = pure [(T.pack path, ([], body))]
+namedBlock (PugFragmentDef name names content) = pure [(name, (names, content))]
 namedBlock _ = pure []
 
 unnamedBlock :: Monad m => Block -> ExceptT PreProcessError m [Block]
-unnamedBlock (PugImport path _ args) = pure [PugFragmentCall (T.pack path) args]
-unnamedBlock (PugFragmentDef _ _) = pure []
+unnamedBlock (PugImport path _ args) =
+  pure [PugFragmentCall (T.pack path) [] args]
+unnamedBlock (PugFragmentDef _ _ _) = pure []
 unnamedBlock node = pure [node]
 
 evalCode :: Monad m => Env -> Code -> ExceptT PreProcessError m Code
@@ -313,13 +316,13 @@ extractVariables env = concatMap f
   f (PugText _ _) = []
   f (PugInclude _ children) = maybe [] (extractVariables env) children
   f (PugEach _ _ _ _) = []
-  f (PugFragmentDef name children) = [(name, Frag env children)]
-  f (PugFragmentCall _ _) = []
+  f (PugFragmentDef name names children) = [(name, Frag names env children)]
+  f (PugFragmentCall _ _ _) = []
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []
   f (PugDefault _ _) = []
-  f (PugImport path (Just body) _) = [(T.pack path, Frag env body)]
+  f (PugImport path (Just body) _) = [(T.pack path, Frag [] env body)]
   f (PugImport _ _ _) = []
   f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
   f (PugReadJson _ _ Nothing) = []
@@ -348,8 +351,8 @@ simplify' = \case
   PugElem name mdot attrs nodes -> [PugElem name mdot attrs $ simplify nodes]
   node@(PugText _ _) -> [node]
   PugInclude _ mnodes -> maybe [] simplify mnodes
-  PugFragmentDef _ _ -> []
-  PugFragmentCall _ args -> simplify args
+  PugFragmentDef _ _ _ -> []
+  PugFragmentCall _ _ args -> simplify args
   PugEach _ _ _ nodes -> simplify nodes
   node@(PugComment _ _) -> [node]
   node@(PugFilter _ _) -> [node]

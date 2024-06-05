@@ -32,8 +32,8 @@ data Block
     PugInclude FilePath (Maybe [Block])
   | -- | This doesn't exit in Pug. This is like a mixin than receive block arguments.
     -- Or like a parent template that can be @extended@ by a child template.
-    PugFragmentDef Text [Block]
-  | PugFragmentCall Text [Block]
+    PugFragmentDef Text [Text] [Block]
+  | PugFragmentCall Text [Code] [Block]
   | PugEach Text (Maybe Text) Code [Block]
   | -- | Whether or not the comment must appear in the output.
     PugComment Bool Text
@@ -148,7 +148,7 @@ data Code
   | Add Code Code
   | -- Code can be a fragment, so we can manipulate them with code later.
     -- We also capture the current environment.
-    Frag Env [Block]
+    Frag [Text] Env [Block]
   deriving (Show, Eq)
 
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting
@@ -175,8 +175,8 @@ extractClasses = nub . sort . concatMap f
   f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (PugText _ _) = []
   f (PugInclude _ children) = maybe [] extractClasses children
-  f (PugFragmentDef _ _) = [] -- We extract them in PugFragmentCall instead.
-  f (PugFragmentCall _ children) = extractClasses children
+  f (PugFragmentDef _ _ _) = [] -- We extract them in PugFragmentCall instead.
+  f (PugFragmentCall _ _ children) = extractClasses children
   f (PugEach _ _ _ children) = extractClasses children
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
@@ -210,8 +210,8 @@ extractFragments = concatMap f
   f (PugElem _ _ _ children) = extractFragments children
   f (PugText _ _) = []
   f (PugInclude _ children) = maybe [] extractFragments children
-  f (PugFragmentDef name children) = [PugFragmentDef' name children]
-  f (PugFragmentCall name children) = [PugFragmentCall' name] <> extractFragments children
+  f (PugFragmentDef name _ children) = [PugFragmentDef' name children]
+  f (PugFragmentCall name _ children) = [PugFragmentCall' name] <> extractFragments children
   f (PugEach _ _ _ children) = extractFragments children
   f (PugComment _ _) = []
   f (PugFilter _ _) = []

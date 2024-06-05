@@ -380,7 +380,7 @@ pugText :: Parser Text
 pugText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
 pugIdentifier :: Parser Text
-pugIdentifier = T.pack <$> lexeme (some (noneOf (" \n" :: String))) <?> "identifier"
+pugIdentifier = T.pack <$> lexeme (some (noneOf (" {}\n" :: String))) <?> "identifier"
 
 --------------------------------------------------------------------------------
 pugInclude :: Parser (L.IndentOpt Parser Block Block)
@@ -396,14 +396,24 @@ pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
 pugFragmentDef :: Parser (L.IndentOpt Parser Block Block)
 pugFragmentDef = do
   _ <- lexeme (string "fragment" <|> string "frag")
-  name <- pugText
-  pure $ L.IndentMany Nothing (pure . PugFragmentDef name) pugNode
+  name <- pugIdentifier
+  params <- maybe [] id <$> optional pugParameters
+  pure $ L.IndentMany Nothing (pure . PugFragmentDef name params) pugNode
+
+-- E.g. {}, {a, b}
+pugParameters :: Parser [Text]
+pugParameters = pugList' "{" "}" pugIdentifier <?> "arguments"
 
 --------------------------------------------------------------------------------
 pugFragmentCall :: Parser (L.IndentOpt Parser Block Block)
 pugFragmentCall = do
   name <- pugIdentifier
-  pure $ L.IndentMany Nothing (pure . PugFragmentCall name) pugNode
+  args <- maybe [] id <$> optional pugArguments
+  pure $ L.IndentMany Nothing (pure . PugFragmentCall name args) pugNode
+
+-- E.g. {}, {1, 'a'}
+pugArguments :: Parser [Code]
+pugArguments = pugList' "{" "}" pugCode <?> "arguments"
 
 --------------------------------------------------------------------------------
 pugEach :: Parser (L.IndentOpt Parser Block Block)
@@ -419,17 +429,20 @@ pugEach = do
   pure $ L.IndentMany Nothing (pure . PugEach name mindex collection) pugNode
 
 pugList :: Parser [Code]
-pugList = do
-  _ <- lexeme "["
-  mx <- optional $ lexeme pugCode
+pugList = pugList' "[" "]" pugCode
+
+pugList' :: Text -> Text -> Parser a -> Parser [a]
+pugList' before after p = do
+  _ <- lexeme $ string before
+  mx <- optional $ lexeme p
   xs <- case mx of
     Nothing -> pure []
     Just x -> do
       xs <- many $ do
         _ <- lexeme (string ",")
-        lexeme pugCode
+        lexeme p
       pure $ x : xs
-  _ <- lexeme "]"
+  _ <- lexeme $ string after
   pure xs
 
 pugObject :: Parser [(Code, Code)]

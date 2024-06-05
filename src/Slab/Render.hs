@@ -101,8 +101,8 @@ nodeToHtml (Syntax.PugText _ [Syntax.Lit s])
 nodeToHtml (Syntax.PugText _ _) = error "Template is not rendered."
 nodeToHtml (Syntax.PugInclude _ (Just nodes)) = mapM_ nodeToHtml nodes
 nodeToHtml (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
-nodeToHtml (Syntax.PugFragmentDef _ _) = mempty
-nodeToHtml (Syntax.PugFragmentCall _ nodes) = mapM_ nodeToHtml nodes
+nodeToHtml (Syntax.PugFragmentDef _ _ _) = mempty
+nodeToHtml (Syntax.PugFragmentCall _ _ nodes) = mapM_ nodeToHtml nodes
 nodeToHtml (Syntax.PugEach _ _ _ nodes) = mapM_ nodeToHtml nodes
 nodeToHtml (Syntax.PugComment b content) =
   if b then H.textComment content else mempty
@@ -144,8 +144,8 @@ textsToHtml xs = H.preEscapedText xs'
   f (Syntax.PugText _ [Syntax.Lit s]) = s
   f (Syntax.PugText _ _) = error "textsToHtml called on unevaluated PugText"
   f (Syntax.PugInclude _ _) = error "textsToHtml called on a PugInclude"
-  f (Syntax.PugFragmentDef _ _) = error "textsToHtml called on a PugFragmentDef"
-  f (Syntax.PugFragmentCall _ _) = error "textsToHtml called on a PugFragmentCall"
+  f (Syntax.PugFragmentDef _ _ _) = error "textsToHtml called on a PugFragmentDef"
+  f (Syntax.PugFragmentCall _ _ _) = error "textsToHtml called on a PugFragmentCall"
   f (Syntax.PugEach _ _ _ _) = error "textsToHtml called on a PugEach"
   f (Syntax.PugComment _ _) = error "textsToHtml called on a PugComment"
   f (Syntax.PugFilter _ _) = error "textsToHtml called on a PugFilter"

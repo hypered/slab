@@ -1,0 +1,6 @@
+frag hello{name}
+  p Hello, #{name}.
+
+hello{1}
+
+hello{'Alice'}
