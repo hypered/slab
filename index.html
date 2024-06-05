@@ -1,2 +1,17 @@
 <!DOCTYPE HTML>
-<html dir="ltr" lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/static/css/struct.css"><title>The Slab markup language</title></head><body class="u-container-vertical"><header><div class="u-container"><div class="u-bar"><div class="u-bar__left"><style>.a-logo { color: black; text-decoration: none; }</style><a class="a-logo" href="/"><div><span class="logo">Slab</span></div></a></div><div class="u-bar__right"></div></div></div></header><main><div class="u-container u-flow-c-4"><div class="switcher"><div class="flow"><p>Slab is a programmable markup language to generate HTML.</p></div><div class="c-content flow"><p>This site is not ready for prime time yet. You can check out <a href="https://github.com/hypered/slab">the project on GitHub</a> instead.</p></div></div></div></main></body></html>
+<html dir="ltr" lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/static/css/struct.css"><title>The Slab markup language</title></head><body class="u-container-vertical"><header><div class="u-container"><div class="u-bar"><div class="u-bar__left"><style>.a-logo { color: black; text-decoration: none; }</style><a class="a-logo" href="/"><div><span class="logo">Slab</span></div></a></div><div class="u-bar__right"></div></div></div></header><main><div class="u-container u-flow-c-4"><div class="switcher"><div class="flow"><p>Slab is a programmable markup language to generate HTML.</p></div><div class="c-content flow"><p>This site is not ready for prime time yet. You can check out <a href="https://github.com/hypered/slab">the project on GitHub</a> instead.</p></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Introduction</h2><p>Slab is an alternative syntax for writing HTML, plus some programming language features (often found in templating languages, like conditionals and loops). <code>slab</code> is a command-line tool to process <code>.slab</code> files and render them into HTML.</p><p>Slab revolves around the concept of fragments. Fragments are pieces of HTML that work like functions. You can define a fragment and then call it:</p><pre><code>frag page
+  doctype html
+  body
+    content
+page
+  h1 A title
+  p A paragraph.</code></pre><p>The example above defines a fragment named <code>page</code>. It then calls <code>page</code>, passing a block of HTML (containing a heading and a paragraph) as an argument (implicitly called <code>content</code>).</p><p>The <code>slab render --pretty</code> command can be used to transform the above code into the following HTML:</p><pre><code>&lt;!DOCTYPE HTML&gt;
+&lt;body&gt;
+    &lt;h1&gt;
+        A title
+    &lt;/h1&gt;
+    &lt;p&gt;
+        A paragraph.
+    &lt;/p&gt;
+&lt;/body&gt;</code></pre><p>When not pretty-printed, it looks like this instead:</p><pre><code>&lt;!DOCTYPE HTML&gt;
+&lt;body&gt;&lt;h1&gt;A title&lt;/h1&gt;&lt;p&gt;A paragraph.&lt;/p&gt;&lt;/body&gt;</code></pre></div></div></main></body></html>
