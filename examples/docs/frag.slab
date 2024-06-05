@@ -1,0 +1,8 @@
+frag page
+  doctype html
+  body
+    content
+
+page
+  h1 A title
+  p A paragraph.
