@@ -35,17 +35,27 @@ blockToHs :: Int -> Syntax.Block -> [Text]
 blockToHs indent = \case
   Syntax.BlockDoctype -> [indent' <> "H.docType"]
   Syntax.PugElem name _ attrs children ->
-    [indent' <> elemToHs name]
-      <> if classNames == []
-        then []
-        else
-          [indent' <> "  ! A.class_ (H.toValue \"" <> classNames' <> "\")"]
-            <> [indent' <> "  $"]
-            <> blocksToHs' (indent + 1) children
+    el
+      <> elemId
+      <> elemClass
+      <> [indent' <> "  $"]
+      <> blocksToHs' (indent + 1) children
    where
+    el = [indent' <> elemToHs name]
+    idNames = Syntax.idNamesFromAttrs attrs
+    idNames' :: Text
+    idNames' = T.intercalate " " idNames
+    elemId =
+      if idNames == []
+      then []
+      else [indent' <> "  ! A.id (H.toValue \"" <> idNames' <> "\")"]
     classNames = Syntax.classNamesFromAttrs attrs
     classNames' :: Text
     classNames' = T.intercalate " " classNames
+    elemClass =
+      if classNames == []
+      then []
+      else [indent' <> "  ! A.class_ (H.toValue \"" <> classNames' <> "\")"]
  where
   indent' = T.replicate (indent * 2) " "
 

@@ -15,6 +15,7 @@ module Slab.Syntax
   , extractClasses
   , extractFragments
   , findFragment
+  , idNamesFromAttrs
   , classNamesFromAttrs
   ) where
 
@@ -234,6 +235,19 @@ findFragment name ms = case filter f ms of
   f _ = False
 
 --------------------------------------------------------------------------------
+idNamesFromAttrs :: [Attr] -> [Text]
+idNamesFromAttrs =
+  concatMap
+    ( \case
+        Id i -> [i]
+        Class _ -> []
+        AttrList pairs -> concatMap f pairs
+    )
+ where
+  f ("id", Just (SingleQuoteString x)) = [x]
+  f ("id", Just _) = error "The id is not a string"
+  f _ = []
+
 classNamesFromAttrs :: [Attr] -> [Text]
 classNamesFromAttrs =
   concatMap

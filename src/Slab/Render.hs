@@ -44,17 +44,7 @@ nodeToHtml (Syntax.PugElem name mdot attrs children) =
     if idNames == []
       then e
       else e ! A.id (H.toValue idNames')
-  idNames =
-    concatMap
-      ( \case
-          Syntax.Id i -> [i]
-          Syntax.Class _ -> []
-          Syntax.AttrList pairs -> concatMap fId pairs
-      )
-      attrs
-  fId ("id", Just (Syntax.SingleQuoteString x)) = [x]
-  fId ("id", Just _) = error "The id is not a string"
-  fId _ = []
+  idNames = Syntax.idNamesFromAttrs attrs
   idNames' :: Text
   idNames' = T.intercalate "-" idNames -- TODO Refuse multiple Ids in some kind of validation step after parsing ?
   mAddClass :: H.Html -> H.Html
