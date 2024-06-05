@@ -3,9 +3,11 @@
   doctype html
   body
     content
+
 page
   h1 A title
   p A paragraph.</code></pre><p>The example above defines a fragment named <code>page</code>. It then calls <code>page</code>, passing a block of HTML (containing a heading and a paragraph) as an argument (implicitly called <code>content</code>).</p><p>The <code>slab render --pretty</code> command can be used to transform the above code into the following HTML:</p><pre><code>&lt;!DOCTYPE HTML&gt;
+
 &lt;body&gt;
     &lt;h1&gt;
         A title
