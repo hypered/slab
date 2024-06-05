@@ -18,6 +18,8 @@ data Command
   | Watch FilePath RenderMode FilePath
   | Serve FilePath
   | Report FilePath
+  | -- | Generate code. Only Haskell for now.
+    Generate FilePath
   | CommandWithPath FilePath ParseMode CommandWithPath
 
 -- | Commands operating on a path.
@@ -93,6 +95,12 @@ parser =
           ( A.info (parserParse <**> A.helper) $
               A.progDesc
                 "Parse a Slab template to AST"
+          )
+        <> A.command
+          "generate"
+          ( A.info (parserGenerate <**> A.helper) $
+              A.progDesc
+                "Generate code corresponding to a Slab template"
           )
         <> A.command
           "classes"
@@ -197,6 +205,11 @@ parserParse :: A.Parser Command
 parserParse = do
   pathAndmode <- parserWithPath
   pure $ uncurry CommandWithPath pathAndmode Parse
+
+parserGenerate :: A.Parser Command
+parserGenerate = do
+  path <- parserTemplatePath
+  pure $ Generate path
 
 parserClasses :: A.Parser Command
 parserClasses = do

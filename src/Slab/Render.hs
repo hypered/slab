@@ -62,17 +62,7 @@ nodeToHtml (Syntax.PugElem name mdot attrs children) =
     if classNames == []
       then e
       else e ! A.class_ (H.toValue classNames')
-  classNames =
-    concatMap
-      ( \case
-          Syntax.Id _ -> []
-          Syntax.Class c -> [c]
-          Syntax.AttrList pairs -> concatMap f pairs
-      )
-      attrs
-  f ("class", Just (Syntax.SingleQuoteString x)) = [x]
-  f ("class", Just _) = error "The class is not a string"
-  f _ = []
+  classNames = Syntax.classNamesFromAttrs attrs
   classNames' :: Text
   classNames' = T.intercalate " " classNames
 

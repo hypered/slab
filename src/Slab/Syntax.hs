@@ -15,6 +15,7 @@ module Slab.Syntax
   , extractClasses
   , extractFragments
   , findFragment
+  , classNamesFromAttrs
   ) where
 
 import Data.Aeson qualified as Aeson
@@ -231,3 +232,17 @@ findFragment name ms = case filter f ms of
  where
   f (PugFragmentDef' name' _) = name == name'
   f _ = False
+
+--------------------------------------------------------------------------------
+classNamesFromAttrs :: [Attr] -> [Text]
+classNamesFromAttrs =
+  concatMap
+    ( \case
+        Id _ -> []
+        Class c -> [c]
+        AttrList pairs -> concatMap f pairs
+    )
+ where
+  f ("class", Just (SingleQuoteString x)) = [x]
+  f ("class", Just _) = error "The class is not a string"
+  f _ = []

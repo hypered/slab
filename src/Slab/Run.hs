@@ -10,6 +10,7 @@ import Data.Text.Lazy.IO qualified as TL
 import Slab.Build qualified as Build
 import Slab.Command qualified as Command
 import Slab.Evaluate qualified as Evaluate
+import Slab.Generate.Haskell qualified as Generate
 import Slab.Parse qualified as Parse
 import Slab.Render qualified as Render
 import Slab.Report qualified as Report
@@ -26,6 +27,7 @@ run (Command.Watch srcDir renderMode distDir) =
   Watch.run srcDir (Build.buildFile srcDir renderMode distDir)
 run (Command.Serve distDir) = Serve.run distDir
 run (Command.Report srcDir) = Report.run srcDir
+run (Command.Generate path) = Generate.renderHs path
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
   evaluated <- evaluateWithMode path pmode
   case evaluated of

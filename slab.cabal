@@ -59,6 +59,7 @@ library
     Slab.Build
     Slab.Command
     Slab.Evaluate
+    Slab.Generate.Haskell
     Slab.Parse
     Slab.Render
     Slab.Report
