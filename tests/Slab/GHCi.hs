@@ -7,10 +7,17 @@ module Slab.GHCi
   ) where
 
 import Data.Text qualified as T
+import Slab.Build qualified as Build
 import Slab.Command qualified as Command
+import Slab.Evaluate qualified as Evaluate
+import Slab.Generate.Haskell qualified as Generate
 import Slab.Parse qualified as Parse
 import Slab.Render qualified as Render
+import Slab.Report qualified as Report
 import Slab.Run qualified as Run
+import Slab.Serve qualified as Serve
+import Slab.Syntax qualified as Syntax
+import Slab.Watch qualified as Watch
 import System.Process (callCommand)
 
 -- This import is present to set -interactive-print in ghci.conf.
