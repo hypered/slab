@@ -125,7 +125,7 @@ data TrailingSym = HasDot | HasEqual | NoSym
   deriving (Show, Eq)
 
 -- The Code must already be evaluated.
-data Attr = AttrList [(Text, Maybe Code)] | Id Text | Class Text
+data Attr = Id Text | Class Text | Attr Text (Maybe Code)
   deriving (Show, Eq)
 
 -- Tracks the syntax used to enter the text.
@@ -195,12 +195,12 @@ extractClasses = nub . sort . concatMap f
   f (PugList children) = extractClasses children
   f (BlockCode _) = []
 
-  g (AttrList xs) = concatMap h xs
   g (Id _) = []
   g (Class c) = [c]
-  h ("class", Just (SingleQuoteString c)) = [c]
-  h ("class", _) = error "The class is not a string"
-  h _ = []
+  g (Attr a b) = h a b
+  h "class" (Just (SingleQuoteString c)) = [c]
+  h "class" _ = error "The class is not a string"
+  h _ _ = []
 
 -- Return type used for `extractFragments`.
 data PugMixin
@@ -244,12 +244,12 @@ idNamesFromAttrs =
     ( \case
         Id i -> [i]
         Class _ -> []
-        AttrList pairs -> concatMap f pairs
+        Attr a b -> f a b
     )
  where
-  f ("id", Just (SingleQuoteString x)) = [x]
-  f ("id", Just _) = error "The id is not a string"
-  f _ = []
+  f "id" (Just (SingleQuoteString x)) = [x]
+  f "id" (Just _) = error "The id is not a string"
+  f _ _ = []
 
 classNamesFromAttrs :: [Attr] -> [Text]
 classNamesFromAttrs =
@@ -257,12 +257,12 @@ classNamesFromAttrs =
     ( \case
         Id _ -> []
         Class c -> [c]
-        AttrList pairs -> concatMap f pairs
+        Attr a b -> f a b
     )
  where
-  f ("class", Just (SingleQuoteString x)) = [x]
-  f ("class", Just _) = error "The class is not a string"
-  f _ = []
+  f "class" (Just (SingleQuoteString x)) = [x]
+  f "class" (Just _) = error "The class is not a string"
+  f _ _ = []
 
 namesFromAttrs :: [Attr] -> [(Text, Text)]
 namesFromAttrs =
@@ -270,16 +270,18 @@ namesFromAttrs =
     ( \case
         Id _ -> []
         Class _ -> []
-        AttrList pairs -> concatMap f pairs
+        Attr a b -> f a b
     )
  where
-  f ("id", _) = []
-  f ("class", _) = []
-  f (a, Just (SingleQuoteString b)) = [(a, b)]
-  f (a, Just (Int b)) = [(a, T.pack $ show b)]
-  f (_, Just _) = error "The attribute is not a string"
-  f (a, Nothing) = [(a, a)]
+  f "id" _ = []
+  f "class" _ = []
+  f a (Just (SingleQuoteString b)) = [(a, b)]
+  f a (Just (Int b)) = [(a, T.pack $ show b)]
+  f _ (Just _) = error "The attribute is not a string"
+  f a Nothing = [(a, a)]
 
+-- | Group multiple classes or IDs in a single class or ID, and transform the
+-- other attributes in 'SingleQuoteString's.
 groupAttrs :: [Attr] -> [Attr]
 groupAttrs attrs = elemId <> elemClass <> elemAttrs
  where
@@ -300,6 +302,4 @@ groupAttrs attrs = elemId <> elemClass <> elemAttrs
     else [Class classNames']
 
   attrs' = namesFromAttrs attrs
-  elemAttrs = case attrs' of
-    [] -> []
-    _ -> [AttrList $ map (\(a, b) -> (a, Just $ SingleQuoteString b)) attrs']
+  elemAttrs = map (\(a, b) -> Attr a (Just $ SingleQuoteString b)) attrs'

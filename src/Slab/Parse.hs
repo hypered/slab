@@ -240,14 +240,14 @@ pugElemWithAttrs = do
           a <- pugElem
           -- `try` because we want to backtrack if there is a dot
           -- not followed by a class name, for mdot to succeed.
-          b <- many (pugId <|> try pugClass <|> pugAttrList)
+          b <- many pugAttrs'
           mtrailing <-
             optional $
               choice
                 [ string "." >> pure HasDot
                 , string "=" >> pure HasEqual
                 ]
-          pure (a, b, maybe NoSym id mtrailing)
+          pure (a, concat b, maybe NoSym id mtrailing)
       )
       <?> "div tag"
   pure $ PugElem name mdot attrs
@@ -324,12 +324,18 @@ pugAttrs = do
   (attrs, mdot) <-
     lexeme
       ( do
-          attrs <- some (pugId <|> pugClass <|> pugAttrList)
+          attrs <- some pugAttrs'
           mdot <- optional (string ".")
-          pure (attrs, maybe NoSym (const HasDot) mdot)
+          pure (concat attrs, maybe NoSym (const HasDot) mdot)
       )
       <?> "attributes"
   pure $ PugElem Div mdot attrs
+
+pugAttrs' :: Parser [Attr]
+pugAttrs' =
+  -- `try` because we want to backtrack if there is a dot
+  -- not followed by a class name, for mdot to succeed.
+  ((:[]) <$> pugId) <|> try ((:[]) <$> pugClass) <|> pugAttrList
 
 -- E.g. #a
 pugId :: Parser Attr
@@ -348,12 +354,12 @@ pugClass =
     <?> "class name"
 
 -- E.g. (), (class='a')
-pugAttrList :: Parser Attr
+pugAttrList :: Parser [Attr]
 pugAttrList = (<?> "attribute") $ do
   _ <- string "("
   pairs <- many pugPair
   _ <- string ")"
-  pure $ AttrList pairs
+  pure $ map (uncurry Attr) pairs
 
 pugPair :: Parser (Text, Maybe Code)
 pugPair = do
