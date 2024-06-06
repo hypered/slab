@@ -16,18 +16,34 @@ $ cat data/values.json
 ]
 
 $ cat example.slab
+frag hello{name}
+  li.greeting
+    p Hello, #{name}.
+    content
+
 let values = data/values.json
 ul
   for value in values
-    li Hello, #{value['username']}.
+    hello{value['username']}
+      p Some content.
 
 $ slab render --pretty example.slab
 <ul>
-    <li>
-        Hello, Alice.
+    <li class="greeting">
+        <p>
+            Hello, Alice.
+        </p>
+        <p>
+            Some content.
+        </p>
     </li>
-    <li>
-        Hello, Bob.
+    <li class="greeting">
+        <p>
+            Hello, Bob.
+        </p>
+        <p>
+            Some content.
+        </p>
     </li>
 </ul>
 ```

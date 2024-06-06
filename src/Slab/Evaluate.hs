@@ -225,7 +225,7 @@ call env stack name values args =
     Just (Frag names capturedEnv body) -> do
       env' <- map (\(a, (as, b)) -> (a, Frag as env b)) <$> namedBlocks args
       let env'' = augmentVariables capturedEnv env'
-          arguments = zip names values
+          arguments = zip names (map (thunk env) values)
           env''' = augmentVariables env'' arguments
       body' <- evaluate env''' ("frag" : stack) body
       pure body'
@@ -265,17 +265,16 @@ evalCode :: Monad m => Env -> Code -> ExceptT PreProcessError m Code
 evalCode env = \case
   Variable name ->
     case lookupVariable name env of
-      Just val -> pure val
+      Just val -> evalCode env val
       Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
   Lookup name key ->
     case lookupVariable name env of
       Just (Object obj) -> do
         -- key' <- evalCode env key
         case lookup key obj of
-          Just val -> pure val
+          Just val -> evalCode env val
           Nothing ->
             pure $ Variable "false"
-      -- throwE $ PreProcessError $ "Key lookup failed. Key: " <> T.pack (show key) <> T.pack (show obj)
       Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
       Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
   Add a b -> do
@@ -285,6 +284,8 @@ evalCode env = \case
       (Int i, Int j) -> pure . Int $ i + j
       (Int i, SingleQuoteString s) -> pure . SingleQuoteString $ T.pack (show i) <> s
       _ -> throwE $ PreProcessError $ "Unimplemented: " <> T.pack (show (Add a' b'))
+  Thunk capturedEnv code ->
+    evalCode capturedEnv code
   code -> pure code
 
 -- After evaluation, the template should be either empty or contain a single literal.
@@ -302,7 +303,7 @@ evalInline env = \case
       SingleQuoteString s -> pure s
       Int x -> pure . T.pack $ show x
       -- Variable x -> context x -- Should not happen after evalCode
-      x -> error $ "render: unhandled value: " <> show x
+      x -> error $ "evalInline: unhandled value: " <> show x
 
 -- Extract both fragments and assignments.
 -- TODO This should be merged with namedBlocks.

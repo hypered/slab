@@ -12,6 +12,8 @@ module Slab.Syntax
   , Env (..)
   , emptyEnv
   , trailingSym
+  , freeVariables
+  , thunk
   , extractClasses
   , extractFragments
   , findFragment
@@ -154,6 +156,8 @@ data Code
   | -- Code can be a fragment, so we can manipulate them with code later.
     -- We also capture the current environment.
     Frag [Text] Env [Block]
+  | -- Same for Code instead of Block.
+    Thunk Env Code
   deriving (Show, Eq)
 
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting
@@ -170,6 +174,27 @@ data Env = Env
 
 emptyEnv :: Env
 emptyEnv = Env []
+
+--------------------------------------------------------------------------------
+freeVariables :: Code -> [Text]
+freeVariables = nub . \case
+  Variable a -> [a]
+  Int _ -> []
+  SingleQuoteString _ -> []
+  List as -> concatMap freeVariables as
+  Object _ -> [] -- TODO I guess some of those can contain variables.
+  Lookup a b -> a : freeVariables b
+  Add a b -> freeVariables a <> freeVariables b
+  Frag _ _ _ -> []
+  Thunk _ _ -> []
+
+-- Capture an environment, but limit its content to only the free variables of
+-- the expression.
+thunk :: Env -> Code -> Code
+thunk Env {..} code = Thunk env code
+ where
+  env = Env $ filter ((`elem` frees) . fst) envVariables
+  frees = freeVariables code
 
 --------------------------------------------------------------------------------
 

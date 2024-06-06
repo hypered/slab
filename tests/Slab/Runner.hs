@@ -19,11 +19,14 @@ runExamples = do
   -- Examples coming from
   -- https://github.com/pugjs/pug/tree/master/packages/pug/test/cases.
   cases <- listExamples "examples/cases/" >>= mapM mkGoldenTest
+  -- Examples coming from the documentation.
+  docs <- listExamples "examples/docs/" >>= mapM mkGoldenTest
   defaultMain $
     testGroup
       "Test suite"
       [ testGroup "Examples" goldens
       , testGroup "Cases" cases
+      , testGroup "Documentation" docs
       ]
 
 --------------------------------------------------------------------------------
