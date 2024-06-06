@@ -28,23 +28,7 @@ prettyBlocks = vsep . map prettyBlock
 prettyBlock :: Syntax.Block -> Doc ann
 prettyBlock (Syntax.PugElem name _ attrs children) = prettyPugElem (name, attrs', children)
  where
-  attrs' = elemId <> elemClass
-
-  idNames = Syntax.idNamesFromAttrs attrs
-  idNames' :: Text
-  idNames' = T.intercalate " " idNames
-  elemId =
-    if idNames == []
-    then []
-    else [Id' idNames']
-
-  classNames = Syntax.classNamesFromAttrs attrs
-  classNames' :: Text
-  classNames' = T.intercalate " " classNames
-  elemClass =
-    if classNames == []
-    then []
-    else [Class' classNames']
+  attrs' = Syntax.groupAttrs attrs
 
 -- | Render an element, aligning the @!@ character:
 --
@@ -54,31 +38,26 @@ prettyBlock (Syntax.PugElem name _ attrs children) = prettyPugElem (name, attrs'
 --     child0
 --     child1
 -- @
-prettyPugElem :: (Syntax.Elem, [Attr'], [Syntax.Block]) -> Doc ann
-prettyPugElem (t1, [], as) =
-  let dollar = if length as > 1 then "$ do" else "$"
-      header = prettyElem t1 <+> dollar
-      footer = case as of
-        [] -> indent 2 "mempty"
-        _ -> vsep $ map (indent 2 . prettyBlock) as
-  in vsep [header, footer]
-prettyPugElem (t1, [t], as) =
-  let dollar = if length as > 1 then "$ do" else "$"
-      header = prettyElem t1 <+> "!" <+> prettyAttr t <+> dollar
-      footer = case as of
-        [] -> indent 2 "mempty"
-        _ -> vsep $ map (indent 2 . prettyBlock) as
-  in vsep [header, footer]
-prettyPugElem (t1, t:ts, as) =
-  let e = prettyElem t1
-      n = succ . T.length . renderStrict $ layoutPretty defaultLayoutOptions e
-      dollar = if length as > 1 then "$ do" else "$"
-      header = e <+> "!" <+> prettyAttr t
-      body = indent n $ vsep (map (("!" <+>) . prettyAttr) ts) <+> dollar
-      footer = case as of
-        [] -> indent 2 "mempty"
-        _ -> vsep $ map (indent 2 . prettyBlock) as
-  in vsep [header, body, footer]
+prettyPugElem :: (Syntax.Elem, [Syntax.Attr], [Syntax.Block]) -> Doc ann
+prettyPugElem (t1, ts_, as) =
+  case ts_ of
+    [] ->
+      let header = prettyT1 <+> dollar
+      in vsep [header, footer]
+    [t] ->
+      let header = prettyT1 <+> "!" <+> prettyAttr t <+> dollar
+      in vsep [header, footer]
+    t:ts ->
+      let header = prettyT1 <+> "!" <+> prettyAttr t
+          body = indent lengthT1 $ vsep (map (("!" <+>) . prettyAttr) ts) <+> dollar
+      in vsep [header, body, footer]
+ where
+  prettyT1 = prettyElem t1
+  lengthT1 = succ . T.length . renderStrict $ layoutPretty defaultLayoutOptions prettyT1
+  dollar = if length as > 1 then "$ do" else "$"
+  footer = case as of
+    [] -> indent 2 "mempty"
+    _ -> vsep $ map (indent 2 . prettyBlock) as
 
 prettyElem :: Syntax.Elem -> Doc ann
 prettyElem = \case
@@ -86,9 +65,6 @@ prettyElem = \case
   Syntax.Body -> "H.body"
   Syntax.Div -> "H.div"
 
--- A version of Attr where multiple classes are supposed to be grouped together.
-data Attr' = Id' Text | Class' Text
-
-prettyAttr :: Attr' -> Doc ann
-prettyAttr (Id' t) = pretty $ "A.id (H.toValue \"" <> t <> "\")"
-prettyAttr (Class' t) = pretty $ "A.class_ (H.toValue \"" <> t <> "\")"
+prettyAttr :: Syntax.Attr -> Doc ann
+prettyAttr (Syntax.Id t) = pretty $ "A.id (H.toValue \"" <> t <> "\")"
+prettyAttr (Syntax.Class t) = pretty $ "A.class_ (H.toValue \"" <> t <> "\")"

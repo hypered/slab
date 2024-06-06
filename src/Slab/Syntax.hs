@@ -17,11 +17,13 @@ module Slab.Syntax
   , findFragment
   , idNamesFromAttrs
   , classNamesFromAttrs
+  , groupAttrs
   ) where
 
 import Data.Aeson qualified as Aeson
 import Data.List (nub, sort)
 import Data.Text (Text)
+import Data.Text qualified as T
 
 --------------------------------------------------------------------------------
 data Block
@@ -260,3 +262,23 @@ classNamesFromAttrs =
   f ("class", Just (SingleQuoteString x)) = [x]
   f ("class", Just _) = error "The class is not a string"
   f _ = []
+
+-- TODO Add other attributes.
+groupAttrs :: [Attr] -> [Attr]
+groupAttrs attrs = elemId <> elemClass
+ where
+  idNames = idNamesFromAttrs attrs
+  idNames' :: Text
+  idNames' = T.intercalate " " idNames
+  elemId =
+    if idNames == []
+    then []
+    else [Id idNames']
+
+  classNames = classNamesFromAttrs attrs
+  classNames' :: Text
+  classNames' = T.intercalate " " classNames
+  elemClass =
+    if classNames == []
+    then []
+    else [Class classNames']
