@@ -71,6 +71,18 @@ suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases). The
 expected HTML is not exactly the same: we pretty print it differently, or some
 tags are explicitely closed in Pug.js (e.g. `<source>` vs. `<source/>`.
 
+# Code generation
+
+In addition of generating static HTML files from Slab templates, we explore
+generating code.
+
+```
+ghci> :main generate a.slab
+```
+
+Currently, a very small subset of the Slab language is supported, and only
+Haskell code can be generated.
+
 # Why the name
 
 In the context of [memory
