@@ -33,13 +33,13 @@ run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) =
   case evaluated of
     Left (Evaluate.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
-    Right nodes -> TL.putStrLn . Render.renderHtmls $ Render.nodesToHtml nodes
+    Right nodes -> TL.putStrLn . Render.renderHtmls $ Render.renderBlocks nodes
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderPretty)) = do
   evaluated <- evaluateWithMode path pmode
   case evaluated of
     Left (Evaluate.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
-    Right nodes -> T.putStr . Render.prettyHtmls $ Render.nodesToHtml nodes
+    Right nodes -> T.putStr . Render.prettyHtmls $ Render.renderBlocks nodes
 run (Command.CommandWithPath path pmode (Command.Evaluate simpl)) = do
   evaluated <- evaluateWithMode path pmode
   case evaluated of

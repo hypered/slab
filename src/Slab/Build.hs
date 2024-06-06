@@ -45,9 +45,9 @@ buildFile srcDir mode distDir path = do
     Right nodes ->
       case mode of
         Command.RenderNormal ->
-          TL.writeFile path' . Render.renderHtmls $ Render.nodesToHtml nodes
+          TL.writeFile path' . Render.renderHtmls $ Render.renderBlocks nodes
         Command.RenderPretty ->
-          T.writeFile path' . Render.prettyHtmls $ Render.nodesToHtml nodes
+          T.writeFile path' . Render.prettyHtmls $ Render.renderBlocks nodes
 
 --------------------------------------------------------------------------------
 listTemplates :: FilePath -> IO [FilePath]
