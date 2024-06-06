@@ -34,6 +34,10 @@ $ slab render --pretty example.slab
 
 # Development
 
+Slab is written in Haskell and this repository provides a Nix-based development
+environment. Running `scripts/ghci.sh` automatically enters a Nix shell with
+the necessary dependencies:
+
 ```
 $ scripts/ghci.sh
 ghci> :main --help
@@ -50,20 +54,30 @@ Available commands:
   build                    Build a library of Slab templates to HTML
   watch                    Watch and build a library of Slab templates to HTML
   serve                    Watch and serve a library of Slab templates to HTML
+  report                   Analyse a library of Slab templates
   render                   Render a Slab template to HTML
   eval                     Parse a Slab template to AST and evaluate it
   parse                    Parse a Slab template to AST
+  generate                 Generate code corresponding to a Slab template
   classes                  Parse a Slab template and report its CSS classes
   fragments                Parse a Slab template and report its fragments
 ```
 
+Note: GHCi is an Haskell interpreter. Within GHCi, instead of calling a
+compiled binary (called `slab` in our case), we can call the special command
+`:main` and pass it arguments in the same way we would on a regular
+command-line.
+
+During development, it helps to create small `.slab` files and run our code on
+them. In particular, given an `examples/a.slab` file, we can use `parse` and
+`eval` to introspect the ASTs at different stages.
+
 ```
-ghci> :main parse examples/a.slab
 ghci> :main parse --shallow examples/a.slab
+ghci> :main parse examples/a.slab
 ghci> :main eval examples/a.slab
 ghci> :main render --pretty examples/a.slab
 ghci> :main render examples/a.slab
-ghci> :main classes examples/a.slab
 ```
 
 The test cases in `examples/cases/` come from the [original Pug test
