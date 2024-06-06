@@ -68,3 +68,4 @@ prettyElem = \case
 prettyAttr :: Syntax.Attr -> Doc ann
 prettyAttr (Syntax.Id t) = pretty $ "A.id (H.toValue \"" <> t <> "\")"
 prettyAttr (Syntax.Class t) = pretty $ "A.class_ (H.toValue \"" <> t <> "\")"
+prettyAttr (Syntax.AttrList []) = mempty

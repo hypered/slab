@@ -30,7 +30,7 @@ renderBlocks = map renderBlock
 renderBlock :: Syntax.Block -> H.Html
 renderBlock Syntax.BlockDoctype = H.docType
 renderBlock (Syntax.PugElem name mdot attrs children) =
-  mAddAttr $
+  mAddAttrs $
     mAddId $
       mAddClass $
         renderElem name $
@@ -47,6 +47,7 @@ renderBlock (Syntax.PugElem name mdot attrs children) =
   idNames = Syntax.idNamesFromAttrs attrs
   idNames' :: Text
   idNames' = T.intercalate "-" idNames -- TODO Refuse multiple Ids in some kind of validation step after parsing ?
+
   mAddClass :: H.Html -> H.Html
   mAddClass e =
     if classNames == []
@@ -56,23 +57,10 @@ renderBlock (Syntax.PugElem name mdot attrs children) =
   classNames' :: Text
   classNames' = T.intercalate " " classNames
 
-  mAddAttr :: H.Html -> H.Html
-  mAddAttr =
-    flip (foldl (\e (a, b) -> e ! H.customAttribute (fromString a) (H.toValue b))) attrs'
-  attrs' =
-    concatMap
-      ( \case
-          Syntax.Id _ -> []
-          Syntax.Class _ -> []
-          Syntax.AttrList pairs -> concatMap g pairs
-      )
-      attrs
-  g ("id", _) = []
-  g ("class", _) = []
-  g (a, Just (Syntax.SingleQuoteString b)) = [(T.unpack a, b)]
-  g (a, Just (Syntax.Int b)) = [(T.unpack a, T.pack $ show b)]
-  g (_, Just _) = error "The attribute is not a string"
-  g (a, Nothing) = [(T.unpack a, a)]
+  mAddAttrs :: H.Html -> H.Html
+  mAddAttrs =
+    flip (foldl (\e (a, b) -> e ! H.customAttribute (fromString $ T.unpack a) (H.toValue b))) attrs'
+  attrs' = Syntax.namesFromAttrs attrs
 renderBlock (Syntax.PugText _ []) =
   H.preEscapedText "\n" -- This allows to force some whitespace.
 renderBlock (Syntax.PugText _ [Syntax.Lit s])

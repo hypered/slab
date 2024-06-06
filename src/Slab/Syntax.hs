@@ -17,6 +17,7 @@ module Slab.Syntax
   , findFragment
   , idNamesFromAttrs
   , classNamesFromAttrs
+  , namesFromAttrs
   , groupAttrs
   ) where
 
@@ -263,9 +264,24 @@ classNamesFromAttrs =
   f ("class", Just _) = error "The class is not a string"
   f _ = []
 
--- TODO Add other attributes.
+namesFromAttrs :: [Attr] -> [(Text, Text)]
+namesFromAttrs =
+  concatMap
+    ( \case
+        Id _ -> []
+        Class _ -> []
+        AttrList pairs -> concatMap f pairs
+    )
+ where
+  f ("id", _) = []
+  f ("class", _) = []
+  f (a, Just (SingleQuoteString b)) = [(a, b)]
+  f (a, Just (Int b)) = [(a, T.pack $ show b)]
+  f (_, Just _) = error "The attribute is not a string"
+  f (a, Nothing) = [(a, a)]
+
 groupAttrs :: [Attr] -> [Attr]
-groupAttrs attrs = elemId <> elemClass
+groupAttrs attrs = elemId <> elemClass <> elemAttrs
  where
   idNames = idNamesFromAttrs attrs
   idNames' :: Text
@@ -282,3 +298,8 @@ groupAttrs attrs = elemId <> elemClass
     if classNames == []
     then []
     else [Class classNames']
+
+  attrs' = namesFromAttrs attrs
+  elemAttrs = case attrs' of
+    [] -> []
+    _ -> [AttrList $ map (\(a, b) -> (a, Just $ SingleQuoteString b)) attrs']
