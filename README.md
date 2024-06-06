@@ -32,7 +32,7 @@ $ slab render --pretty example.slab
 </ul>
 ```
 
-# Devlopment
+# Development
 
 ```
 $ scripts/ghci.sh
