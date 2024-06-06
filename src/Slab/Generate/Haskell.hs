@@ -16,10 +16,36 @@ renderHs path = do
   preprocessed <- Evaluate.preprocessFile path
   case preprocessed of
     Left err -> print err
-    Right blocks -> T.putStrLn $ renderBlocks blocks
+    Right blocks -> T.putStrLn $ renderModule blocks
+
+renderModule :: [Syntax.Block] -> Text
+renderModule = renderStrict . layoutPretty defaultLayoutOptions . prettyModule
 
 renderBlocks :: [Syntax.Block] -> Text
 renderBlocks = renderStrict . layoutPretty defaultLayoutOptions . prettyBlocks
+
+--------------------------------------------------------------------------------
+prettyModule :: [Syntax.Block] -> Doc ann
+prettyModule blocks =
+  vsep
+    [ moduleHeader
+    , indent 2 $ prettyBlocks blocks
+    ]
+
+moduleHeader :: Doc ann
+moduleHeader =
+  vsep
+    [ "module Main where"
+    , mempty
+    , "import Data.Text (Text)"
+    , "import Text.Blaze.Html5 (Html, (!))"
+    , "import Text.Blaze.Html5 qualified as H"
+    , "import Text.Blaze.Html5.Attributes qualified as A"
+    , "import Text.Blaze.Html.Renderer.Pretty (renderHtml)"
+    , mempty
+    , "main :: IO ()"
+    , "main = putStrLn . renderHtml $"
+    ]
 
 --------------------------------------------------------------------------------
 prettyBlocks :: [Syntax.Block] -> Doc ann
@@ -66,8 +92,8 @@ prettyElem = \case
   Syntax.Div -> "H.div"
 
 prettyAttr :: Syntax.Attr -> Doc ann
-prettyAttr (Syntax.Id t) = pretty $ "A.id (H.toValue \"" <> t <> "\")"
-prettyAttr (Syntax.Class t) = pretty $ "A.class_ (H.toValue \"" <> t <> "\")"
+prettyAttr (Syntax.Id t) = pretty $ "A.id (H.toValue (\"" <> t <> "\" :: Text))"
+prettyAttr (Syntax.Class t) = pretty $ "A.class_ (H.toValue (\"" <> t <> "\" :: Text))"
 prettyAttr (Syntax.Attr a b) =
   "H.customAttribute" <+> pretty a <+> maybe (pretty a) prettyCode b
 
