@@ -335,7 +335,7 @@ pugAttrs' :: Parser [Attr]
 pugAttrs' =
   -- `try` because we want to backtrack if there is a dot
   -- not followed by a class name, for mdot to succeed.
-  ((:[]) <$> pugId) <|> try ((:[]) <$> pugClass) <|> pugAttrList
+  ((: []) <$> pugId) <|> try ((: []) <$> pugClass) <|> pugAttrList
 
 -- E.g. #a
 pugId :: Parser Attr

@@ -69,14 +69,14 @@ prettyPugElem (t1, ts_, as) =
   case ts_ of
     [] ->
       let header = prettyT1 <+> dollar
-      in vsep [header, footer]
+       in vsep [header, footer]
     [t] ->
       let header = prettyT1 <+> "!" <+> prettyAttr t <+> dollar
-      in vsep [header, footer]
-    t:ts ->
+       in vsep [header, footer]
+    t : ts ->
       let header = prettyT1 <+> "!" <+> prettyAttr t
           body = indent lengthT1 $ vsep (map (("!" <+>) . prettyAttr) ts) <+> dollar
-      in vsep [header, body, footer]
+       in vsep [header, body, footer]
  where
   prettyT1 = prettyElem t1
   lengthT1 = succ . T.length . renderStrict $ layoutPretty defaultLayoutOptions prettyT1

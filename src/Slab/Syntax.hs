@@ -290,16 +290,16 @@ groupAttrs attrs = elemId <> elemClass <> elemAttrs
   idNames' = T.intercalate " " idNames
   elemId =
     if idNames == []
-    then []
-    else [Id idNames']
+      then []
+      else [Id idNames']
 
   classNames = classNamesFromAttrs attrs
   classNames' :: Text
   classNames' = T.intercalate " " classNames
   elemClass =
     if classNames == []
-    then []
-    else [Class classNames']
+      then []
+      else [Class classNames']
 
   attrs' = namesFromAttrs attrs
   elemAttrs = map (\(a, b) -> Attr a (Just $ SingleQuoteString b)) attrs'

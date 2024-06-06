@@ -47,7 +47,6 @@ renderBlock (Syntax.PugElem name mdot attrs children) =
   idNames = Syntax.idNamesFromAttrs attrs
   idNames' :: Text
   idNames' = T.intercalate "-" idNames -- TODO Refuse multiple Ids in some kind of validation step after parsing ?
-
   mAddClass :: H.Html -> H.Html
   mAddClass e =
     if classNames == []
