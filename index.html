@@ -16,7 +16,7 @@ page
         A paragraph.
     &lt;/p&gt;
 &lt;/body&gt;</code></pre><p>When not pretty-printed, it looks like this instead:</p><pre><code>&lt;!DOCTYPE HTML&gt;
-&lt;body&gt;&lt;h1&gt;A title&lt;/h1&gt;&lt;p&gt;A paragraph.&lt;/p&gt;&lt;/body&gt;</code></pre></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Basic syntax</h2><p>At its core, Slab is a short-hand notation to represent HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to the one used in Pug, which inspired Slab.</p><div class="switcher"><pre><code>ul
+&lt;body&gt;&lt;h1&gt;A title&lt;/h1&gt;&lt;p&gt;A paragraph.&lt;/p&gt;&lt;/body&gt;</code></pre></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Basic syntax</h2><h3>Elements</h3><p>At its core, Slab is a short-hand notation to represent HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to the one used in Pug, which inspired Slab.</p><div class="switcher"><pre><code>ul
   li Item
   li Item
   li Item</code></pre><pre><code>&lt;ul&gt;
@@ -29,4 +29,16 @@ page
     &lt;li&gt;
         Item
     &lt;/li&gt;
-&lt;/ul&gt;</code></pre></div><p>Note: we show on the right the resulting HTML pretty-printed. In a production setting, we would instead generate the following:</p><pre><code>&lt;ul&gt;&lt;li&gt;Item&lt;/li&gt;&lt;li&gt;Item&lt;/li&gt;&lt;li&gt;Item&lt;/li&gt;&lt;/ul&gt;</code></pre></div></div></main></body></html>
+&lt;/ul&gt;</code></pre></div><p>Note: we show on the resulting HTML pretty-printed. In a production setting, we would instead generate the following:</p><pre><code>&lt;ul&gt;&lt;li&gt;Item&lt;/li&gt;&lt;li&gt;Item&lt;/li&gt;&lt;li&gt;Item&lt;/li&gt;&lt;/ul&gt;</code></pre><h3>IDs and classes</h3><p>To assign an ID to an element, the regular attribute notation can be used (see below). Slab also supports tacking the ID directly to the element name with a <code>#</code> character.</p><div class="switcher"><pre><code>h1#title A title</code></pre><pre><code>&lt;h1 id=&quot;title&quot;&gt;
+    A title
+&lt;/h1&gt;</code></pre></div><p>Classes work similarly and use and the <code>.</code> character for the short notation instead.</p><div class="switcher"><pre><code>h1.hero A title
+p.lede.muted Catching summary.</code></pre><pre><code>&lt;h1 class=&quot;hero&quot;&gt;
+    A title
+&lt;/h1&gt;
+&lt;p class=&quot;lede muted&quot;&gt;
+    Catching summary.
+&lt;/p&gt;</code></pre></div><p>An ID or a class can also be used on their own. In that case, a <code>div</code> element is assumed.</p><div class="switcher"><pre><code>.playground
+  #app</code></pre><pre><code>&lt;div class=&quot;playground&quot;&gt;
+    &lt;div id=&quot;app&quot;&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</code></pre></div></div></div></main></body></html>
