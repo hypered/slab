@@ -56,8 +56,7 @@ data Block
   | -- | Allow to assign the content of a JSON file to a variable. The syntax
     -- is specific to how Struct has a @require@ function in scope.
     PugReadJson Text FilePath (Maybe Aeson.Value)
-  | -- | Only support assigning a string for now.
-    PugAssignVar Text Text
+  | PugAssignVar Text Code
   | PugIf Code [Block] [Block]
   | PugList [Block]
   | BlockCode Code

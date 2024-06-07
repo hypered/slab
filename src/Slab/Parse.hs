@@ -366,10 +366,16 @@ pugPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
   mb <- optional $ do
     _ <- string "="
-    b <- lexeme (SingleQuoteString <$> pugSingleQuoteString <|> SingleQuoteString <$> pugDoubleQuoteString <|> Int <$> pugNumber)
+    b <- lexeme pugValue
     pure b
   _ <- optional (lexeme $ string ",")
   pure (a, mb)
+
+pugValue :: Parser Code
+pugValue =
+  SingleQuoteString <$> pugSingleQuoteString
+    <|> SingleQuoteString <$> pugDoubleQuoteString
+    <|> Int <$> pugNumber
 
 pugSingleQuoteString :: Parser Text
 pugSingleQuoteString = do
@@ -573,7 +579,7 @@ pugLet = do
 
 pugAssignVar :: Text -> Parser (L.IndentOpt Parser Block Block)
 pugAssignVar name = do
-  val <- lexeme pugDoubleQuoteString
+  val <- lexeme pugValue
   pure $ L.IndentNone $ PugAssignVar name val
 
 pugReadJson :: Text -> Parser (L.IndentOpt Parser Block Block)
