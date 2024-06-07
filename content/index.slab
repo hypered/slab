@@ -56,11 +56,11 @@ html(dir="ltr", lang="en")
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
                     h2 Basic syntax
+                    h3 Elements
 
                     p At its core, Slab is a short-hand notation to represent HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to the one used in Pug, which inspired Slab.
 
                     .switcher
-
                         pre
                             code
                                 include:escape-html ../examples/docs/basic.slab
@@ -68,9 +68,41 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/basic.html
 
-                    p Note: we show on the right the resulting HTML pretty-printed. In a production setting, we would instead generate the following:
+                    p Note: we show on the resulting HTML pretty-printed. In a production setting, we would instead generate the following:
 
                     pre
                         code
                             :escape-html
                                 <ul><li>Item</li><li>Item</li><li>Item</li></ul>
+
+                    h3 IDs and classes
+
+                    p To assign an ID to an element, the regular attribute notation can be used (see below). Slab also supports tacking the ID directly to the element name with a <code>#</code> character.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic-id.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic-id.html
+
+                    p Classes work similarly and use and the <code>.</code> character for the short notation instead.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic-class.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic-class.html
+
+                    p An ID or a class can also be used on their own. In that case, a <code>div</code> element is assumed.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic-div.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic-div.html
