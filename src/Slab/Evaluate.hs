@@ -80,20 +80,20 @@ preprocessNodeE ctx@Context {..} = \case
     nodes' <- preprocessNodesE ctx nodes
     pure $ PugElem name mdot attrs nodes'
   node@(PugText _ _) -> pure node
-  PugInclude path _ -> do
+  PugInclude mname path _ -> do
     let includedPath = takeDirectory ctxStartPath </> path
         slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
     if
-        | exists && not slabExt -> do
+        | exists && (not slabExt || mname == Just "escape-html") -> do
             -- Include the file content as-is.
             content <- liftIO $ T.readFile includedPath
             let node = Parse.pugTextInclude content
-            pure $ PugInclude path (Just [node])
+            pure $ PugInclude mname path (Just [node])
         | exists -> do
             -- Parse and process the .slab file.
             nodes' <- preprocessFileE includedPath
-            pure $ PugInclude path (Just nodes')
+            pure $ PugInclude mname path (Just nodes')
         | otherwise ->
             throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   PugFragmentDef name params nodes -> do
@@ -153,13 +153,13 @@ eval env stack = \case
   PugText syn template -> do
     template' <- evalTemplate env template
     pure $ PugText syn template'
-  PugInclude path mnodes -> do
+  PugInclude mname path mnodes -> do
     case mnodes of
       Just nodes -> do
         nodes' <- evaluate env ("include" : stack) nodes
-        pure $ PugInclude path (Just nodes')
+        pure $ PugInclude mname path (Just nodes')
       Nothing ->
-        pure $ PugInclude path Nothing
+        pure $ PugInclude mname path Nothing
   node@(PugFragmentDef _ _ _) -> pure node
   PugFragmentCall name values args -> do
     body <- call env stack name values args
@@ -315,7 +315,7 @@ extractVariables env = concatMap f
   f BlockDoctype = []
   f (PugElem _ _ _ _) = []
   f (PugText _ _) = []
-  f (PugInclude _ children) = maybe [] (extractVariables env) children
+  f (PugInclude _ _ children) = maybe [] (extractVariables env) children
   f (PugEach _ _ _ _) = []
   f (PugFragmentDef name names children) = [(name, Frag names env children)]
   f (PugFragmentCall _ _ _) = []
@@ -351,7 +351,7 @@ simplify' = \case
   node@BlockDoctype -> [node]
   PugElem name mdot attrs nodes -> [PugElem name mdot attrs $ simplify nodes]
   node@(PugText _ _) -> [node]
-  PugInclude _ mnodes -> maybe [] simplify mnodes
+  PugInclude _ _ mnodes -> maybe [] simplify mnodes
   PugFragmentDef _ _ _ -> []
   PugFragmentCall _ _ args -> simplify args
   PugEach _ _ _ nodes -> simplify nodes

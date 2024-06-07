@@ -398,9 +398,13 @@ pugIdentifier = T.pack <$> lexeme (some (noneOf (" {}\n" :: String))) <?> "ident
 --------------------------------------------------------------------------------
 pugInclude :: Parser (L.IndentOpt Parser Block Block)
 pugInclude = do
-  _ <- lexeme (string "include")
+  mname <- lexeme $ do
+    string "include"
+    optional $ do
+      _ <- string ":"
+      pugIdentifier
   path <- pugPath
-  pure $ L.IndentNone $ PugInclude path Nothing
+  pure $ L.IndentNone $ PugInclude mname path Nothing
 
 pugPath :: Parser FilePath
 pugPath = lexeme (some (noneOf ['\n'])) <?> "path"

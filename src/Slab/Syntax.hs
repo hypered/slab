@@ -36,7 +36,8 @@ data Block
   | PugText TextSyntax [Inline]
   | -- | @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
-    PugInclude FilePath (Maybe [Block])
+    -- The filter name follows the same behavior as PugFilter.
+    PugInclude (Maybe Text) FilePath (Maybe [Block])
   | -- | This doesn't exit in Pug. This is like a mixin than receive block arguments.
     -- Or like a parent template that can be @extended@ by a child template.
     PugFragmentDef Text [Text] [Block]
@@ -204,7 +205,7 @@ extractClasses = nub . sort . concatMap f
   f BlockDoctype = []
   f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (PugText _ _) = []
-  f (PugInclude _ children) = maybe [] extractClasses children
+  f (PugInclude _ _ children) = maybe [] extractClasses children
   f (PugFragmentDef _ _ _) = [] -- We extract them in PugFragmentCall instead.
   f (PugFragmentCall _ _ children) = extractClasses children
   f (PugEach _ _ _ children) = extractClasses children
@@ -239,7 +240,7 @@ extractFragments = concatMap f
   f BlockDoctype = []
   f (PugElem _ _ _ children) = extractFragments children
   f (PugText _ _) = []
-  f (PugInclude _ children) = maybe [] extractFragments children
+  f (PugInclude _ _ children) = maybe [] extractFragments children
   f (PugFragmentDef name _ children) = [PugFragmentDef' name children]
   f (PugFragmentCall name _ children) = [PugFragmentCall' name] <> extractFragments children
   f (PugEach _ _ _ children) = extractFragments children

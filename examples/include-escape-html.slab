@@ -1,0 +1,3 @@
+body
+  include:escape-html a.slab
+  include:escape-html a.html

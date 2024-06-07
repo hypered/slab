@@ -66,8 +66,10 @@ renderBlock (Syntax.PugText _ [Syntax.Lit s])
   | s == T.empty = H.preEscapedText "\n" -- This allows to force some whitespace.
   | otherwise = H.preEscapedText s -- TODO
 renderBlock (Syntax.PugText _ _) = error "Template is not rendered."
-renderBlock (Syntax.PugInclude _ (Just nodes)) = mapM_ renderBlock nodes
-renderBlock (Syntax.PugInclude path Nothing) = H.stringComment $ "include " <> path
+renderBlock (Syntax.PugInclude (Just "escape-html") _ (Just nodes)) =
+  escapeTexts nodes
+renderBlock (Syntax.PugInclude _ _ (Just nodes)) = mapM_ renderBlock nodes
+renderBlock (Syntax.PugInclude _ path Nothing) = H.stringComment $ "include " <> path
 renderBlock (Syntax.PugFragmentDef _ _ _) = mempty
 renderBlock (Syntax.PugFragmentCall _ _ nodes) = mapM_ renderBlock nodes
 renderBlock (Syntax.PugEach _ _ _ nodes) = mapM_ renderBlock nodes
@@ -105,12 +107,20 @@ renderBlock (Syntax.BlockCode c) = error $ "renderBlock called on BlockCode " <>
 renderTexts :: [Syntax.Block] -> H.Html
 renderTexts xs = H.preEscapedText xs'
  where
-  xs' = T.intercalate "\n" $ map f xs
+  xs' = T.intercalate "\n" $ map extractText xs
+
+escapeTexts :: [Syntax.Block] -> H.Html
+escapeTexts xs = H.text xs'
+ where
+  xs' = T.intercalate "\n" $ map extractText xs
+
+extractText = f
+ where
   f Syntax.BlockDoctype = error "renderTexts called on a BlockDoctype"
   f (Syntax.PugElem _ _ _ _) = error "renderTexts called on a PugElem"
   f (Syntax.PugText _ [Syntax.Lit s]) = s
   f (Syntax.PugText _ _) = error "renderTexts called on unevaluated PugText"
-  f (Syntax.PugInclude _ _) = error "renderTexts called on a PugInclude"
+  f (Syntax.PugInclude _ _ _) = error "renderTexts called on a PugInclude"
   f (Syntax.PugFragmentDef _ _ _) = error "renderTexts called on a PugFragmentDef"
   f (Syntax.PugFragmentCall _ _ _) = error "renderTexts called on a PugFragmentCall"
   f (Syntax.PugEach _ _ _ _) = error "renderTexts called on a PugEach"
