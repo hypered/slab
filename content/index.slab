@@ -118,3 +118,20 @@ html(dir="ltr", lang="en")
                         pre
                             code
                                 include:escape-html ../examples/docs/basic-attr.html
+
+                .c-content.flow-all.u-flow-c-4.limit-42em
+                    h2 Expression language
+
+                    p In addition of its lightweight syntax equivalent to HTML, Slab supports some constructs usually found in programming languages.
+
+                    h3 Variable declarations
+
+                    p Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element by following the element name directly with a <code>=</code> character.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/expr.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/expr.html
