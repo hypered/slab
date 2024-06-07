@@ -16,4 +16,17 @@ page
         A paragraph.
     &lt;/p&gt;
 &lt;/body&gt;</code></pre><p>When not pretty-printed, it looks like this instead:</p><pre><code>&lt;!DOCTYPE HTML&gt;
-&lt;body&gt;&lt;h1&gt;A title&lt;/h1&gt;&lt;p&gt;A paragraph.&lt;/p&gt;&lt;/body&gt;</code></pre></div></div></main></body></html>
+&lt;body&gt;&lt;h1&gt;A title&lt;/h1&gt;&lt;p&gt;A paragraph.&lt;/p&gt;&lt;/body&gt;</code></pre></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Basic syntax</h2><p>At its core, Slab is a short-hand notation to represent HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to the one used in Pug, which inspired Slab.</p><div class="switcher"><pre><code>ul
+  li Item
+  li Item
+  li Item</code></pre><pre><code>&lt;ul&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+&lt;/ul&gt;</code></pre></div><p>Note: we show on the right the resulting HTML pretty-printed. In a production setting, we would instead generate the following:</p><pre><code>&lt;ul&gt;&lt;li&gt;Item&lt;/li&gt;&lt;li&gt;Item&lt;/li&gt;&lt;li&gt;Item&lt;/li&gt;&lt;/ul&gt;</code></pre></div></div></main></body></html>
