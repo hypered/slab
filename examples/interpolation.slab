@@ -1,8 +1,8 @@
-- var name = "Alice"
+let name = "Alice"
 p Hello, #{name}.
 
 body
-  - var name = "Bob"
+  let name = "Bob"
   p Hello, #{name}.
 
 p Hello, #{'Charlie'}.

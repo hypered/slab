@@ -61,7 +61,7 @@ pugNode = do
         , pugRawElement
         , pugDefault
         , pugImport
-        , (try pugReadJson <|> pugAssignVar)
+        , pugLet
         , try pugEach
         , pugIf
         , pugFragmentCall
@@ -399,7 +399,7 @@ pugIdentifier = T.pack <$> lexeme (some (noneOf (" {}\n" :: String))) <?> "ident
 pugInclude :: Parser (L.IndentOpt Parser Block Block)
 pugInclude = do
   mname <- lexeme $ do
-    string "include"
+    _ <- string "include"
     optional $ do
       _ <- string ":"
       pugIdentifier
@@ -561,22 +561,26 @@ pugImport = do
   pure $ L.IndentMany Nothing (pure . PugImport path Nothing) pugNode
 
 --------------------------------------------------------------------------------
-pugReadJson :: Parser (L.IndentOpt Parser Block Block)
-pugReadJson = do
+pugLet :: Parser (L.IndentOpt Parser Block Block)
+pugLet = do
   _ <- lexeme (string "let")
   name <- lexeme pugName
   _ <- lexeme (string "=")
+  choice
+    [ pugAssignVar name
+    , pugReadJson name
+    ]
+
+pugAssignVar :: Text -> Parser (L.IndentOpt Parser Block Block)
+pugAssignVar name = do
+  val <- lexeme pugDoubleQuoteString
+  pure $ L.IndentNone $ PugAssignVar name val
+
+pugReadJson :: Text -> Parser (L.IndentOpt Parser Block Block)
+pugReadJson name = do
   path <- pugPath
   pure $ L.IndentNone $ PugReadJson name path Nothing
 
-pugAssignVar :: Parser (L.IndentOpt Parser Block Block)
-pugAssignVar = do
-  _ <- lexeme (string "-")
-  _ <- lexeme (string "var")
-  name <- lexeme pugName
-  _ <- lexeme (string "=")
-  val <- lexeme pugDoubleQuoteString
-  pure $ L.IndentNone $ PugAssignVar name val
 
 --------------------------------------------------------------------------------
 scn :: Parser ()
