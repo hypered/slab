@@ -53,3 +53,24 @@ html(dir="ltr", lang="en")
                             :escape-html
                                 <!DOCTYPE HTML>
                                 <body><h1>A title</h1><p>A paragraph.</p></body>
+
+                .c-content.flow-all.u-flow-c-4.limit-42em
+                    h2 Basic syntax
+
+                    p At its core, Slab is a short-hand notation to represent HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to the one used in Pug, which inspired Slab.
+
+                    .switcher
+
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic.html
+
+                    p Note: we show on the right the resulting HTML pretty-printed. In a production setting, we would instead generate the following:
+
+                    pre
+                        code
+                            :escape-html
+                                <ul><li>Item</li><li>Item</li><li>Item</li></ul>
