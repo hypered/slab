@@ -149,3 +149,15 @@ html(dir="ltr", lang="en")
                         pre
                             code
                                 include:escape-html ../examples/docs/exprs.html
+
+                    h3 String interpolation
+
+                    p Expressions can be used within the text content of an element using the the <code>##{...}</code> syntax.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/interpolation.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/interpolation.html
