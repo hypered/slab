@@ -114,26 +114,27 @@ escapeTexts xs = H.text xs'
  where
   xs' = T.intercalate "\n" $ map extractText xs
 
+extractText :: Syntax.Block -> Text
 extractText = f
  where
-  f Syntax.BlockDoctype = error "renderTexts called on a BlockDoctype"
-  f (Syntax.PugElem _ _ _ _) = error "renderTexts called on a PugElem"
+  f Syntax.BlockDoctype = error "extractTexts called on a BlockDoctype"
+  f (Syntax.PugElem _ _ _ _) = error "extractTexts called on a PugElem"
   f (Syntax.PugText _ [Syntax.Lit s]) = s
-  f (Syntax.PugText _ _) = error "renderTexts called on unevaluated PugText"
-  f (Syntax.PugInclude _ _ _) = error "renderTexts called on a PugInclude"
-  f (Syntax.PugFragmentDef _ _ _) = error "renderTexts called on a PugFragmentDef"
-  f (Syntax.PugFragmentCall _ _ _) = error "renderTexts called on a PugFragmentCall"
-  f (Syntax.PugEach _ _ _ _) = error "renderTexts called on a PugEach"
-  f (Syntax.PugComment _ _) = error "renderTexts called on a PugComment"
-  f (Syntax.PugFilter _ _) = error "renderTexts called on a PugFilter"
-  f (Syntax.PugRawElem _ _) = error "renderTexts called on a PugRawElem"
-  f (Syntax.PugDefault _ _) = error "renderTexts called on a PugDefault"
-  f (Syntax.PugImport _ _ _) = error "renderTexts called on a PugImport"
-  f (Syntax.PugReadJson _ _ _) = error "renderTexts called on a PugReadJson"
-  f (Syntax.PugAssignVar _ _) = error "renderTexts called on a PugAssignVar"
-  f (Syntax.PugIf _ _ _) = error "renderTexts called on a PugIf"
-  f (Syntax.PugList _) = error "renderTexts called on a PugList"
-  f (Syntax.BlockCode _) = error "renderTexts called on a BlockCode"
+  f (Syntax.PugText _ _) = error "extractTexts called on unevaluated PugText"
+  f (Syntax.PugInclude _ _ _) = error "extractTexts called on a PugInclude"
+  f (Syntax.PugFragmentDef _ _ _) = error "extractTexts called on a PugFragmentDef"
+  f (Syntax.PugFragmentCall _ _ _) = error "extractTexts called on a PugFragmentCall"
+  f (Syntax.PugEach _ _ _ _) = error "extractTexts called on a PugEach"
+  f (Syntax.PugComment _ _) = error "extractTexts called on a PugComment"
+  f (Syntax.PugFilter _ _) = error "extractTexts called on a PugFilter"
+  f (Syntax.PugRawElem _ _) = error "extractTexts called on a PugRawElem"
+  f (Syntax.PugDefault _ _) = error "extractTexts called on a PugDefault"
+  f (Syntax.PugImport _ _ _) = error "extractTexts called on a PugImport"
+  f (Syntax.PugReadJson _ _ _) = error "extractTexts called on a PugReadJson"
+  f (Syntax.PugAssignVar _ _) = error "extractTexts called on a PugAssignVar"
+  f (Syntax.PugIf _ _ _) = error "extractTexts called on a PugIf"
+  f (Syntax.PugList _) = error "extractTexts called on a PugList"
+  f (Syntax.BlockCode _) = error "extractTexts called on a BlockCode"
 
 renderElem :: Syntax.Elem -> Html -> Html
 renderElem = \case
