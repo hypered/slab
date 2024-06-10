@@ -1,0 +1,13 @@
+-- A regular comment.
+
+--- A comment in the generated HTML.
+
+---
+  Another comment
+  in the generated
+  HTML.
+
+--
+  Another
+  regular
+  comment.

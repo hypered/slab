@@ -119,6 +119,18 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/basic-attr.html
 
+                    h3 Comments
+
+                    p Comments are introduced with <code>--</code> or <code>---</code>, either with the comment itself on the same line, or as an indented text block on the floowing lines.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic-comments.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/basic-comments.html
+
                 .c-content.flow-all.u-flow-c-4.limit-42em
                     h2 Expression language
 
