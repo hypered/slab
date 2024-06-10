@@ -74,7 +74,9 @@ renderBlock (Syntax.PugFragmentDef _ _ _) = mempty
 renderBlock (Syntax.PugFragmentCall _ _ nodes) = mapM_ renderBlock nodes
 renderBlock (Syntax.PugEach _ _ _ nodes) = mapM_ renderBlock nodes
 renderBlock (Syntax.PugComment b content) =
-  if b then H.textComment content else mempty
+  case b of
+    Syntax.PassthroughComment -> H.textComment content
+    Syntax.NormalComment -> mempty
 renderBlock (Syntax.PugFilter "escape-html" content) =
   H.text content
 renderBlock (Syntax.PugFilter name _) = error $ "Unknown filter name " <> T.unpack name

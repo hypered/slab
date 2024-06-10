@@ -3,6 +3,7 @@
 module Slab.Syntax
   ( Block (..)
   , isDoctype
+  , CommentType (..)
   , Elem (..)
   , TrailingSym (..)
   , Attr (..)
@@ -43,8 +44,8 @@ data Block
     PugFragmentDef Text [Text] [Block]
   | PugFragmentCall Text [Code] [Block]
   | PugEach Text (Maybe Text) Code [Block]
-  | -- | Whether or not the comment must appear in the output.
-    PugComment Bool Text
+  | -- TODO Should we allow string interpolation here ?
+    PugComment CommentType Text
   | PugFilter Text Text
   | PugRawElem Text [Block]
   | -- | @default@ defines an optional formal parameter with a default content.
@@ -69,6 +70,10 @@ isDoctype _ = False
 trailingSym :: Block -> TrailingSym
 trailingSym (PugElem _ sym _ _) = sym
 trailingSym _ = NoSym
+
+-- | A "passthrough" comment will be included in the generated HTML.
+data CommentType = NormalComment | PassthroughComment
+  deriving (Show, Eq)
 
 data Elem
   = Html

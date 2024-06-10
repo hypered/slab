@@ -511,8 +511,8 @@ pugComment = do
   b <-
     lexeme $
       choice
-        [ string "---" *> pure True
-        , string "--" *> pure False
+        [ string "---" *> pure PassthroughComment
+        , string "--" *> pure NormalComment
         ]
   mcontent <- optional pugText
   case mcontent of
