@@ -283,7 +283,25 @@ evalCode env = \case
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i + j
       (Int i, SingleQuoteString s) -> pure . SingleQuoteString $ T.pack (show i) <> s
-      _ -> throwE $ PreProcessError $ "Unimplemented: " <> T.pack (show (Add a' b'))
+      _ -> throwE $ PreProcessError $ "Unimplemented (add): " <> T.pack (show (Add a' b'))
+  Sub a b -> do
+    a' <- evalCode env a
+    b' <- evalCode env b
+    case (a', b') of
+      (Int i, Int j) -> pure . Int $ i - j
+      _ -> throwE $ PreProcessError $ "Unimplemented (sub): " <> T.pack (show (Add a' b'))
+  Times a b -> do
+    a' <- evalCode env a
+    b' <- evalCode env b
+    case (a', b') of
+      (Int i, Int j) -> pure . Int $ i * j
+      _ -> throwE $ PreProcessError $ "Unimplemented (times): " <> T.pack (show (Add a' b'))
+  Divide a b -> do
+    a' <- evalCode env a
+    b' <- evalCode env b
+    case (a', b') of
+      (Int i, Int j) -> pure . Int $ i `div` j
+      _ -> throwE $ PreProcessError $ "Unimplemented (divide): " <> T.pack (show (Add a' b'))
   Thunk capturedEnv code ->
     evalCode capturedEnv code
   code -> pure code

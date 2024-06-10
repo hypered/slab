@@ -45,6 +45,7 @@ library
     , fsnotify
     , Glob
     , megaparsec
+    , parser-combinators
     , prettyprinter
     , pretty-simple
     , servant

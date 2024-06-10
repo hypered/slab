@@ -3,6 +3,7 @@
 module Slab.Parse
   ( parseFile
   , parse
+  , parseExpr
   , parseErrorPretty
   , pugTextInclude
   -- Inline parsing stuff
@@ -16,7 +17,9 @@ module Slab.Parse
   ) where
 
 import Control.Monad (void)
+import Control.Monad.Combinators.Expr
 import Data.Char (isSpace)
+import Data.Functor (($>))
 import Data.List (intercalate)
 import Data.List.NonEmpty qualified as NE (toList)
 import Data.Maybe (isJust)
@@ -41,6 +44,14 @@ parseFile path = do
 
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Block]
 parse fn = runParser (many pugNode <* eof) fn
+
+-- | We expose the expression parser for development:
+--
+-- @
+--     print $ Parse.parseExpr "1 + 2 * a"
+-- @
+parseExpr :: Text -> Either (ParseErrorBundle Text Void) Code
+parseExpr = runParser (sc *> pugCode <* eof) ""
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
@@ -187,36 +198,40 @@ pugCode' = do
 
 pugCode :: Parser Code
 pugCode =
-  do
-    try pugExpression
-    <|> (SingleQuoteString <$> pugSingleQuoteString) -- TODO Escape HTML, e.g. < to &lt;.
-    <|> (Int <$> pugInt)
-    <|> ( do
-            name <- pugName
-            mkey <- optional $ do
-              _ <- string "["
-              key <- pugSingleQuoteString
-              _ <- string "]"
-              pure key
-            case mkey of
-              Nothing -> pure $ Variable name
-              Just key -> pure $ Lookup name (SingleQuoteString key)
-        )
+  pugExpression
     <|> (Object <$> pugObject)
 
 pugVariable :: Parser Text
 pugVariable = pugName
 
--- Hard-coded for now to parse something like
---   p= index + 1 + '.'
 pugExpression :: Parser Code
-pugExpression = do
-  name <- lexeme pugVariable
-  _ <- lexeme $ string "+"
-  n <- lexeme $ pugNumber
-  _ <- lexeme $ string "+"
-  s <- lexeme $ pugSingleQuoteString
-  pure $ Add (Add (Variable name) (Int n)) (SingleQuoteString s)
+pugExpression = makeExprParser pTerm operatorTable
+ where
+  pTerm =
+    lexeme (Int <$> pugNumber)
+      <|> lexeme (SingleQuoteString <$> pugSingleQuoteString)
+      <|> lexeme pugVariable'
+      <|> parens pugExpression
+  parens = between (char '(') (char ')')
+
+-- An operator table to define precedence and associativity
+operatorTable :: [[Operator Parser Code]]
+operatorTable =
+  [ [InfixL (symbol "*" $> Times), InfixL (symbol "/" $> Divide)]
+  , [InfixL (symbol "+" $> Add), InfixL (symbol "-" $> Sub)]
+  ]
+
+pugVariable' :: Parser Code
+pugVariable' = do
+  name <- pugName
+  mkey <- optional $ do
+    _ <- string "["
+    key <- pugSingleQuoteString
+    _ <- string "]"
+    pure key
+  case mkey of
+    Nothing -> pure $ Variable name
+    Just key -> pure $ Lookup name (SingleQuoteString key)
 
 --------------------------------------------------------------------------------
 pugDoctype :: Parser (L.IndentOpt Parser Block Block)
@@ -527,9 +542,6 @@ pugFilter = do
       let items' = realign items
       pure $ L.IndentNone $ PugFilter name $ T.intercalate "\n" items'
 
-pugInt :: Parser Int
-pugInt = L.decimal
-
 pugName :: Parser Text
 pugName =
   T.pack
@@ -587,7 +599,6 @@ pugReadJson name = do
   path <- pugPath
   pure $ L.IndentNone $ PugReadJson name path Nothing
 
-
 --------------------------------------------------------------------------------
 scn :: Parser ()
 scn = L.space space1 empty empty
@@ -603,6 +614,9 @@ sc = L.space (void $ some (char ' ' <|> char '\t')) empty empty
 
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
+
+symbol :: Text -> Parser Text
+symbol = L.symbol sc
 
 --------------------------------------------------------------------------------
 -- Convert parse errors to a user-friendly message.

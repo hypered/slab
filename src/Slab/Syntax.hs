@@ -153,6 +153,9 @@ data Code
   | -- The object[key] lookup. This is quite restrive as a start.
     Lookup Text Code
   | Add Code Code
+  | Sub Code Code
+  | Times Code Code
+  | Divide Code Code
   | -- Code can be a fragment, so we can manipulate them with code later.
     -- We also capture the current environment.
     Frag [Text] Env [Block]
@@ -177,16 +180,17 @@ emptyEnv = Env []
 
 --------------------------------------------------------------------------------
 freeVariables :: Code -> [Text]
-freeVariables = nub . \case
-  Variable a -> [a]
-  Int _ -> []
-  SingleQuoteString _ -> []
-  List as -> concatMap freeVariables as
-  Object _ -> [] -- TODO I guess some of those can contain variables.
-  Lookup a b -> a : freeVariables b
-  Add a b -> freeVariables a <> freeVariables b
-  Frag _ _ _ -> []
-  Thunk _ _ -> []
+freeVariables =
+  nub . \case
+    Variable a -> [a]
+    Int _ -> []
+    SingleQuoteString _ -> []
+    List as -> concatMap freeVariables as
+    Object _ -> [] -- TODO I guess some of those can contain variables.
+    Lookup a b -> a : freeVariables b
+    Add a b -> freeVariables a <> freeVariables b
+    Frag _ _ _ -> []
+    Thunk _ _ -> []
 
 -- Capture an environment, but limit its content to only the free variables of
 -- the expression.

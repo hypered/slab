@@ -135,3 +135,17 @@ html(dir="ltr", lang="en")
                         pre
                             code
                                 include:escape-html ../examples/docs/expr.html
+
+                    p A current limitation is that each declaration requires its own <code>let</code> line.
+
+                    h3 Expressions
+
+                    p Simple values (integers and string literals) are supported alongside simple expressions (addition, substraction, multiplication and (integer) division).
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/exprs.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/exprs.html
