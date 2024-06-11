@@ -90,4 +90,30 @@ ul
     &lt;li&gt;
         Bob
     &lt;/li&gt;
+&lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Control flow</h2><p>Slab supports conditionals and loops using <code>if</code> and <code>for</code> blocks.</p><h3>Conditionals</h3><p>The <code>else</code> branch is optional.</p><div class="switcher"><pre><code>if true
+  p A.
+else
+  p B.</code></pre><pre><code>&lt;p&gt;
+    A.
+&lt;/p&gt;</code></pre></div><h3>Loops</h3><p>It is possible to iterate on lists and objects. In the following example, the index and the key are optional.</p><div class="switcher"><pre><code>ul
+  for val, index in [1, 2]
+    li val: #{val}, index: #{index}
+
+ul
+  for val, key in {1: &#39;one&#39;, 2: &#39;two&#39;}
+    li val: #{val}, key: #{key}</code></pre><pre><code>&lt;ul&gt;
+    &lt;li&gt;
+        val: 1, index: 0
+    &lt;/li&gt;
+    &lt;li&gt;
+        val: 2, index: 1
+    &lt;/li&gt;
+&lt;/ul&gt;
+&lt;ul&gt;
+    &lt;li&gt;
+        val: one, key: 1
+    &lt;/li&gt;
+    &lt;li&gt;
+        val: two, key: 2
+    &lt;/li&gt;
 &lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p></div></div></main></body></html>
