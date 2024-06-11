@@ -1,0 +1,4 @@
+let values = ../../data/values.json
+ul
+  for value in values
+    li= value['username']
