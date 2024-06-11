@@ -57,7 +57,60 @@ p.lede.muted Catching summary.</code></pre><pre><code>&lt;h1 class=&quot;hero&qu
   comment.</code></pre><pre><code>&lt;!-- A comment in the generated HTML. --&gt;
 &lt;!-- Another comment
 in the generated
-HTML. --&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Expression language</h2><p>In addition of its lightweight syntax equivalent to HTML, Slab supports some constructs usually found in programming languages.</p><h3>Variable declarations</h3><p>Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element by following the element name directly with a <code>=</code> character.</p><div class="switcher"><pre><code>let a = 1
+HTML. --&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Fragments</h2><p>Fragments are blocks of HTML that can be named and reused.</p><h3>Basics</h3><p>To define a new fragment, the <code>frag</code> keyword is used, followed by the name of the fragment. The body of the fragment is made of the following indented lines. To call a fragment, its name is used like a regular element.</p><div class="switcher"><pre><code>frag card
+  h1 Card
+  content
+
+card
+  frag content
+    p A paragraph.</code></pre><pre><code>&lt;h1&gt;
+    Card
+&lt;/h1&gt;
+&lt;p&gt;
+    A paragraph.
+&lt;/p&gt;</code></pre></div><p>In the above example, the fragment <code>card</code> is defined. In its body, it itself calls another fragment, <code>content</code>. That fragment is passed as an argument when <code>card</code> called. Arguments are given by defining fragments with the corresponding name, indented below the call.</p><h3>Implicit <code>content</code> argument</h3><p>To make a call to a fragment look more similar to regular HTML elements, indented lines below the call are passed as an argument called <code>content</code> when an expicit fragment with the same name is not defined. I.e. the following example is equivalent to the example above:</p><div class="switcher"><pre><code>frag card
+  h1 Card
+  content
+
+card
+  p A paragraph.</code></pre><pre><code>&lt;h1&gt;
+    Card
+&lt;/h1&gt;
+&lt;p&gt;
+    A paragraph.
+&lt;/p&gt;</code></pre></div><h3>Default arguments</h3><p>Fragments can define default contents for their arguments (making them optional) by using the <code>default</code> keyword before calling an argument.</p><div class="switcher"><pre><code>frag card
+  h1 Card
+  default content
+    p Default paragraph.
+
+card
+  p Another paragraph.
+
+card</code></pre><pre><code>&lt;h1&gt;
+    Card
+&lt;/h1&gt;
+&lt;p&gt;
+    Another paragraph.
+&lt;/p&gt;
+&lt;h1&gt;
+    Card
+&lt;/h1&gt;
+&lt;p&gt;
+    Default paragraph.
+&lt;/p&gt;</code></pre></div><h3>Expression arguments</h3><p>Fragments can also take (non-fragment) arguments. The expressions that can be used in Slag are documented in the <a href="#expression-language">Expression language</a> section.</p><p>A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragments, (non-fragments) arguments are passed between curly braces.</p><div class="switcher"><pre><code>frag hello{name}
+  .greeting
+    p Hello, #{name}.
+    content
+
+hello{&#39;Alice&#39;}
+  p Some content.</code></pre><pre><code>&lt;div class=&quot;greeting&quot;&gt;
+    &lt;p&gt;
+        Hello, Alice.
+    &lt;/p&gt;
+    &lt;p&gt;
+        Some content.
+    &lt;/p&gt;
+&lt;/div&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="expression-language">Expression language</h2><p>In addition of its lightweight syntax equivalent to HTML, Slab supports some constructs usually found in programming languages.</p><h3>Variable declarations</h3><p>Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element by following the element name directly with a <code>=</code> character.</p><div class="switcher"><pre><code>let a = 1
 let b = &quot;Alice&quot;
 p= a
 p= b</code></pre><pre><code>&lt;p&gt;
