@@ -144,6 +144,7 @@ renderElem = \case
   Syntax.Body -> H.body
   Syntax.Div -> H.div
   Syntax.Span -> H.span
+  Syntax.Br -> const H.br
   Syntax.Hr -> const H.hr
   Syntax.H1 -> H.h1
   Syntax.H2 -> H.h2

@@ -80,6 +80,7 @@ data Elem
   | Body
   | Div
   | Span
+  | Br
   | Hr
   | H1
   | H2

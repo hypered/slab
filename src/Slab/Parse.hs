@@ -283,6 +283,7 @@ pugElem =
         "body" -> pure Body
         "div" -> pure Div
         "span" -> pure Span
+        "br" -> pure Br
         "hr" -> pure Hr
         "h1" -> pure H1
         "h2" -> pure H2
