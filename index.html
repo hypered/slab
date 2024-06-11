@@ -116,4 +116,17 @@ ul
     &lt;li&gt;
         val: two, key: 2
     &lt;/li&gt;
-&lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p></div></div></main></body></html>
+&lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Modularity</h2><p>Slab code can be split in multiple files in two ways: include statements and imports.</p><h3>Includes</h3><p>An include works by inlining the content of the included file in the including file. When the included file has a <code>.slab</code> extension, it is interpreted as if its code was present in the including file. In particular, any toplevel code that is not <code>let</code> expressions or fragment definitions will render as-if directly written in the including code, and definitions can be used in the including file.</p><p>The include syntax allows to specify a filter. Currently the only supported filter is <code>:escape-html</code>. It can be used when you want to show HTML code and also to show Slab code (i.e. disabling its interpretation). This is how the example code on this page is shown.</p><div class="switcher"><pre><code>include basic.slab</code></pre><pre><code>&lt;ul&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+&lt;/ul&gt;</code></pre></div><div class="switcher"><pre><code>include:escape-html basic.slab</code></pre><pre><code>ul
+  li Item
+  li Item
+  li Item</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p></div></div></main></body></html>
