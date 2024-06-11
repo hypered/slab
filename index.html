@@ -129,4 +129,20 @@ ul
 &lt;/ul&gt;</code></pre></div><div class="switcher"><pre><code>include:escape-html basic.slab</code></pre><pre><code>ul
   li Item
   li Item
-  li Item</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p></div></div></main></body></html>
+  li Item</code></pre></div><h3>Imports</h3><p>An import makes it possible to call a Slab file as if it was a fragment. Its body is the content of the file. As with fragments, it is possible to pass fragments as arguments.</p><p>Assuming a file called <code>aux-imported.slab</code> with the following content:</p><pre><code>div
+  default name
+div
+  default content</code></pre><p>It can be called as a fragment:</p><div class="switcher"><pre><code>import aux-imported.slab
+  frag name
+    h1 A title
+  frag content
+    p A paragraph.</code></pre><pre><code>&lt;div&gt;
+    &lt;h1&gt;
+        A title
+    &lt;/h1&gt;
+&lt;/div&gt;
+&lt;div&gt;
+    &lt;p&gt;
+        A paragraph.
+    &lt;/p&gt;
+&lt;/div&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p></div></div></main></body></html>
