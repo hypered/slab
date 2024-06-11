@@ -221,6 +221,33 @@ html(dir="ltr", lang="en")
                                 include:escape-html ../examples/docs/flow-for.html
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
+                    h2 Modularity
+
+                    p Slab code can be split in multiple files in two ways: include statements and imports.
+
+                    h3 Includes
+
+                    p An include works by inlining the content of the included file in the including file. When the included file has a <code>.slab</code> extension, it is interpreted as if its code was present in the including file. In particular, any toplevel code that is not <code>let</code> expressions or fragment definitions will render as-if directly written in the including code, and definitions can be used in the including file.
+
+                    p The include syntax allows to specify a filter. Currently the only supported filter is <code>:escape-html</code>. It can be used when you want to show HTML code and also to show Slab code (i.e. disabling its interpretation). This is how the example code on this page is shown.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/mod-include.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/mod-include.html
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/mod-include-filter.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/mod-include-filter.html
+
+                .c-content.flow-all.u-flow-c-4.limit-42em
                     h2 Open source
 
                     p Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.
