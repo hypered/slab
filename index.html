@@ -71,4 +71,23 @@ p= a + 2 * 3</code></pre><pre><code>&lt;p&gt;
 &lt;/p&gt;</code></pre></div><h3>String interpolation</h3><p>Expressions can be used within the text content of an element using the the <code>#{...}</code> syntax.</p><div class="switcher"><pre><code>let name = &quot;Bob&quot;
 p Hello, #{name}.</code></pre><pre><code>&lt;p&gt;
     Hello, Bob.
-&lt;/p&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p></div></div></main></body></html>
+&lt;/p&gt;</code></pre></div><h3>JSON support</h3><p>Static JSON files can be loaded by using their relative path.</p><p>Assuming a file with the following content:</p><pre><code>[
+  {
+    &quot;username&quot;: &quot;Alice&quot;,
+    &quot;email&quot;: &quot;alice@example.com&quot;
+  },
+  {
+    &quot;username&quot;: &quot;Bob&quot;,
+    &quot;email&quot;: &quot;bob@example.com&quot;
+  }
+]</code></pre><div class="switcher"><pre><code>let values = ../../data/values.json
+ul
+  for value in values
+    li= value[&#39;username&#39;]</code></pre><pre><code>&lt;ul&gt;
+    &lt;li&gt;
+        Alice
+    &lt;/li&gt;
+    &lt;li&gt;
+        Bob
+    &lt;/li&gt;
+&lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p></div></div></main></body></html>
