@@ -102,7 +102,7 @@ preprocessNodeE ctx@Context {..} = \case
   PugFragmentCall name values nodes -> do
     nodes' <- preprocessNodesE ctx nodes
     pure $ PugFragmentCall name values nodes'
-  node@(PugEach _ _ _ _) -> pure node
+  node@(PugFor _ _ _ _) -> pure node
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
@@ -164,8 +164,8 @@ eval env stack = \case
   PugFragmentCall name values args -> do
     body <- call env stack name values args
     pure $ PugFragmentCall name values body
-  PugEach name mindex values nodes -> do
-    -- Re-use PugEach to construct a single node to return.
+  PugFor name mindex values nodes -> do
+    -- Re-use PugFor to construct a single node to return.
     let zero :: Int
         zero = 0
     values' <- evalCode env values
@@ -178,7 +178,7 @@ eval env stack = \case
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
             Nothing -> augmentVariables env [(name, value)]
       evaluate env' ("each" : stack) nodes
-    pure $ PugEach name mindex values $ concat nodes'
+    pure $ PugFor name mindex values $ concat nodes'
   node@(PugComment _ _) -> pure node
   node@(PugFilter _ _) -> pure node
   node@(PugRawElem _ _) -> pure node
@@ -334,7 +334,7 @@ extractVariables env = concatMap f
   f (PugElem _ _ _ _) = []
   f (PugText _ _) = []
   f (PugInclude _ _ children) = maybe [] (extractVariables env) children
-  f (PugEach _ _ _ _) = []
+  f (PugFor _ _ _ _) = []
   f (PugFragmentDef name names children) = [(name, Frag names env children)]
   f (PugFragmentCall _ _ _) = []
   f (PugComment _ _) = []
@@ -372,7 +372,7 @@ simplify' = \case
   PugInclude _ _ mnodes -> maybe [] simplify mnodes
   PugFragmentDef _ _ _ -> []
   PugFragmentCall _ _ args -> simplify args
-  PugEach _ _ _ nodes -> simplify nodes
+  PugFor _ _ _ nodes -> simplify nodes
   node@(PugComment _ _) -> [node]
   node@(PugFilter _ _) -> [node]
   node@(PugRawElem _ _) -> [node]

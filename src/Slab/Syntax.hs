@@ -43,7 +43,7 @@ data Block
     -- Or like a parent template that can be @extended@ by a child template.
     PugFragmentDef Text [Text] [Block]
   | PugFragmentCall Text [Code] [Block]
-  | PugEach Text (Maybe Text) Code [Block]
+  | PugFor Text (Maybe Text) Code [Block]
   | -- TODO Should we allow string interpolation here ?
     PugComment CommentType Text
   | PugFilter Text Text
@@ -217,7 +217,7 @@ extractClasses = nub . sort . concatMap f
   f (PugInclude _ _ children) = maybe [] extractClasses children
   f (PugFragmentDef _ _ _) = [] -- We extract them in PugFragmentCall instead.
   f (PugFragmentCall _ _ children) = extractClasses children
-  f (PugEach _ _ _ children) = extractClasses children
+  f (PugFor _ _ _ children) = extractClasses children
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
@@ -252,7 +252,7 @@ extractFragments = concatMap f
   f (PugInclude _ _ children) = maybe [] extractFragments children
   f (PugFragmentDef name _ children) = [PugFragmentDef' name children]
   f (PugFragmentCall name _ children) = [PugFragmentCall' name] <> extractFragments children
-  f (PugEach _ _ _ children) = extractFragments children
+  f (PugFor _ _ _ children) = extractFragments children
   f (PugComment _ _) = []
   f (PugFilter _ _) = []
   f (PugRawElem _ _) = []

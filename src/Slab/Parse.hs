@@ -465,7 +465,7 @@ pugEach = do
   _ <- lexeme (string "in")
   collection <-
     (List <$> pugList) <|> (Object <$> pugObject) <|> (Variable <$> pugVariable)
-  pure $ L.IndentMany Nothing (pure . PugEach name mindex collection) pugNode
+  pure $ L.IndentMany Nothing (pure . PugFor name mindex collection) pugNode
 
 pugList :: Parser [Code]
 pugList = pugList' "[" "]" pugCode

@@ -72,7 +72,7 @@ renderBlock (Syntax.PugInclude _ _ (Just nodes)) = mapM_ renderBlock nodes
 renderBlock (Syntax.PugInclude _ path Nothing) = H.stringComment $ "include " <> path
 renderBlock (Syntax.PugFragmentDef _ _ _) = mempty
 renderBlock (Syntax.PugFragmentCall _ _ nodes) = mapM_ renderBlock nodes
-renderBlock (Syntax.PugEach _ _ _ nodes) = mapM_ renderBlock nodes
+renderBlock (Syntax.PugFor _ _ _ nodes) = mapM_ renderBlock nodes
 renderBlock (Syntax.PugComment b content) =
   case b of
     Syntax.PassthroughComment -> H.textComment content
@@ -126,7 +126,7 @@ extractText = f
   f (Syntax.PugInclude _ _ _) = error "extractTexts called on a PugInclude"
   f (Syntax.PugFragmentDef _ _ _) = error "extractTexts called on a PugFragmentDef"
   f (Syntax.PugFragmentCall _ _ _) = error "extractTexts called on a PugFragmentCall"
-  f (Syntax.PugEach _ _ _ _) = error "extractTexts called on a PugEach"
+  f (Syntax.PugFor _ _ _ _) = error "extractTexts called on a PugFor"
   f (Syntax.PugComment _ _) = error "extractTexts called on a PugComment"
   f (Syntax.PugFilter _ _) = error "extractTexts called on a PugFilter"
   f (Syntax.PugRawElem _ _) = error "extractTexts called on a PugRawElem"
