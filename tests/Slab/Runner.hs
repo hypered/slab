@@ -47,7 +47,7 @@ mkGoldenTest path = do
  where
   action :: IO Text
   action = do
-    evaluated <- Evaluate.evaluatePugFile path
+    evaluated <- Evaluate.evaluateFile path
     case evaluated of
       Left _ -> pure "TODO"
       Right nodes -> do

@@ -78,16 +78,16 @@ pugNode = do
         , pugFragmentCall
         ]
   case node of
-    PugIf cond as _ -> do
+    BlockIf cond as _ -> do
       mbs <- optional $ L.indentBlock scn pugElse
-      pure $ PugIf cond as $ maybe [] id mbs
+      pure $ BlockIf cond as $ maybe [] id mbs
     _ -> pure node
 
 pugIf :: Parser (L.IndentOpt Parser Block Block)
 pugIf = do
   _ <- lexeme $ string "if"
   cond <- pugCode
-  pure $ L.IndentMany Nothing (pure . (\as -> PugIf cond as [])) pugNode
+  pure $ L.IndentMany Nothing (pure . (\as -> BlockIf cond as [])) pugNode
 
 pugElse :: Parser (L.IndentOpt Parser [Block] Block)
 pugElse = do
@@ -106,8 +106,8 @@ pugElement = do
           scn
           items <- textBlock ref pugText -- TODO Use parseInlines
           let items' = realign items
-          pure $ L.IndentNone $ header [PugText Dot [Lit $ T.intercalate "\n" items']]
-        _ -> pure $ L.IndentNone $ header [PugText Dot template]
+          pure $ L.IndentNone $ header [BlockText Dot [Lit $ T.intercalate "\n" items']]
+        _ -> pure $ L.IndentNone $ header [BlockText Dot template]
     HasEqual -> do
       mcontent <- optional pugCode
       case mcontent of
@@ -120,7 +120,7 @@ pugElement = do
       template <- parseInlines
       case template of
         [] -> pure $ L.IndentMany Nothing (pure . header) pugNode
-        _ -> pure $ L.IndentNone $ header [PugText Normal template]
+        _ -> pure $ L.IndentNone $ header [BlockText Normal template]
 
 -- | Parse lines of text, indented more than `ref`.
 -- E.g.:
@@ -165,7 +165,7 @@ pugPipe = do
   ref <- L.indentLevel
   template <- p
   templates <- go ref
-  pure $ L.IndentNone $ PugText Pipe $ intercalate [Lit "\n"] (template : templates)
+  pure $ L.IndentNone $ BlockText Pipe $ intercalate [Lit "\n"] (template : templates)
  where
   go ref = do
     scn
@@ -188,7 +188,7 @@ pugPipe = do
 -- directly preceded by a @|@ in the including file.
 pugTextInclude :: Text -> Block
 pugTextInclude content =
-  PugText Include [Lit $ T.intercalate "\n" $ T.lines content]
+  BlockText Include [Lit $ T.intercalate "\n" $ T.lines content]
 
 pugCode' :: Parser (L.IndentOpt Parser Block Block)
 pugCode' = do
@@ -265,7 +265,7 @@ pugElemWithAttrs = do
           pure (a, concat b, maybe NoSym id mtrailing)
       )
       <?> "div tag"
-  pure $ PugElem name mdot attrs
+  pure $ BlockElem name mdot attrs
 
 pugElem :: Parser Elem
 pugElem =
@@ -345,7 +345,7 @@ pugAttrs = do
           pure (concat attrs, maybe NoSym (const HasDot) mdot)
       )
       <?> "attributes"
-  pure $ PugElem Div mdot attrs
+  pure $ BlockElem Div mdot attrs
 
 pugAttrs' :: Parser [Attr]
 pugAttrs' =
@@ -426,7 +426,7 @@ pugInclude = do
       _ <- string ":"
       pugIdentifier
   path <- pugPath
-  pure $ L.IndentNone $ PugInclude mname path Nothing
+  pure $ L.IndentNone $ BlockInclude mname path Nothing
 
 pugPath :: Parser FilePath
 pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
@@ -437,7 +437,7 @@ pugFragmentDef = do
   _ <- lexeme (string "fragment" <|> string "frag")
   name <- pugIdentifier
   params <- maybe [] id <$> optional pugParameters
-  pure $ L.IndentMany Nothing (pure . PugFragmentDef name params) pugNode
+  pure $ L.IndentMany Nothing (pure . BlockFragmentDef name params) pugNode
 
 -- E.g. {}, {a, b}
 pugParameters :: Parser [Text]
@@ -448,7 +448,7 @@ pugFragmentCall :: Parser (L.IndentOpt Parser Block Block)
 pugFragmentCall = do
   name <- pugIdentifier
   args <- maybe [] id <$> optional pugArguments
-  pure $ L.IndentMany Nothing (pure . PugFragmentCall name args) pugNode
+  pure $ L.IndentMany Nothing (pure . BlockFragmentCall name args) pugNode
 
 -- E.g. {}, {1, 'a'}
 pugArguments :: Parser [Code]
@@ -465,7 +465,7 @@ pugEach = do
   _ <- lexeme (string "in")
   collection <-
     (List <$> pugList) <|> (Object <$> pugObject) <|> (Variable <$> pugVariable)
-  pure $ L.IndentMany Nothing (pure . PugFor name mindex collection) pugNode
+  pure $ L.IndentMany Nothing (pure . BlockFor name mindex collection) pugNode
 
 pugList :: Parser [Code]
 pugList = pugList' "[" "]" pugCode
@@ -517,12 +517,12 @@ pugComment = do
         ]
   mcontent <- optional pugText
   case mcontent of
-    Just content -> pure $ L.IndentNone $ PugComment b content
+    Just content -> pure $ L.IndentNone $ BlockComment b content
     Nothing -> do
       scn
       items <- textBlock ref pugText
       let items' = realign items
-      pure $ L.IndentNone $ PugComment b $ T.intercalate "\n" items'
+      pure $ L.IndentNone $ BlockComment b $ T.intercalate "\n" items'
 
 --------------------------------------------------------------------------------
 pugFilter :: Parser (L.IndentOpt Parser Block Block)
@@ -536,12 +536,12 @@ pugFilter = do
       <?> "filter name"
   mcontent <- optional pugText
   case mcontent of
-    Just content -> pure $ L.IndentNone $ PugFilter name content
+    Just content -> pure $ L.IndentNone $ BlockFilter name content
     Nothing -> do
       scn
       items <- textBlock ref pugText
       let items' = realign items
-      pure $ L.IndentNone $ PugFilter name $ T.intercalate "\n" items'
+      pure $ L.IndentNone $ BlockFilter name $ T.intercalate "\n" items'
 
 pugName :: Parser Text
 pugName =
@@ -563,21 +563,21 @@ pugAngleBracket :: Parser ([Block] -> Block)
 pugAngleBracket = do
   _ <- char '<'
   content <- pugText
-  pure $ PugRawElem $ "<" <> content
+  pure $ BlockRawElem $ "<" <> content
 
 --------------------------------------------------------------------------------
 pugDefault :: Parser (L.IndentOpt Parser Block Block)
 pugDefault = do
   _ <- lexeme (string "default")
   name <- pugText
-  pure $ L.IndentMany Nothing (pure . PugDefault name) pugNode
+  pure $ L.IndentMany Nothing (pure . BlockDefault name) pugNode
 
 --------------------------------------------------------------------------------
 pugImport :: Parser (L.IndentOpt Parser Block Block)
 pugImport = do
   _ <- lexeme (string "import")
   path <- pugPath
-  pure $ L.IndentMany Nothing (pure . PugImport path Nothing) pugNode
+  pure $ L.IndentMany Nothing (pure . BlockImport path Nothing) pugNode
 
 --------------------------------------------------------------------------------
 pugLet :: Parser (L.IndentOpt Parser Block Block)
@@ -593,12 +593,12 @@ pugLet = do
 pugAssignVar :: Text -> Parser (L.IndentOpt Parser Block Block)
 pugAssignVar name = do
   val <- lexeme pugValue
-  pure $ L.IndentNone $ PugAssignVar name val
+  pure $ L.IndentNone $ BlockAssignVar name val
 
 pugReadJson :: Text -> Parser (L.IndentOpt Parser Block Block)
 pugReadJson name = do
   path <- pugPath
-  pure $ L.IndentNone $ PugReadJson name path Nothing
+  pure $ L.IndentNone $ BlockReadJson name path Nothing
 
 --------------------------------------------------------------------------------
 scn :: Parser ()

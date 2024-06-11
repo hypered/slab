@@ -29,7 +29,7 @@ renderBlocks = map renderBlock
 
 renderBlock :: Syntax.Block -> H.Html
 renderBlock Syntax.BlockDoctype = H.docType
-renderBlock (Syntax.PugElem name mdot attrs children) =
+renderBlock (Syntax.BlockElem name mdot attrs children) =
   mAddAttrs $
     mAddId $
       mAddClass $
@@ -60,40 +60,40 @@ renderBlock (Syntax.PugElem name mdot attrs children) =
   mAddAttrs =
     flip (foldl (\e (a, b) -> e ! H.customAttribute (fromString $ T.unpack a) (H.toValue b))) attrs'
   attrs' = Syntax.namesFromAttrs attrs
-renderBlock (Syntax.PugText _ []) =
+renderBlock (Syntax.BlockText _ []) =
   H.preEscapedText "\n" -- This allows to force some whitespace.
-renderBlock (Syntax.PugText _ [Syntax.Lit s])
+renderBlock (Syntax.BlockText _ [Syntax.Lit s])
   | s == T.empty = H.preEscapedText "\n" -- This allows to force some whitespace.
   | otherwise = H.preEscapedText s -- TODO
-renderBlock (Syntax.PugText _ _) = error "Template is not rendered."
-renderBlock (Syntax.PugInclude (Just "escape-html") _ (Just nodes)) =
+renderBlock (Syntax.BlockText _ _) = error "Template is not rendered."
+renderBlock (Syntax.BlockInclude (Just "escape-html") _ (Just nodes)) =
   escapeTexts nodes
-renderBlock (Syntax.PugInclude _ _ (Just nodes)) = mapM_ renderBlock nodes
-renderBlock (Syntax.PugInclude _ path Nothing) = H.stringComment $ "include " <> path
-renderBlock (Syntax.PugFragmentDef _ _ _) = mempty
-renderBlock (Syntax.PugFragmentCall _ _ nodes) = mapM_ renderBlock nodes
-renderBlock (Syntax.PugFor _ _ _ nodes) = mapM_ renderBlock nodes
-renderBlock (Syntax.PugComment b content) =
+renderBlock (Syntax.BlockInclude _ _ (Just nodes)) = mapM_ renderBlock nodes
+renderBlock (Syntax.BlockInclude _ path Nothing) = H.stringComment $ "include " <> path
+renderBlock (Syntax.BlockFragmentDef _ _ _) = mempty
+renderBlock (Syntax.BlockFragmentCall _ _ nodes) = mapM_ renderBlock nodes
+renderBlock (Syntax.BlockFor _ _ _ nodes) = mapM_ renderBlock nodes
+renderBlock (Syntax.BlockComment b content) =
   case b of
     Syntax.PassthroughComment -> H.textComment content
     Syntax.NormalComment -> mempty
-renderBlock (Syntax.PugFilter "escape-html" content) =
+renderBlock (Syntax.BlockFilter "escape-html" content) =
   H.text content
-renderBlock (Syntax.PugFilter name _) = error $ "Unknown filter name " <> T.unpack name
-renderBlock (Syntax.PugRawElem content children) = do
+renderBlock (Syntax.BlockFilter name _) = error $ "Unknown filter name " <> T.unpack name
+renderBlock (Syntax.BlockRawElem content children) = do
   H.preEscapedText content -- TODO Construct a proper tag ?
   mapM_ renderBlock children
-renderBlock (Syntax.PugDefault _ nodes) = mapM_ renderBlock nodes
-renderBlock (Syntax.PugImport _ (Just nodes) _) = mapM_ renderBlock nodes
-renderBlock (Syntax.PugImport path Nothing _) = H.stringComment $ "extends " <> path
-renderBlock (Syntax.PugReadJson _ _ _) = mempty
-renderBlock (Syntax.PugAssignVar _ _) = mempty
-renderBlock (Syntax.PugIf _ as bs) = do
-  -- The evaluation code transforms a PugIf into a PugList, so this should
+renderBlock (Syntax.BlockDefault _ nodes) = mapM_ renderBlock nodes
+renderBlock (Syntax.BlockImport _ (Just nodes) _) = mapM_ renderBlock nodes
+renderBlock (Syntax.BlockImport path Nothing _) = H.stringComment $ "extends " <> path
+renderBlock (Syntax.BlockReadJson _ _ _) = mempty
+renderBlock (Syntax.BlockAssignVar _ _) = mempty
+renderBlock (Syntax.BlockIf _ as bs) = do
+  -- The evaluation code transforms a BlockIf into a BlockList, so this should
   -- not be called.
   mapM_ renderBlock as
   mapM_ renderBlock bs
-renderBlock (Syntax.PugList nodes) =
+renderBlock (Syntax.BlockList nodes) =
   mapM_ renderBlock nodes
 renderBlock (Syntax.BlockCode (Syntax.SingleQuoteString s))
   | s == T.empty = mempty
@@ -120,22 +120,22 @@ extractText :: Syntax.Block -> Text
 extractText = f
  where
   f Syntax.BlockDoctype = error "extractTexts called on a BlockDoctype"
-  f (Syntax.PugElem _ _ _ _) = error "extractTexts called on a PugElem"
-  f (Syntax.PugText _ [Syntax.Lit s]) = s
-  f (Syntax.PugText _ _) = error "extractTexts called on unevaluated PugText"
-  f (Syntax.PugInclude _ _ _) = error "extractTexts called on a PugInclude"
-  f (Syntax.PugFragmentDef _ _ _) = error "extractTexts called on a PugFragmentDef"
-  f (Syntax.PugFragmentCall _ _ _) = error "extractTexts called on a PugFragmentCall"
-  f (Syntax.PugFor _ _ _ _) = error "extractTexts called on a PugFor"
-  f (Syntax.PugComment _ _) = error "extractTexts called on a PugComment"
-  f (Syntax.PugFilter _ _) = error "extractTexts called on a PugFilter"
-  f (Syntax.PugRawElem _ _) = error "extractTexts called on a PugRawElem"
-  f (Syntax.PugDefault _ _) = error "extractTexts called on a PugDefault"
-  f (Syntax.PugImport _ _ _) = error "extractTexts called on a PugImport"
-  f (Syntax.PugReadJson _ _ _) = error "extractTexts called on a PugReadJson"
-  f (Syntax.PugAssignVar _ _) = error "extractTexts called on a PugAssignVar"
-  f (Syntax.PugIf _ _ _) = error "extractTexts called on a PugIf"
-  f (Syntax.PugList _) = error "extractTexts called on a PugList"
+  f (Syntax.BlockElem _ _ _ _) = error "extractTexts called on a BlockElem"
+  f (Syntax.BlockText _ [Syntax.Lit s]) = s
+  f (Syntax.BlockText _ _) = error "extractTexts called on unevaluated BlockText"
+  f (Syntax.BlockInclude _ _ _) = error "extractTexts called on a BlockInclude"
+  f (Syntax.BlockFragmentDef _ _ _) = error "extractTexts called on a BlockFragmentDef"
+  f (Syntax.BlockFragmentCall _ _ _) = error "extractTexts called on a BlockFragmentCall"
+  f (Syntax.BlockFor _ _ _ _) = error "extractTexts called on a BlockFor"
+  f (Syntax.BlockComment _ _) = error "extractTexts called on a BlockComment"
+  f (Syntax.BlockFilter _ _) = error "extractTexts called on a BlockFilter"
+  f (Syntax.BlockRawElem _ _) = error "extractTexts called on a BlockRawElem"
+  f (Syntax.BlockDefault _ _) = error "extractTexts called on a BlockDefault"
+  f (Syntax.BlockImport _ _ _) = error "extractTexts called on a BlockImport"
+  f (Syntax.BlockReadJson _ _ _) = error "extractTexts called on a BlockReadJson"
+  f (Syntax.BlockAssignVar _ _) = error "extractTexts called on a BlockAssignVar"
+  f (Syntax.BlockIf _ _ _) = error "extractTexts called on a BlockIf"
+  f (Syntax.BlockList _) = error "extractTexts called on a BlockList"
   f (Syntax.BlockCode _) = error "extractTexts called on a BlockCode"
 
 renderElem :: Syntax.Elem -> Html -> Html

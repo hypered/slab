@@ -4,7 +4,7 @@
 module Slab.Evaluate
   ( PreProcessError (..)
   , preprocessFile
-  , evaluatePugFile
+  , evaluateFile
   , evaluate
   , defaultEnv
   , simplify
@@ -60,8 +60,8 @@ preprocessFileE path = do
 preprocessNodesE :: Context -> [Block] -> ExceptT PreProcessError IO [Block]
 preprocessNodesE ctx nodes = mapM (preprocessNodeE ctx) nodes
 
-evaluatePugFile :: FilePath -> IO (Either PreProcessError [Block])
-evaluatePugFile path = runExceptT (preprocessFileE path >>= evaluate defaultEnv ["toplevel"])
+evaluateFile :: FilePath -> IO (Either PreProcessError [Block])
+evaluateFile path = runExceptT (preprocessFileE path >>= evaluate defaultEnv ["toplevel"])
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
@@ -76,11 +76,11 @@ evaluate env stack nodes = do
 preprocessNodeE :: Context -> Block -> ExceptT PreProcessError IO Block
 preprocessNodeE ctx@Context {..} = \case
   node@BlockDoctype -> pure node
-  PugElem name mdot attrs nodes -> do
+  BlockElem name mdot attrs nodes -> do
     nodes' <- preprocessNodesE ctx nodes
-    pure $ PugElem name mdot attrs nodes'
-  node@(PugText _ _) -> pure node
-  PugInclude mname path _ -> do
+    pure $ BlockElem name mdot attrs nodes'
+  node@(BlockText _ _) -> pure node
+  BlockInclude mname path _ -> do
     let includedPath = takeDirectory ctxStartPath </> path
         slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
@@ -89,27 +89,27 @@ preprocessNodeE ctx@Context {..} = \case
             -- Include the file content as-is.
             content <- liftIO $ T.readFile includedPath
             let node = Parse.pugTextInclude content
-            pure $ PugInclude mname path (Just [node])
+            pure $ BlockInclude mname path (Just [node])
         | exists -> do
             -- Parse and process the .slab file.
             nodes' <- preprocessFileE includedPath
-            pure $ PugInclude mname path (Just nodes')
+            pure $ BlockInclude mname path (Just nodes')
         | otherwise ->
             throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
-  PugFragmentDef name params nodes -> do
+  BlockFragmentDef name params nodes -> do
     nodes' <- preprocessNodesE ctx nodes
-    pure $ PugFragmentDef name params nodes'
-  PugFragmentCall name values nodes -> do
+    pure $ BlockFragmentDef name params nodes'
+  BlockFragmentCall name values nodes -> do
     nodes' <- preprocessNodesE ctx nodes
-    pure $ PugFragmentCall name values nodes'
-  node@(PugFor _ _ _ _) -> pure node
-  node@(PugComment _ _) -> pure node
-  node@(PugFilter _ _) -> pure node
-  node@(PugRawElem _ _) -> pure node
-  PugDefault name nodes -> do
+    pure $ BlockFragmentCall name values nodes'
+  node@(BlockFor _ _ _ _) -> pure node
+  node@(BlockComment _ _) -> pure node
+  node@(BlockFilter _ _) -> pure node
+  node@(BlockRawElem _ _) -> pure node
+  BlockDefault name nodes -> do
     nodes' <- preprocessNodesE ctx nodes
-    pure $ PugDefault name nodes'
-  PugImport path _ args -> do
+    pure $ BlockDefault name nodes'
+  BlockImport path _ args -> do
     -- An import is treated like an include used to define a fragment, then
     -- directly calling that fragment.
     let includedPath = takeDirectory ctxStartPath </> path
@@ -122,50 +122,50 @@ preprocessNodeE ctx@Context {..} = \case
             -- Parse and process the .slab file.
             body <- preprocessFileE includedPath
             args' <- mapM (preprocessNodeE ctx) args
-            pure $ PugImport path (Just body) args'
+            pure $ BlockImport path (Just body) args'
         | otherwise ->
             throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
-  PugReadJson name path _ -> do
+  BlockReadJson name path _ -> do
     let path' = takeDirectory ctxStartPath </> path
     content <- liftIO $ BL.readFile path'
     case Aeson.eitherDecode content of
       Right val ->
-        pure $ PugReadJson name path $ Just val
+        pure $ BlockReadJson name path $ Just val
       Left err ->
         throwE $ PreProcessError $ "Can't decode JSON: " <> T.pack err
-  node@(PugAssignVar _ _) -> pure node
-  PugIf cond as bs -> do
+  node@(BlockAssignVar _ _) -> pure node
+  BlockIf cond as bs -> do
     -- File inclusion is done right away, without checking the condition.
     as' <- preprocessNodesE ctx as
     bs' <- preprocessNodesE ctx bs
-    pure $ PugIf cond as' bs'
-  PugList nodes -> do
+    pure $ BlockIf cond as' bs'
+  BlockList nodes -> do
     nodes' <- preprocessNodesE ctx nodes
-    pure $ PugList nodes'
+    pure $ BlockList nodes'
   node@(BlockCode _) -> pure node
 
 eval :: Monad m => Env -> [Text] -> Block -> ExceptT PreProcessError m Block
 eval env stack = \case
   node@BlockDoctype -> pure node
-  PugElem name mdot attrs nodes -> do
+  BlockElem name mdot attrs nodes -> do
     nodes' <- evaluate env stack nodes
-    pure $ PugElem name mdot attrs nodes'
-  PugText syn template -> do
+    pure $ BlockElem name mdot attrs nodes'
+  BlockText syn template -> do
     template' <- evalTemplate env template
-    pure $ PugText syn template'
-  PugInclude mname path mnodes -> do
+    pure $ BlockText syn template'
+  BlockInclude mname path mnodes -> do
     case mnodes of
       Just nodes -> do
         nodes' <- evaluate env ("include" : stack) nodes
-        pure $ PugInclude mname path (Just nodes')
+        pure $ BlockInclude mname path (Just nodes')
       Nothing ->
-        pure $ PugInclude mname path Nothing
-  node@(PugFragmentDef _ _ _) -> pure node
-  PugFragmentCall name values args -> do
+        pure $ BlockInclude mname path Nothing
+  node@(BlockFragmentDef _ _ _) -> pure node
+  BlockFragmentCall name values args -> do
     body <- call env stack name values args
-    pure $ PugFragmentCall name values body
-  PugFor name mindex values nodes -> do
-    -- Re-use PugFor to construct a single node to return.
+    pure $ BlockFragmentCall name values body
+  BlockFor name mindex values nodes -> do
+    -- Re-use BlockFor to construct a single node to return.
     let zero :: Int
         zero = 0
     values' <- evalCode env values
@@ -178,43 +178,43 @@ eval env stack = \case
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
             Nothing -> augmentVariables env [(name, value)]
       evaluate env' ("each" : stack) nodes
-    pure $ PugFor name mindex values $ concat nodes'
-  node@(PugComment _ _) -> pure node
-  node@(PugFilter _ _) -> pure node
-  node@(PugRawElem _ _) -> pure node
-  PugDefault name nodes -> do
+    pure $ BlockFor name mindex values $ concat nodes'
+  node@(BlockComment _ _) -> pure node
+  node@(BlockFilter _ _) -> pure node
+  node@(BlockRawElem _ _) -> pure node
+  BlockDefault name nodes -> do
     -- If the fragment is not given as an argument, we return the default block,
     -- but recursively trying to replace the blocks found within its own body.
     case lookupVariable name env of
       Nothing -> do
         nodes' <- evaluate env ("?block" : stack) nodes
-        pure $ PugDefault name nodes'
+        pure $ BlockDefault name nodes'
       Just (Frag _ capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
-        pure $ PugDefault name nodes''
+        pure $ BlockDefault name nodes''
       Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
-  PugImport path _ args -> do
+  BlockImport path _ args -> do
     body <- call env stack (T.pack path) [] args
-    pure $ PugImport path (Just body) args
-  node@(PugReadJson _ _ _) -> pure node
-  node@(PugAssignVar _ _) -> pure node
-  PugIf cond as bs -> do
+    pure $ BlockImport path (Just body) args
+  node@(BlockReadJson _ _ _) -> pure node
+  node@(BlockAssignVar _ _) -> pure node
+  BlockIf cond as bs -> do
     cond' <- evalCode env cond
     case cond' of
       SingleQuoteString s
         | not (T.null s) -> do
             as' <- evaluate env ("then" : stack) as
-            pure $ PugIf cond as' []
+            pure $ BlockIf cond as' []
       Int n
         | n /= 0 -> do
             as' <- evaluate env ("then" : stack) as
-            pure $ PugIf cond as' []
+            pure $ BlockIf cond as' []
       _ -> do
         bs' <- evaluate env ("else" : stack) bs
-        pure $ PugIf cond [] bs'
-  PugList nodes -> do
+        pure $ BlockIf cond [] bs'
+  BlockList nodes -> do
     nodes' <- evaluate env stack nodes
-    pure $ PugList nodes'
+    pure $ BlockList nodes'
   BlockCode code -> do
     code' <- evalCode env code
     pure $ BlockCode code'
@@ -251,14 +251,14 @@ namedBlocks nodes = do
     else pure $ named <> content
 
 namedBlock :: Monad m => Block -> ExceptT PreProcessError m [(Text, ([Text], [Block]))]
-namedBlock (PugImport path (Just body) _) = pure [(T.pack path, ([], body))]
-namedBlock (PugFragmentDef name names content) = pure [(name, (names, content))]
+namedBlock (BlockImport path (Just body) _) = pure [(T.pack path, ([], body))]
+namedBlock (BlockFragmentDef name names content) = pure [(name, (names, content))]
 namedBlock _ = pure []
 
 unnamedBlock :: Monad m => Block -> ExceptT PreProcessError m [Block]
-unnamedBlock (PugImport path _ args) =
-  pure [PugFragmentCall (T.pack path) [] args]
-unnamedBlock (PugFragmentDef _ _ _) = pure []
+unnamedBlock (BlockImport path _ args) =
+  pure [BlockFragmentCall (T.pack path) [] args]
+unnamedBlock (BlockFragmentDef _ _ _) = pure []
 unnamedBlock node = pure [node]
 
 evalCode :: Monad m => Env -> Code -> ExceptT PreProcessError m Code
@@ -331,23 +331,23 @@ extractVariables :: Env -> [Block] -> [(Text, Code)]
 extractVariables env = concatMap f
  where
   f BlockDoctype = []
-  f (PugElem _ _ _ _) = []
-  f (PugText _ _) = []
-  f (PugInclude _ _ children) = maybe [] (extractVariables env) children
-  f (PugFor _ _ _ _) = []
-  f (PugFragmentDef name names children) = [(name, Frag names env children)]
-  f (PugFragmentCall _ _ _) = []
-  f (PugComment _ _) = []
-  f (PugFilter _ _) = []
-  f (PugRawElem _ _) = []
-  f (PugDefault _ _) = []
-  f (PugImport path (Just body) _) = [(T.pack path, Frag [] env body)]
-  f (PugImport _ _ _) = []
-  f (PugReadJson name _ (Just val)) = [(name, jsonToCode val)]
-  f (PugReadJson _ _ Nothing) = []
-  f (PugAssignVar name val) = [(name, val)]
-  f (PugIf _ _ _) = []
-  f (PugList _) = []
+  f (BlockElem _ _ _ _) = []
+  f (BlockText _ _) = []
+  f (BlockInclude _ _ children) = maybe [] (extractVariables env) children
+  f (BlockFor _ _ _ _) = []
+  f (BlockFragmentDef name names children) = [(name, Frag names env children)]
+  f (BlockFragmentCall _ _ _) = []
+  f (BlockComment _ _) = []
+  f (BlockFilter _ _) = []
+  f (BlockRawElem _ _) = []
+  f (BlockDefault _ _) = []
+  f (BlockImport path (Just body) _) = [(T.pack path, Frag [] env body)]
+  f (BlockImport _ _ _) = []
+  f (BlockReadJson name _ (Just val)) = [(name, jsonToCode val)]
+  f (BlockReadJson _ _ Nothing) = []
+  f (BlockAssignVar name val) = [(name, val)]
+  f (BlockIf _ _ _) = []
+  f (BlockList _) = []
   f (BlockCode _) = []
 
 jsonToCode :: Aeson.Value -> Code
@@ -367,20 +367,20 @@ simplify = concatMap simplify'
 simplify' :: Block -> [Block]
 simplify' = \case
   node@BlockDoctype -> [node]
-  PugElem name mdot attrs nodes -> [PugElem name mdot attrs $ simplify nodes]
-  node@(PugText _ _) -> [node]
-  PugInclude _ _ mnodes -> maybe [] simplify mnodes
-  PugFragmentDef _ _ _ -> []
-  PugFragmentCall _ _ args -> simplify args
-  PugFor _ _ _ nodes -> simplify nodes
-  node@(PugComment _ _) -> [node]
-  node@(PugFilter _ _) -> [node]
-  node@(PugRawElem _ _) -> [node]
-  PugDefault _ nodes -> simplify nodes
-  PugImport _ mbody _ -> maybe [] simplify mbody
-  PugReadJson _ _ _ -> []
-  PugAssignVar _ _ -> []
-  PugIf _ [] bs -> simplify bs
-  PugIf _ as _ -> simplify as
-  PugList nodes -> simplify nodes
+  BlockElem name mdot attrs nodes -> [BlockElem name mdot attrs $ simplify nodes]
+  node@(BlockText _ _) -> [node]
+  BlockInclude _ _ mnodes -> maybe [] simplify mnodes
+  BlockFragmentDef _ _ _ -> []
+  BlockFragmentCall _ _ args -> simplify args
+  BlockFor _ _ _ nodes -> simplify nodes
+  node@(BlockComment _ _) -> [node]
+  node@(BlockFilter _ _) -> [node]
+  node@(BlockRawElem _ _) -> [node]
+  BlockDefault _ nodes -> simplify nodes
+  BlockImport _ mbody _ -> maybe [] simplify mbody
+  BlockReadJson _ _ _ -> []
+  BlockAssignVar _ _ -> []
+  BlockIf _ [] bs -> simplify bs
+  BlockIf _ as _ -> simplify as
+  BlockList nodes -> simplify nodes
   node@(BlockCode _) -> [node]

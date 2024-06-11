@@ -31,7 +31,7 @@ buildFile srcDir mode distDir path = do
   putStrLn $ "Building " <> path' <> "..."
   createDirectoryIfMissing True dir'
 
-  evaluated <- Evaluate.evaluatePugFile path
+  evaluated <- Evaluate.evaluateFile path
   case evaluated of
     Left (Evaluate.PreProcessParseError err) -> do
       T.putStrLn . T.pack $ errorBundlePretty err

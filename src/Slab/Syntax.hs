@@ -33,33 +33,33 @@ import Data.Text qualified as T
 data Block
   = -- | Only @doctype html@ for now.
     BlockDoctype
-  | PugElem Elem TrailingSym [Attr] [Block]
-  | PugText TextSyntax [Inline]
+  | BlockElem Elem TrailingSym [Attr] [Block]
+  | BlockText TextSyntax [Inline]
   | -- | @Nothing@ when the template is parsed, then @Just nodes@ after
     -- preprocessing (i.e. actually running the include statement).
-    -- The filter name follows the same behavior as PugFilter.
-    PugInclude (Maybe Text) FilePath (Maybe [Block])
-  | -- | This doesn't exit in Pug. This is like a mixin than receive block arguments.
+    -- The filter name follows the same behavior as BlockFilter.
+    BlockInclude (Maybe Text) FilePath (Maybe [Block])
+  | -- | This doesn't exist in Pug. This is like a mixin than receive block arguments.
     -- Or like a parent template that can be @extended@ by a child template.
-    PugFragmentDef Text [Text] [Block]
-  | PugFragmentCall Text [Code] [Block]
-  | PugFor Text (Maybe Text) Code [Block]
+    BlockFragmentDef Text [Text] [Block]
+  | BlockFragmentCall Text [Code] [Block]
+  | BlockFor Text (Maybe Text) Code [Block]
   | -- TODO Should we allow string interpolation here ?
-    PugComment CommentType Text
-  | PugFilter Text Text
-  | PugRawElem Text [Block]
+    BlockComment CommentType Text
+  | BlockFilter Text Text
+  | BlockRawElem Text [Block]
   | -- | @default@ defines an optional formal parameter with a default content.
     -- Its content is used when the argument is not given.
-    PugDefault Text [Block]
+    BlockDefault Text [Block]
   | -- | Similar to an anonymous fragment call, where the fragment body is the
     -- content of the referenced file.
-    PugImport FilePath (Maybe [Block]) [Block]
+    BlockImport FilePath (Maybe [Block]) [Block]
   | -- | Allow to assign the content of a JSON file to a variable. The syntax
     -- is specific to how Struct has a @require@ function in scope.
-    PugReadJson Text FilePath (Maybe Aeson.Value)
-  | PugAssignVar Text Code
-  | PugIf Code [Block] [Block]
-  | PugList [Block]
+    BlockReadJson Text FilePath (Maybe Aeson.Value)
+  | BlockAssignVar Text Code
+  | BlockIf Code [Block] [Block]
+  | BlockList [Block]
   | BlockCode Code
   deriving (Show, Eq)
 
@@ -68,7 +68,7 @@ isDoctype BlockDoctype = True
 isDoctype _ = False
 
 trailingSym :: Block -> TrailingSym
-trailingSym (PugElem _ sym _ _) = sym
+trailingSym (BlockElem _ sym _ _) = sym
 trailingSym _ = NoSym
 
 -- | A "passthrough" comment will be included in the generated HTML.
@@ -141,7 +141,7 @@ data TextSyntax
   = -- | The text follows an element on the same line.
     Normal
   | -- | The text follows a pipe character. Multiple lines each introduced by a
-    -- pipe symbol are grouped as a single 'PugText' node.
+    -- pipe symbol are grouped as a single 'BlockText' node.
     Pipe
   | -- | The text is part of a text block following a trailing dot.
     Dot
@@ -212,22 +212,22 @@ extractClasses :: [Block] -> [Text]
 extractClasses = nub . sort . concatMap f
  where
   f BlockDoctype = []
-  f (PugElem _ _ attrs children) = concatMap g attrs <> extractClasses children
-  f (PugText _ _) = []
-  f (PugInclude _ _ children) = maybe [] extractClasses children
-  f (PugFragmentDef _ _ _) = [] -- We extract them in PugFragmentCall instead.
-  f (PugFragmentCall _ _ children) = extractClasses children
-  f (PugFor _ _ _ children) = extractClasses children
-  f (PugComment _ _) = []
-  f (PugFilter _ _) = []
+  f (BlockElem _ _ attrs children) = concatMap g attrs <> extractClasses children
+  f (BlockText _ _) = []
+  f (BlockInclude _ _ children) = maybe [] extractClasses children
+  f (BlockFragmentDef _ _ _) = [] -- We extract them in BlockFragmentCall instead.
+  f (BlockFragmentCall _ _ children) = extractClasses children
+  f (BlockFor _ _ _ children) = extractClasses children
+  f (BlockComment _ _) = []
+  f (BlockFilter _ _) = []
   -- TODO Would be nice to extract classes from verbatim HTML too.
-  f (PugRawElem _ _) = []
-  f (PugDefault _ children) = extractClasses children
-  f (PugImport _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
-  f (PugReadJson _ _ _) = []
-  f (PugAssignVar _ _) = []
-  f (PugIf _ as bs) = extractClasses as <> extractClasses bs
-  f (PugList children) = extractClasses children
+  f (BlockRawElem _ _) = []
+  f (BlockDefault _ children) = extractClasses children
+  f (BlockImport _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
+  f (BlockReadJson _ _ _) = []
+  f (BlockAssignVar _ _) = []
+  f (BlockIf _ as bs) = extractClasses as <> extractClasses bs
+  f (BlockList children) = extractClasses children
   f (BlockCode _) = []
 
   g (Id _) = []
@@ -238,38 +238,38 @@ extractClasses = nub . sort . concatMap f
   h _ _ = []
 
 -- Return type used for `extractFragments`.
-data PugMixin
-  = PugFragmentDef' Text [Block]
-  | PugFragmentCall' Text
+data BlockFragment
+  = BlockFragmentDef' Text [Block]
+  | BlockFragmentCall' Text
   deriving (Show, Eq)
 
-extractFragments :: [Block] -> [PugMixin]
+extractFragments :: [Block] -> [BlockFragment]
 extractFragments = concatMap f
  where
   f BlockDoctype = []
-  f (PugElem _ _ _ children) = extractFragments children
-  f (PugText _ _) = []
-  f (PugInclude _ _ children) = maybe [] extractFragments children
-  f (PugFragmentDef name _ children) = [PugFragmentDef' name children]
-  f (PugFragmentCall name _ children) = [PugFragmentCall' name] <> extractFragments children
-  f (PugFor _ _ _ children) = extractFragments children
-  f (PugComment _ _) = []
-  f (PugFilter _ _) = []
-  f (PugRawElem _ _) = []
-  f (PugDefault _ children) = extractFragments children
-  f (PugImport _ children args) = maybe [] extractFragments children <> extractFragments args
-  f (PugReadJson _ _ _) = []
-  f (PugAssignVar _ _) = []
-  f (PugIf _ as bs) = extractFragments as <> extractFragments bs
-  f (PugList children) = extractFragments children
+  f (BlockElem _ _ _ children) = extractFragments children
+  f (BlockText _ _) = []
+  f (BlockInclude _ _ children) = maybe [] extractFragments children
+  f (BlockFragmentDef name _ children) = [BlockFragmentDef' name children]
+  f (BlockFragmentCall name _ children) = [BlockFragmentCall' name] <> extractFragments children
+  f (BlockFor _ _ _ children) = extractFragments children
+  f (BlockComment _ _) = []
+  f (BlockFilter _ _) = []
+  f (BlockRawElem _ _) = []
+  f (BlockDefault _ children) = extractFragments children
+  f (BlockImport _ children args) = maybe [] extractFragments children <> extractFragments args
+  f (BlockReadJson _ _ _) = []
+  f (BlockAssignVar _ _) = []
+  f (BlockIf _ as bs) = extractFragments as <> extractFragments bs
+  f (BlockList children) = extractFragments children
   f (BlockCode _) = []
 
-findFragment :: Text -> [PugMixin] -> Maybe [Block]
+findFragment :: Text -> [BlockFragment] -> Maybe [Block]
 findFragment name ms = case filter f ms of
-  [PugFragmentDef' _ nodes] -> Just nodes
+  [BlockFragmentDef' _ nodes] -> Just nodes
   _ -> Nothing
  where
-  f (PugFragmentDef' name' _) = name == name'
+  f (BlockFragmentDef' name' _) = name == name'
   f _ = False
 
 --------------------------------------------------------------------------------

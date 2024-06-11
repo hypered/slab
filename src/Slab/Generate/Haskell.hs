@@ -52,7 +52,7 @@ prettyBlocks :: [Syntax.Block] -> Doc ann
 prettyBlocks = vsep . map prettyBlock
 
 prettyBlock :: Syntax.Block -> Doc ann
-prettyBlock (Syntax.PugElem name _ attrs children) = prettyPugElem (name, attrs', children)
+prettyBlock (Syntax.BlockElem name _ attrs children) = prettyBlockElem (name, attrs', children)
  where
   attrs' = Syntax.groupAttrs attrs
 
@@ -64,8 +64,8 @@ prettyBlock (Syntax.PugElem name _ attrs children) = prettyPugElem (name, attrs'
 --     child0
 --     child1
 -- @
-prettyPugElem :: (Syntax.Elem, [Syntax.Attr], [Syntax.Block]) -> Doc ann
-prettyPugElem (t1, ts_, as) =
+prettyBlockElem :: (Syntax.Elem, [Syntax.Attr], [Syntax.Block]) -> Doc ann
+prettyBlockElem (t1, ts_, as) =
   case ts_ of
     [] ->
       let header = prettyT1 <+> dollar
