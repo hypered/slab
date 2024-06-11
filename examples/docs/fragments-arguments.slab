@@ -1,0 +1,7 @@
+frag hello{name}
+  .greeting
+    p Hello, #{name}.
+    content
+
+hello{'Alice'}
+  p Some content.

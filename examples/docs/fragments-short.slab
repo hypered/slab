@@ -1,0 +1,6 @@
+frag card
+  h1 Card
+  content
+
+card
+  p A paragraph.

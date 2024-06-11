@@ -1,0 +1,9 @@
+frag card
+  h1 Card
+  default content
+    p Default paragraph.
+
+card
+  p Another paragraph.
+
+card
