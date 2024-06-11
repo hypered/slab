@@ -1,0 +1,5 @@
+import aux-imported.slab
+  frag name
+    h1 A title
+  frag content
+    p A paragraph.

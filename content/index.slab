@@ -247,6 +247,26 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/mod-include-filter.html
 
+                    h3 Imports
+
+                    p An import makes it possible to call a Slab file as if it was a fragment. Its body is the content of the file. As with fragments, it is possible to pass fragments as arguments.
+
+                    p Assuming a file called <code>aux-imported.slab</code> with the following content:
+
+                    pre
+                        code
+                            include:escape-html ../examples/docs/aux-imported.slab
+
+                    p It can be called as a fragment:
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/mod-import.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/mod-import.html
+
                 .c-content.flow-all.u-flow-c-4.limit-42em
                     h2 Open source
 
