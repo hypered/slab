@@ -25,7 +25,7 @@ html(dir="ltr", lang="en")
                         p Slab is a programmable markup language to generate HTML.
 
                     .c-content.flow
-                        p This site is not ready for prime time yet. You can check out <a href="https://github.com/hypered/slab">the project on GitHub</a> instead.
+                        p This project is still very young. Features demonstrated on this page work as shown but they don't always generalize as expected.
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
                     h2 Introduction
@@ -173,3 +173,8 @@ html(dir="ltr", lang="en")
                         pre
                             code
                                 include:escape-html ../examples/docs/interpolation.html
+
+                .c-content.flow-all.u-flow-c-4.limit-42em
+                    h2 Open source
+
+                    p Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.

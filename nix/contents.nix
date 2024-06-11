@@ -17,6 +17,7 @@ in {
       root = ../.;
       include = with nix-filter; [
         "slab.cabal"
+        "LICENSE"
         (and "bin" (or_ (matchExt "hs") isDirectory))
         (and "src" (or_ (matchExt "hs") isDirectory))
         (and "tests" (or_ (matchExt "hs") isDirectory))
