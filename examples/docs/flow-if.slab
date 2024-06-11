@@ -1,0 +1,4 @@
+if true
+  p A.
+else
+  p B.

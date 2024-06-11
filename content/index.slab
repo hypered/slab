@@ -192,6 +192,35 @@ html(dir="ltr", lang="en")
                                 include:escape-html ../examples/docs/expr-json.html
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
+                    h2 Control flow
+
+                    p Slab supports conditionals and loops using <code>if</code> and <code>for</code> blocks.
+
+                    h3 Conditionals
+
+                    p The <code>else</code> branch is optional.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/flow-if.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/flow-if.html
+
+                    h3 Loops
+
+                    p It is possible to iterate on lists and objects. In the following example, the index and the key are optional.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/flow-for.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/flow-for.html
+
+                .c-content.flow-all.u-flow-c-4.limit-42em
                     h2 Open source
 
                     p Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.
