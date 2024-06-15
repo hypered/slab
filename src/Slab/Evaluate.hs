@@ -70,7 +70,7 @@ eval env stack = \case
     collection <- case values' of
       List xs -> pure $ zip xs $ map Int [zero ..]
       Object xs -> pure $ map (\(k, v) -> (v, k)) xs
-      _ -> throwE $ Error.MiscError $ "Iterating on something that is not a collection"
+      _ -> throwE $ Error.EvaluateError $ "Iterating on something that is not a collection"
     nodes' <- forM collection $ \(value, index) -> do
       let env' = case mindex of
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
@@ -90,7 +90,7 @@ eval env stack = \case
       Just (Frag _ capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
         pure $ BlockDefault name nodes''
-      Just _ -> throwE $ Error.MiscError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
+      Just _ -> throwE $ Error.EvaluateError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
   BlockImport path _ args -> do
     body <- call env stack (T.pack path) [] args
     pure $ BlockImport path (Just body) args
@@ -128,8 +128,8 @@ call env stack name values args =
           env''' = augmentVariables env'' arguments
       body' <- evaluate env''' ("frag" : stack) body
       pure body'
-    Just _ -> throwE $ Error.MiscError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
-    Nothing -> throwE $ Error.MiscError $ "Can't find fragment \"" <> name <> "\""
+    Just _ -> throwE $ Error.EvaluateError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
+    Nothing -> throwE $ Error.EvaluateError $ "Can't find fragment \"" <> name <> "\""
 
 defaultEnv :: Env
 defaultEnv = Env [("true", Int 1), ("false", Int 0)]
@@ -146,7 +146,7 @@ namedBlocks nodes = do
   unnamed <- concat <$> mapM unnamedBlock nodes
   let content = if null unnamed then [] else [("content", ([], unnamed))]
   if isJust (lookup "content" named) && not (null unnamed)
-    then throwE $ Error.MiscError $ "A block of content and a content argument are provided"
+    then throwE $ Error.EvaluateError $ "A block of content and a content argument are provided"
     else pure $ named <> content
 
 namedBlock :: Monad m => Block -> ExceptT Error.Error m [(Text, ([Text], [Block]))]
@@ -165,7 +165,7 @@ evalCode env = \case
   Variable name ->
     case lookupVariable name env of
       Just val -> evalCode env val
-      Nothing -> throwE $ Error.MiscError $ "Can't find variable \"" <> name <> "\""
+      Nothing -> throwE $ Error.EvaluateError $ "Can't find variable \"" <> name <> "\""
   Lookup name key ->
     case lookupVariable name env of
       Just (Object obj) -> do
@@ -174,33 +174,33 @@ evalCode env = \case
           Just val -> evalCode env val
           Nothing ->
             pure $ Variable "false"
-      Just _ -> throwE $ Error.MiscError $ "Variable \"" <> name <> "\" is not an object"
-      Nothing -> throwE $ Error.MiscError $ "Can't find variable \"" <> name <> "\""
+      Just _ -> throwE $ Error.EvaluateError $ "Variable \"" <> name <> "\" is not an object"
+      Nothing -> throwE $ Error.EvaluateError $ "Can't find variable \"" <> name <> "\""
   Add a b -> do
     a' <- evalCode env a
     b' <- evalCode env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i + j
       (Int i, SingleQuoteString s) -> pure . SingleQuoteString $ T.pack (show i) <> s
-      _ -> throwE $ Error.MiscError $ "Unimplemented (add): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (add): " <> T.pack (show (Add a' b'))
   Sub a b -> do
     a' <- evalCode env a
     b' <- evalCode env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i - j
-      _ -> throwE $ Error.MiscError $ "Unimplemented (sub): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (sub): " <> T.pack (show (Add a' b'))
   Times a b -> do
     a' <- evalCode env a
     b' <- evalCode env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i * j
-      _ -> throwE $ Error.MiscError $ "Unimplemented (times): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (times): " <> T.pack (show (Add a' b'))
   Divide a b -> do
     a' <- evalCode env a
     b' <- evalCode env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i `div` j
-      _ -> throwE $ Error.MiscError $ "Unimplemented (divide): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (divide): " <> T.pack (show (Add a' b'))
   Thunk capturedEnv code ->
     evalCode capturedEnv code
   code -> pure code

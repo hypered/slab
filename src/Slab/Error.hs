@@ -9,8 +9,10 @@ import Text.Megaparsec (ParseErrorBundle)
 --------------------------------------------------------------------------------
 
 -- | Represent all errors emitted by Slab. I.e. this is used in each stage
--- (`Slab.Parse`, `Slab.PreProcess`, `Slab.Evaluate`).
+-- (`Slab.Parse`, `Slab.PreProcess`, `Slab.Evaluate`, `Slab.ExecuteError`).
 data Error
   = ParseError (ParseErrorBundle Text Void)
-  | MiscError Text -- TODO Add specific variants instead of using Text.
+  | PreProcessError Text -- TODO Add specific variants instead of using Text.
+  | EvaluateError Text -- TODO Add specific variants instead of using Text.
+  | ExecuteError Text -- TODO Add specific variants instead of using Text.
   deriving (Show, Eq)

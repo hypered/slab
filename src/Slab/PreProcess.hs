@@ -68,7 +68,7 @@ preproc ctx@Context {..} = \case
             nodes' <- preprocessFileE includedPath
             pure $ BlockInclude mname path (Just nodes')
         | otherwise ->
-            throwE $ Error.MiscError $ "File " <> T.pack includedPath <> " doesn't exist"
+            throwE $ Error.PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   BlockFragmentDef name params nodes -> do
     nodes' <- preprocess ctx nodes
     pure $ BlockFragmentDef name params nodes'
@@ -90,14 +90,14 @@ preproc ctx@Context {..} = \case
     exists <- liftIO $ doesFileExist includedPath
     if
         | exists && not slabExt ->
-            throwE $ Error.MiscError $ "Extends requires a .slab file"
+            throwE $ Error.PreProcessError $ "Extends requires a .slab file"
         | exists -> do
             -- Parse and process the .slab file.
             body <- preprocessFileE includedPath
             args' <- mapM (preproc ctx) args
             pure $ BlockImport path (Just body) args'
         | otherwise ->
-            throwE $ Error.MiscError $ "File " <> T.pack includedPath <> " doesn't exist"
+            throwE $ Error.PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   node@(BlockRun _ _) -> pure node
   BlockReadJson name path _ -> do
     let path' = takeDirectory ctxStartPath </> path
@@ -106,7 +106,7 @@ preproc ctx@Context {..} = \case
       Right val ->
         pure $ BlockReadJson name path $ Just val
       Left err ->
-        throwE $ Error.MiscError $ "Can't decode JSON: " <> T.pack err
+        throwE $ Error.PreProcessError $ "Can't decode JSON: " <> T.pack err
   node@(BlockAssignVar _ _) -> pure node
   BlockIf cond as bs -> do
     -- File inclusion is done right away, without checking the condition.
