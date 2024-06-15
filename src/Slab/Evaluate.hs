@@ -23,8 +23,9 @@ import Slab.Syntax
 
 -- | Similar to `preprocessFile` but evaluate the template.
 evaluateFile :: FilePath -> IO (Either PreProcess.PreProcessError [Block])
-evaluateFile path = runExceptT $
-  PreProcess.preprocessFileE path >>= evaluate defaultEnv ["toplevel"]
+evaluateFile path =
+  runExceptT $
+    PreProcess.preprocessFileE path >>= evaluate defaultEnv ["toplevel"]
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.

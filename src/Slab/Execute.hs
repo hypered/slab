@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
+
 module Slab.Execute
   ( run
   , executeFile
@@ -27,7 +28,9 @@ executeFile path =
       >>= execute path
 
 --------------------------------------------------------------------------------
-execute :: FilePath -> [Syntax.Block]
+execute
+  :: FilePath
+  -> [Syntax.Block]
   -> ExceptT PreProcess.PreProcessError IO [Syntax.Block]
 execute ctx = mapM (exec ctx)
 
@@ -59,10 +62,12 @@ exec ctx = \case
     pure $ Syntax.BlockImport path mbody' args
   node@(Syntax.BlockRun _ (Just _)) -> pure node
   Syntax.BlockRun cmd Nothing -> do
-    out <- liftIO $
-      readCreateProcess ((shell $ T.unpack cmd) { cwd = Just "/tmp/" }) ""
-    pure $ Syntax.BlockRun cmd $
-      Just [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack out]]
+    out <-
+      liftIO $
+        readCreateProcess ((shell $ T.unpack cmd) {cwd = Just "/tmp/"}) ""
+    pure $
+      Syntax.BlockRun cmd $
+        Just [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack out]]
   node@(Syntax.BlockReadJson _ _ _) -> pure node
   node@(Syntax.BlockAssignVar _ _) -> pure node
   Syntax.BlockIf cond as bs -> do

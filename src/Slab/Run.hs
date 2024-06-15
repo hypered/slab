@@ -2,8 +2,7 @@ module Slab.Run
   ( run
   ) where
 
-import Control.Monad.Trans.Except (runExceptT)
-import Control.Monad.Trans.Except (ExceptT, withExceptT)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, withExceptT)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy.IO qualified as TL

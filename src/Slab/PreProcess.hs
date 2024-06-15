@@ -34,6 +34,7 @@ data PreProcessError
   deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
+
 -- | Similar to `parseFile` but pre-process the include statements.
 preprocessFile :: FilePath -> IO (Either PreProcessError [Block])
 preprocessFile = runExceptT . preprocessFileE
