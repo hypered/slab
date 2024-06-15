@@ -1,10 +1,17 @@
 module Slab.Error
   ( Error (..)
+  , unwrap
   ) where
 
 import Data.Text (Text)
 import Data.Void (Void)
-import Text.Megaparsec (ParseErrorBundle)
+import Text.Megaparsec (ParseErrorBundle, errorBundlePretty)
+
+import Data.Text qualified as T
+import Data.Text.IO qualified as T
+import Data.Text.Lazy.IO qualified as TL
+import System.Exit (exitFailure)
+import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 
@@ -16,3 +23,14 @@ data Error
   | EvaluateError Text -- TODO Add specific variants instead of using Text.
   | ExecuteError Text -- TODO Add specific variants instead of using Text.
   deriving (Show, Eq)
+
+-- | Extract a Right value, or die, emitting an error message.
+unwrap :: Either Error a -> IO a
+unwrap = \case
+  Left (ParseError err) -> do
+    T.putStrLn . T.pack $ errorBundlePretty err
+    exitFailure
+  Left err -> do
+    TL.putStrLn $ pShowNoColor err
+    exitFailure
+  Right a -> pure a

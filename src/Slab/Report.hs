@@ -2,16 +2,10 @@ module Slab.Report
   ( run
   ) where
 
-import Data.Text qualified as T
-import Data.Text.IO qualified as T
-import Data.Text.Lazy.IO qualified as TL
 import Slab.Build qualified as Build
 import Slab.Error qualified as Error
 import Slab.Evaluate qualified as Evaluate
 import Slab.Syntax qualified as Syntax
-import System.Exit (exitFailure)
-import Text.Megaparsec hiding (parse)
-import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: FilePath -> IO ()
@@ -43,18 +37,9 @@ buildDir srcDir = do
 buildFile :: FilePath -> IO Module
 buildFile path = do
   putStrLn $ "Reading " <> path <> "..."
-
-  evaluated <- Evaluate.evaluateFile path
-  case evaluated of
-    Left (Error.ParseError err) -> do
-      T.putStrLn . T.pack $ errorBundlePretty err
-      exitFailure
-    Left err -> do
-      TL.putStrLn $ pShowNoColor err
-      exitFailure
-    Right nodes ->
-      pure
-        Module
-          { modulePath = path
-          , moduleNodes = nodes
-          }
+  nodes <- Evaluate.evaluateFile path >>= Error.unwrap
+  pure
+    Module
+      { modulePath = path
+      , moduleNodes = nodes
+      }
