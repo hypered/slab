@@ -125,9 +125,5 @@ executeWithModeE
   :: FilePath
   -> Command.ParseMode
   -> ExceptT Evaluate.PreProcessError IO [Syntax.Block]
-executeWithModeE path pmode = do
-  let ctx =
-        Evaluate.Context
-          { Evaluate.ctxStartPath = path
-          }
-  evaluateWithModeE path pmode >>= Execute.execute ctx
+executeWithModeE path pmode =
+  evaluateWithModeE path pmode >>= Execute.execute path

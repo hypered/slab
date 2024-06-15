@@ -42,9 +42,13 @@ data PreProcessError
   | PreProcessError Text -- TODO Add specific variants instead of using Text.
   deriving (Show, Eq)
 
--- | Similarly to `parseFile` but pre-process the include statements.
+-- | Similar to `parseFile` but pre-process the include statements.
 preprocessFile :: FilePath -> IO (Either PreProcessError [Block])
 preprocessFile = runExceptT . preprocessFileE
+
+-- | Similar to `preprocessFile` but evaluate the template.
+evaluateFile :: FilePath -> IO (Either PreProcessError [Block])
+evaluateFile path = runExceptT (preprocessFileE path >>= evaluate defaultEnv ["toplevel"])
 
 preprocessFileE :: FilePath -> ExceptT PreProcessError IO [Block]
 preprocessFileE path = do
@@ -61,9 +65,6 @@ preprocessFileE path = do
 -- recursively).
 preprocessNodesE :: Context -> [Block] -> ExceptT PreProcessError IO [Block]
 preprocessNodesE ctx nodes = mapM (preprocessNodeE ctx) nodes
-
-evaluateFile :: FilePath -> IO (Either PreProcessError [Block])
-evaluateFile path = runExceptT (preprocessFileE path >>= evaluate defaultEnv ["toplevel"])
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.

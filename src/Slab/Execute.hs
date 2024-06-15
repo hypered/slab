@@ -15,31 +15,22 @@ import System.Process (cwd, readCreateProcess, shell)
 
 --------------------------------------------------------------------------------
 run :: FilePath -> [Syntax.Block] -> IO (Either Evaluate.PreProcessError [Syntax.Block])
-run path nodes = do
-  let ctx =
-        Evaluate.Context
-          { ctxStartPath = path
-          }
-  nodes' <- runExceptT $ execute ctx nodes
-  pure nodes'
+run path nodes = runExceptT $ execute path nodes
 
+-- | Similar to `evaluateFile` but run external commands.
 executeFile :: FilePath -> IO (Either Evaluate.PreProcessError [Syntax.Block])
-executeFile path = do
-  let ctx =
-        Evaluate.Context
-          { ctxStartPath = path
-          }
+executeFile path =
   runExceptT $
     Evaluate.preprocessFileE path
       >>= Evaluate.evaluate Evaluate.defaultEnv ["toplevel"]
-      >>= execute ctx
+      >>= execute path
 
-execute :: Evaluate.Context -> [Syntax.Block]
+execute :: FilePath -> [Syntax.Block]
   -> ExceptT Evaluate.PreProcessError IO [Syntax.Block]
 execute ctx = mapM (exec ctx)
 
-exec :: Evaluate.Context -> Syntax.Block -> ExceptT Evaluate.PreProcessError IO Syntax.Block
-exec ctx@Evaluate.Context {..} = \case
+exec :: FilePath -> Syntax.Block -> ExceptT Evaluate.PreProcessError IO Syntax.Block
+exec ctx = \case
   node@Syntax.BlockDoctype -> pure node
   Syntax.BlockElem name mdot attrs nodes -> do
     nodes' <- execute ctx nodes
