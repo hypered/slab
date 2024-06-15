@@ -5,7 +5,6 @@ module Slab.Parse
   , parseFileE
   , parse
   , parseExpr
-  , parseErrorPretty
   , pugTextInclude
   -- Inline parsing stuff
 
@@ -24,13 +23,10 @@ import Control.Monad.Trans.Except (ExceptT, except, runExceptT, withExceptT)
 import Data.Char (isSpace)
 import Data.Functor (($>))
 import Data.List (intercalate)
-import Data.List.NonEmpty qualified as NE (toList)
 import Data.Maybe (isJust)
-import Data.Set qualified as S (toList)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
-import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
 import Slab.Error qualified as Error
 import Slab.Syntax
@@ -38,7 +34,6 @@ import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected
 import Text.Megaparsec qualified as M
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
-import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
 parseFile :: FilePath -> IO (Either Error.Error [Block])
@@ -635,45 +630,6 @@ lexeme = L.lexeme sc
 
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
-
---------------------------------------------------------------------------------
--- Convert parse errors to a user-friendly message.
-parseErrorPretty :: ParseErrorBundle Text Void -> Text
-parseErrorPretty (ParseErrorBundle errors posState) =
-  case NE.toList errors of
-    [] -> "Unknown error"
-    (e : _) -> case e of
-      TrivialError offset unexpected expected ->
-        let
-          pos = pstateSourcePos $ reachOffsetNoLine offset posState
-          errorPos =
-            T.pack (show (unPos (sourceLine pos)))
-              <> ":"
-              <> T.pack (show (unPos (sourceColumn pos)))
-          unexpectedMsg =
-            maybe
-              "Unexpected end of input."
-              (\u -> "Unexpected " <> errorItemPretty u <> ".")
-              unexpected
-          expectedMsg =
-            if null expected
-              then ""
-              else "Expected " <> (T.intercalate ", " . map errorItemPretty . S.toList $ expected) <> "."
-         in
-          T.unwords
-            [ "Error at"
-            , errorPos
-            , "-"
-            , unexpectedMsg
-            , if T.null expectedMsg then "." else expectedMsg
-            ]
-      FancyError offset err -> "Complex error at position " <> T.pack (show offset) <> ": " <> TL.toStrict (pShowNoColor err)
-
-errorItemPretty :: ErrorItem Char -> Text
-errorItemPretty = \case
-  Tokens ts -> "character '" <> T.pack (NE.toList ts) <> "'"
-  M.Label label -> T.pack (NE.toList label)
-  EndOfInput -> "end of input"
 
 --------------------------------------------------------------------------------
 

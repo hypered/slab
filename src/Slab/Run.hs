@@ -43,7 +43,7 @@ run (Command.CommandWithPath path pmode (Command.Evaluate simpl)) = do
     then TL.putStrLn $ pShowNoColor $ Evaluate.simplify nodes
     else TL.putStrLn $ pShowNoColor nodes
 run (Command.CommandWithPath path pmode Command.Parse) = do
-  nodes <- parseWithMode path pmode
+  nodes <- parseWithMode path pmode >>= Error.unwrap
   TL.putStrLn $ pShowNoColor nodes
 run (Command.CommandWithPath path pmode Command.Classes) = do
   nodes <- parseWithMode path pmode >>= Error.unwrap
