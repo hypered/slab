@@ -28,6 +28,8 @@ data Error
 unwrap :: Either Error a -> IO a
 unwrap = \case
   Left (ParseError err) -> do
+    -- TODO Probably use this instead:
+    -- T.putStrLn . Parse.parseErrorPretty $ err
     T.putStrLn . T.pack $ errorBundlePretty err
     exitFailure
   Left err -> do

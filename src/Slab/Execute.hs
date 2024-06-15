@@ -2,8 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Slab.Execute
-  ( run
-  , executeFile
+  ( executeFile
   , execute
   ) where
 
@@ -17,8 +16,6 @@ import Slab.Syntax qualified as Syntax
 import System.Process (cwd, readCreateProcess, shell)
 
 --------------------------------------------------------------------------------
-run :: FilePath -> [Syntax.Block] -> IO (Either Error.Error [Syntax.Block])
-run path nodes = runExceptT $ execute path nodes
 
 -- | Similar to `evaluateFile` but run external commands.
 executeFile :: FilePath -> IO (Either Error.Error [Syntax.Block])
