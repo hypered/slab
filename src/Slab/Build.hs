@@ -35,7 +35,7 @@ buildFile srcDir mode distDir path = do
 
   evaluated <- Execute.executeFile path
   case evaluated of
-    Left (Error.PreProcessParseError err) -> do
+    Left (Error.ParseError err) -> do
       T.putStrLn . T.pack $ errorBundlePretty err
       exitFailure
     Left err -> do

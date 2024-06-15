@@ -1,5 +1,5 @@
 module Slab.Error
-  ( PreProcessError (..)
+  ( Error (..)
   ) where
 
 import Data.Text (Text)
@@ -9,8 +9,8 @@ import Text.Megaparsec (ParseErrorBundle)
 --------------------------------------------------------------------------------
 
 -- | Represent all errors emitted by Slab. I.e. this is used in each stage
--- (`Slab.PreProcess`, `Slab.Evaluate`).
-data PreProcessError
-  = PreProcessParseError (ParseErrorBundle Text Void)
-  | PreProcessError Text -- TODO Add specific variants instead of using Text.
+-- (`Slab.Parse`, `Slab.PreProcess`, `Slab.Evaluate`).
+data Error
+  = ParseError (ParseErrorBundle Text Void)
+  | MiscError Text -- TODO Add specific variants instead of using Text.
   deriving (Show, Eq)

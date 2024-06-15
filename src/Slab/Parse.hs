@@ -20,7 +20,7 @@ module Slab.Parse
 import Control.Monad (void)
 import Control.Monad.Combinators.Expr
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Except (ExceptT, except)
+import Control.Monad.Trans.Except (ExceptT, except, runExceptT, withExceptT)
 import Data.Char (isSpace)
 import Data.Functor (($>))
 import Data.List (intercalate)
@@ -32,6 +32,7 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy qualified as TL
 import Data.Void (Void)
+import Slab.Error qualified as Error
 import Slab.Syntax
 import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
 import Text.Megaparsec qualified as M
@@ -40,15 +41,13 @@ import Text.Megaparsec.Char.Lexer qualified as L
 import Text.Pretty.Simple (pShowNoColor)
 
 --------------------------------------------------------------------------------
-parseFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [Block])
-parseFile path = do
-  pugContent <- T.readFile path
-  pure $ parse path pugContent
+parseFile :: FilePath -> IO (Either Error.Error [Block])
+parseFile = runExceptT . parseFileE
 
-parseFileE :: FilePath -> ExceptT (ParseErrorBundle Text Void) IO [Block]
+parseFileE :: FilePath -> ExceptT Error.Error IO [Block]
 parseFileE path = do
   pugContent <- liftIO $ T.readFile path
-  except $ parse path pugContent
+  withExceptT Error.ParseError . except $ parse path pugContent
 
 --------------------------------------------------------------------------------
 

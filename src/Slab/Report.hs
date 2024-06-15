@@ -46,7 +46,7 @@ buildFile path = do
 
   evaluated <- Evaluate.evaluateFile path
   case evaluated of
-    Left (Error.PreProcessParseError err) -> do
+    Left (Error.ParseError err) -> do
       T.putStrLn . T.pack $ errorBundlePretty err
       exitFailure
     Left err -> do

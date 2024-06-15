@@ -17,11 +17,11 @@ import Slab.Syntax qualified as Syntax
 import System.Process (cwd, readCreateProcess, shell)
 
 --------------------------------------------------------------------------------
-run :: FilePath -> [Syntax.Block] -> IO (Either Error.PreProcessError [Syntax.Block])
+run :: FilePath -> [Syntax.Block] -> IO (Either Error.Error [Syntax.Block])
 run path nodes = runExceptT $ execute path nodes
 
 -- | Similar to `evaluateFile` but run external commands.
-executeFile :: FilePath -> IO (Either Error.PreProcessError [Syntax.Block])
+executeFile :: FilePath -> IO (Either Error.Error [Syntax.Block])
 executeFile path =
   runExceptT $
     PreProcess.preprocessFileE path
@@ -32,10 +32,10 @@ executeFile path =
 execute
   :: FilePath
   -> [Syntax.Block]
-  -> ExceptT Error.PreProcessError IO [Syntax.Block]
+  -> ExceptT Error.Error IO [Syntax.Block]
 execute ctx = mapM (exec ctx)
 
-exec :: FilePath -> Syntax.Block -> ExceptT Error.PreProcessError IO Syntax.Block
+exec :: FilePath -> Syntax.Block -> ExceptT Error.Error IO Syntax.Block
 exec ctx = \case
   node@Syntax.BlockDoctype -> pure node
   Syntax.BlockElem name mdot attrs nodes -> do

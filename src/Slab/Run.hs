@@ -2,7 +2,7 @@ module Slab.Run
   ( run
   ) where
 
-import Control.Monad.Trans.Except (ExceptT, runExceptT, withExceptT)
+import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy.IO qualified as TL
@@ -33,19 +33,19 @@ run (Command.Generate path) = Generate.renderHs path
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
   evaluated <- executeWithMode path pmode
   case evaluated of
-    Left (Error.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
+    Left (Error.ParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> TL.putStrLn . Render.renderHtmls $ Render.renderBlocks nodes
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderPretty)) = do
   evaluated <- executeWithMode path pmode
   case evaluated of
-    Left (Error.PreProcessParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
+    Left (Error.ParseError err) -> T.putStrLn . T.pack $ errorBundlePretty err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> T.putStr . Render.prettyHtmls $ Render.renderBlocks nodes
 run (Command.CommandWithPath path pmode Command.Execute) = do
   evaluated <- evaluateWithMode path pmode
   case evaluated of
-    Left (Error.PreProcessParseError err) ->
+    Left (Error.ParseError err) ->
       T.putStrLn . Parse.parseErrorPretty $ err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> do
@@ -54,7 +54,7 @@ run (Command.CommandWithPath path pmode Command.Execute) = do
 run (Command.CommandWithPath path pmode (Command.Evaluate simpl)) = do
   evaluated <- evaluateWithMode path pmode
   case evaluated of
-    Left (Error.PreProcessParseError err) ->
+    Left (Error.ParseError err) ->
       T.putStrLn . Parse.parseErrorPretty $ err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes ->
@@ -64,7 +64,7 @@ run (Command.CommandWithPath path pmode (Command.Evaluate simpl)) = do
 run (Command.CommandWithPath path pmode Command.Parse) = do
   parsed <- parseWithMode path pmode
   case parsed of
-    Left (Error.PreProcessParseError err) ->
+    Left (Error.ParseError err) ->
       T.putStrLn . Parse.parseErrorPretty $ err
     Left err -> TL.putStrLn $ pShowNoColor err
     Right nodes -> TL.putStrLn $ pShowNoColor nodes
@@ -89,35 +89,35 @@ run (Command.CommandWithPath path pmode (Command.Fragments mname)) = do
 parseWithMode
   :: FilePath
   -> Command.ParseMode
-  -> IO (Either Error.PreProcessError [Syntax.Block])
+  -> IO (Either Error.Error [Syntax.Block])
 parseWithMode path pmode = runExceptT $ parseWithModeE path pmode
 
 evaluateWithMode
   :: FilePath
   -> Command.ParseMode
-  -> IO (Either Error.PreProcessError [Syntax.Block])
+  -> IO (Either Error.Error [Syntax.Block])
 evaluateWithMode path pmode = runExceptT $ evaluateWithModeE path pmode
 
 executeWithMode
   :: FilePath
   -> Command.ParseMode
-  -> IO (Either Error.PreProcessError [Syntax.Block])
+  -> IO (Either Error.Error [Syntax.Block])
 executeWithMode path pmode = runExceptT $ executeWithModeE path pmode
 
 --------------------------------------------------------------------------------
 parseWithModeE
   :: FilePath
   -> Command.ParseMode
-  -> ExceptT Error.PreProcessError IO [Syntax.Block]
+  -> ExceptT Error.Error IO [Syntax.Block]
 parseWithModeE path pmode =
   case pmode of
-    Command.ParseShallow -> withExceptT Error.PreProcessParseError $ Parse.parseFileE path
+    Command.ParseShallow -> Parse.parseFileE path
     Command.ParseDeep -> PreProcess.preprocessFileE path
 
 evaluateWithModeE
   :: FilePath
   -> Command.ParseMode
-  -> ExceptT Error.PreProcessError IO [Syntax.Block]
+  -> ExceptT Error.Error IO [Syntax.Block]
 evaluateWithModeE path pmode = do
   parsed <- parseWithModeE path pmode
   Evaluate.evaluate Evaluate.defaultEnv ["toplevel"] parsed
@@ -125,6 +125,6 @@ evaluateWithModeE path pmode = do
 executeWithModeE
   :: FilePath
   -> Command.ParseMode
-  -> ExceptT Error.PreProcessError IO [Syntax.Block]
+  -> ExceptT Error.Error IO [Syntax.Block]
 executeWithModeE path pmode =
   evaluateWithModeE path pmode >>= Execute.execute path
