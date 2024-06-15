@@ -50,6 +50,8 @@ parseFileE path = do
   pugContent <- liftIO $ T.readFile path
   except $ parse path pugContent
 
+--------------------------------------------------------------------------------
+
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Block]
 parse fn = runParser (many pugNode <* eof) fn
 

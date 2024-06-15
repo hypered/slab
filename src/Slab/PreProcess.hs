@@ -9,9 +9,8 @@ module Slab.PreProcess
   ) where
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE, withExceptT)
 import Data.Aeson qualified as Aeson
-import Data.Bifunctor (first)
 import Data.ByteString.Lazy qualified as BL
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -41,27 +40,25 @@ preprocessFile = runExceptT . preprocessFileE
 
 preprocessFileE :: FilePath -> ExceptT PreProcessError IO [Block]
 preprocessFileE path = do
-  pugContent <- liftIO $ T.readFile path
-  let mnodes = first PreProcessParseError $ Parse.parse path pugContent
-  nodes <- except mnodes
+  nodes <- withExceptT PreProcessParseError $ Parse.parseFileE path
   let ctx =
         Context
           { ctxStartPath = path
           }
-  preprocessNodesE ctx nodes
+  preprocess ctx nodes
 
 --------------------------------------------------------------------------------
 
 -- Process include statements (i.e. read the given path and parse its content
 -- recursively).
-preprocessNodesE :: Context -> [Block] -> ExceptT PreProcessError IO [Block]
-preprocessNodesE ctx nodes = mapM (preprocessNodeE ctx) nodes
+preprocess :: Context -> [Block] -> ExceptT PreProcessError IO [Block]
+preprocess ctx nodes = mapM (preproc ctx) nodes
 
-preprocessNodeE :: Context -> Block -> ExceptT PreProcessError IO Block
-preprocessNodeE ctx@Context {..} = \case
+preproc :: Context -> Block -> ExceptT PreProcessError IO Block
+preproc ctx@Context {..} = \case
   node@BlockDoctype -> pure node
   BlockElem name mdot attrs nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
+    nodes' <- preprocess ctx nodes
     pure $ BlockElem name mdot attrs nodes'
   node@(BlockText _ _) -> pure node
   BlockInclude mname path _ -> do
@@ -81,17 +78,17 @@ preprocessNodeE ctx@Context {..} = \case
         | otherwise ->
             throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   BlockFragmentDef name params nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
+    nodes' <- preprocess ctx nodes
     pure $ BlockFragmentDef name params nodes'
   BlockFragmentCall name values nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
+    nodes' <- preprocess ctx nodes
     pure $ BlockFragmentCall name values nodes'
   node@(BlockFor _ _ _ _) -> pure node
   node@(BlockComment _ _) -> pure node
   node@(BlockFilter _ _) -> pure node
   node@(BlockRawElem _ _) -> pure node
   BlockDefault name nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
+    nodes' <- preprocess ctx nodes
     pure $ BlockDefault name nodes'
   BlockImport path _ args -> do
     -- An import is treated like an include used to define a fragment, then
@@ -105,7 +102,7 @@ preprocessNodeE ctx@Context {..} = \case
         | exists -> do
             -- Parse and process the .slab file.
             body <- preprocessFileE includedPath
-            args' <- mapM (preprocessNodeE ctx) args
+            args' <- mapM (preproc ctx) args
             pure $ BlockImport path (Just body) args'
         | otherwise ->
             throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
@@ -121,10 +118,10 @@ preprocessNodeE ctx@Context {..} = \case
   node@(BlockAssignVar _ _) -> pure node
   BlockIf cond as bs -> do
     -- File inclusion is done right away, without checking the condition.
-    as' <- preprocessNodesE ctx as
-    bs' <- preprocessNodesE ctx bs
+    as' <- preprocess ctx as
+    bs' <- preprocess ctx bs
     pure $ BlockIf cond as' bs'
   BlockList nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
+    nodes' <- preprocess ctx nodes
     pure $ BlockList nodes'
   node@(BlockCode _) -> pure node
