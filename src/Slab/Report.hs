@@ -6,8 +6,8 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy.IO qualified as TL
 import Slab.Build qualified as Build
+import Slab.Error qualified as Error
 import Slab.Evaluate qualified as Evaluate
-import Slab.PreProcess qualified as PreProcess
 import Slab.Syntax qualified as Syntax
 import System.Exit (exitFailure)
 import Text.Megaparsec hiding (parse)
@@ -46,7 +46,7 @@ buildFile path = do
 
   evaluated <- Evaluate.evaluateFile path
   case evaluated of
-    Left (PreProcess.PreProcessParseError err) -> do
+    Left (Error.PreProcessParseError err) -> do
       T.putStrLn . T.pack $ errorBundlePretty err
       exitFailure
     Left err -> do

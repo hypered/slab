@@ -63,6 +63,7 @@ library
   exposed-modules:
     Slab.Build
     Slab.Command
+    Slab.Error
     Slab.Execute
     Slab.Evaluate
     Slab.Generate.Haskell
