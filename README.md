@@ -72,7 +72,8 @@ Available commands:
   serve                    Watch and serve a library of Slab templates to HTML
   report                   Analyse a library of Slab templates
   render                   Render a Slab template to HTML
-  eval                     Parse a Slab template to AST and evaluate it
+  run                      Execute a Slab template
+  evaluate                 Evaluate a Slab template
   parse                    Parse a Slab template to AST
   generate                 Generate code corresponding to a Slab template
   classes                  Parse a Slab template and report its CSS classes

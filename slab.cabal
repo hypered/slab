@@ -50,6 +50,7 @@ library
     , parser-combinators
     , prettyprinter
     , pretty-simple
+    , process
     , servant
     , servant-blaze
     , servant-server
@@ -62,6 +63,7 @@ library
   exposed-modules:
     Slab.Build
     Slab.Command
+    Slab.Execute
     Slab.Evaluate
     Slab.Generate.Haskell
     Slab.Parse

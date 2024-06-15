@@ -25,6 +25,7 @@ data Command
 -- | Commands operating on a path.
 data CommandWithPath
   = Render RenderMode
+  | Execute
   | -- | If True, simplify the evaluated AST.
     Evaluate Bool
   | Parse
@@ -85,10 +86,16 @@ parser =
                 "Render a Slab template to HTML"
           )
         <> A.command
-          "eval"
+          "run"
+          ( A.info (parserExectue <**> A.helper) $
+              A.progDesc
+                "Execute a Slab template"
+          )
+        <> A.command
+          "evaluate"
           ( A.info (parserEvaluate <**> A.helper) $
               A.progDesc
-                "Parse a Slab template to AST and evaluate it"
+                "Evaluate a Slab template"
           )
         <> A.command
           "parse"
@@ -180,6 +187,11 @@ parserWatch = do
             "A destination directory for the generated HTML files."
       )
   pure $ Watch srcDir mode distDir
+
+parserExectue :: A.Parser Command
+parserExectue = do
+  pathAndmode <- parserWithPath
+  pure $ uncurry CommandWithPath pathAndmode $ Execute
 
 parserRender :: A.Parser Command
 parserRender = do

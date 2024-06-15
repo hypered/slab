@@ -54,6 +54,7 @@ data Block
   | -- | Similar to an anonymous fragment call, where the fragment body is the
     -- content of the referenced file.
     BlockImport FilePath (Maybe [Block]) [Block]
+  | BlockRun Text (Maybe [Block])
   | -- | Allow to assign the content of a JSON file to a variable. The syntax
     -- is specific to how Struct has a @require@ function in scope.
     BlockReadJson Text FilePath (Maybe Aeson.Value)
@@ -147,6 +148,8 @@ data TextSyntax
     Dot
   | -- | The text is the content of an include statement without a .slab extension.
     Include
+  | -- | The text is the output of command.
+    RunOutput
   deriving (Show, Eq)
 
 -- Minimal support for some JS expressions.
@@ -195,6 +198,9 @@ freeVariables =
     Object _ -> [] -- TODO I guess some of those can contain variables.
     Lookup a b -> a : freeVariables b
     Add a b -> freeVariables a <> freeVariables b
+    Sub a b -> freeVariables a <> freeVariables b
+    Times a b -> freeVariables a <> freeVariables b
+    Divide a b -> freeVariables a <> freeVariables b
     Frag _ _ _ -> []
     Thunk _ _ -> []
 
@@ -224,6 +230,7 @@ extractClasses = nub . sort . concatMap f
   f (BlockRawElem _ _) = []
   f (BlockDefault _ children) = extractClasses children
   f (BlockImport _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
+  f (BlockRun _ _) = []
   f (BlockReadJson _ _ _) = []
   f (BlockAssignVar _ _) = []
   f (BlockIf _ as bs) = extractClasses as <> extractClasses bs
@@ -258,6 +265,7 @@ extractFragments = concatMap f
   f (BlockRawElem _ _) = []
   f (BlockDefault _ children) = extractFragments children
   f (BlockImport _ children args) = maybe [] extractFragments children <> extractFragments args
+  f (BlockRun _ _) = []
   f (BlockReadJson _ _ _) = []
   f (BlockAssignVar _ _) = []
   f (BlockIf _ as bs) = extractFragments as <> extractFragments bs

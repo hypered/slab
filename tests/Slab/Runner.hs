@@ -4,7 +4,7 @@ module Slab.Runner
 
 import Data.List (sort)
 import Data.Text (Text)
-import Slab.Evaluate qualified as Evaluate
+import Slab.Execute qualified as Execute
 import Slab.Render qualified as Render
 import System.FilePath
 import System.FilePath.Glob qualified as Glob
@@ -47,7 +47,7 @@ mkGoldenTest path = do
  where
   action :: IO Text
   action = do
-    evaluated <- Evaluate.evaluateFile path
+    evaluated <- Execute.executeFile path
     case evaluated of
       Left _ -> pure "TODO"
       Right nodes -> do

@@ -2,6 +2,7 @@
 
 module Slab.Parse
   ( parseFile
+  , parseFileE
   , parse
   , parseExpr
   , parseErrorPretty
@@ -18,6 +19,8 @@ module Slab.Parse
 
 import Control.Monad (void)
 import Control.Monad.Combinators.Expr
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Except (ExceptT, except)
 import Data.Char (isSpace)
 import Data.Functor (($>))
 import Data.List (intercalate)
@@ -41,6 +44,11 @@ parseFile :: FilePath -> IO (Either (ParseErrorBundle Text Void) [Block])
 parseFile path = do
   pugContent <- T.readFile path
   pure $ parse path pugContent
+
+parseFileE :: FilePath -> ExceptT (ParseErrorBundle Text Void) IO [Block]
+parseFileE path = do
+  pugContent <- liftIO $ T.readFile path
+  except $ parse path pugContent
 
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Block]
 parse fn = runParser (many pugNode <* eof) fn
@@ -72,6 +80,7 @@ pugNode = do
         , pugRawElement
         , pugDefault
         , pugImport
+        , pugRun
         , pugLet
         , try pugEach
         , pugIf
@@ -578,6 +587,13 @@ pugImport = do
   _ <- lexeme (string "import")
   path <- pugPath
   pure $ L.IndentMany Nothing (pure . BlockImport path Nothing) pugNode
+
+--------------------------------------------------------------------------------
+pugRun :: Parser (L.IndentOpt Parser Block Block)
+pugRun = do
+  _ <- lexeme (string "run")
+  cmd <- pugText
+  pure $ L.IndentNone $ BlockRun cmd Nothing
 
 --------------------------------------------------------------------------------
 pugLet :: Parser (L.IndentOpt Parser Block Block)

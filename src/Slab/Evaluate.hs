@@ -2,8 +2,10 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Slab.Evaluate
-  ( PreProcessError (..)
+  ( Context (..)
+  , PreProcessError (..)
   , preprocessFile
+  , preprocessFileE
   , evaluateFile
   , evaluate
   , defaultEnv
@@ -125,6 +127,7 @@ preprocessNodeE ctx@Context {..} = \case
             pure $ BlockImport path (Just body) args'
         | otherwise ->
             throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
+  node@(BlockRun _ _) -> pure node
   BlockReadJson name path _ -> do
     let path' = takeDirectory ctxStartPath </> path
     content <- liftIO $ BL.readFile path'
@@ -196,6 +199,7 @@ eval env stack = \case
   BlockImport path _ args -> do
     body <- call env stack (T.pack path) [] args
     pure $ BlockImport path (Just body) args
+  node@(BlockRun _ _) -> pure node
   node@(BlockReadJson _ _ _) -> pure node
   node@(BlockAssignVar _ _) -> pure node
   BlockIf cond as bs -> do
@@ -343,6 +347,7 @@ extractVariables env = concatMap f
   f (BlockDefault _ _) = []
   f (BlockImport path (Just body) _) = [(T.pack path, Frag [] env body)]
   f (BlockImport _ _ _) = []
+  f (BlockRun _ _) = []
   f (BlockReadJson name _ (Just val)) = [(name, jsonToCode val)]
   f (BlockReadJson _ _ Nothing) = []
   f (BlockAssignVar name val) = [(name, val)]
@@ -378,6 +383,7 @@ simplify' = \case
   node@(BlockRawElem _ _) -> [node]
   BlockDefault _ nodes -> simplify nodes
   BlockImport _ mbody _ -> maybe [] simplify mbody
+  BlockRun _ mbody -> maybe [] simplify mbody
   BlockReadJson _ _ _ -> []
   BlockAssignVar _ _ -> []
   BlockIf _ [] bs -> simplify bs
