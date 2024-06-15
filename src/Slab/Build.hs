@@ -11,6 +11,7 @@ import Data.Text.Lazy.IO qualified as TL
 import Slab.Command qualified as Command
 import Slab.Evaluate qualified as Evaluate
 import Slab.Execute qualified as Execute
+import Slab.PreProcess qualified as PreProcess
 import Slab.Render qualified as Render
 import System.Directory (createDirectoryIfMissing)
 import System.Exit (exitFailure)
@@ -34,7 +35,7 @@ buildFile srcDir mode distDir path = do
 
   evaluated <- Execute.executeFile path
   case evaluated of
-    Left (Evaluate.PreProcessParseError err) -> do
+    Left (PreProcess.PreProcessParseError err) -> do
       T.putStrLn . T.pack $ errorBundlePretty err
       exitFailure
     Left err -> do

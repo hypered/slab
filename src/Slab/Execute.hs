@@ -10,26 +10,28 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Data.Text qualified as T
 import Slab.Evaluate qualified as Evaluate
+import Slab.PreProcess qualified as PreProcess
 import Slab.Syntax qualified as Syntax
 import System.Process (cwd, readCreateProcess, shell)
 
 --------------------------------------------------------------------------------
-run :: FilePath -> [Syntax.Block] -> IO (Either Evaluate.PreProcessError [Syntax.Block])
+run :: FilePath -> [Syntax.Block] -> IO (Either PreProcess.PreProcessError [Syntax.Block])
 run path nodes = runExceptT $ execute path nodes
 
 -- | Similar to `evaluateFile` but run external commands.
-executeFile :: FilePath -> IO (Either Evaluate.PreProcessError [Syntax.Block])
+executeFile :: FilePath -> IO (Either PreProcess.PreProcessError [Syntax.Block])
 executeFile path =
   runExceptT $
-    Evaluate.preprocessFileE path
+    PreProcess.preprocessFileE path
       >>= Evaluate.evaluate Evaluate.defaultEnv ["toplevel"]
       >>= execute path
 
+--------------------------------------------------------------------------------
 execute :: FilePath -> [Syntax.Block]
-  -> ExceptT Evaluate.PreProcessError IO [Syntax.Block]
+  -> ExceptT PreProcess.PreProcessError IO [Syntax.Block]
 execute ctx = mapM (exec ctx)
 
-exec :: FilePath -> Syntax.Block -> ExceptT Evaluate.PreProcessError IO Syntax.Block
+exec :: FilePath -> Syntax.Block -> ExceptT PreProcess.PreProcessError IO Syntax.Block
 exec ctx = \case
   node@Syntax.BlockDoctype -> pure node
   Syntax.BlockElem name mdot attrs nodes -> do

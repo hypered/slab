@@ -1,74 +1,34 @@
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Slab.Evaluate
-  ( Context (..)
-  , PreProcessError (..)
-  , preprocessFile
-  , preprocessFileE
-  , evaluateFile
+  ( evaluateFile
   , evaluate
   , defaultEnv
   , simplify
   ) where
 
 import Control.Monad (forM)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Except (ExceptT, except, runExceptT, throwE)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Key qualified as Aeson.Key
 import Data.Aeson.KeyMap qualified as Aeson.KeyMap
-import Data.Bifunctor (first)
-import Data.ByteString.Lazy qualified as BL
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Text.IO qualified as T
 import Data.Vector qualified as V
-import Data.Void (Void)
-import Slab.Parse qualified as Parse
+import Slab.PreProcess qualified as PreProcess
 import Slab.Syntax
-import System.Directory (doesFileExist)
-import System.FilePath (takeDirectory, takeExtension, (</>))
-import Text.Megaparsec hiding (Label, label, parse, parseErrorPretty, unexpected)
 
 --------------------------------------------------------------------------------
-data Context = Context
-  { ctxStartPath :: FilePath
-  }
-
-data PreProcessError
-  = PreProcessParseError (ParseErrorBundle Text Void)
-  | PreProcessError Text -- TODO Add specific variants instead of using Text.
-  deriving (Show, Eq)
-
--- | Similar to `parseFile` but pre-process the include statements.
-preprocessFile :: FilePath -> IO (Either PreProcessError [Block])
-preprocessFile = runExceptT . preprocessFileE
 
 -- | Similar to `preprocessFile` but evaluate the template.
-evaluateFile :: FilePath -> IO (Either PreProcessError [Block])
-evaluateFile path = runExceptT (preprocessFileE path >>= evaluate defaultEnv ["toplevel"])
-
-preprocessFileE :: FilePath -> ExceptT PreProcessError IO [Block]
-preprocessFileE path = do
-  pugContent <- liftIO $ T.readFile path
-  let mnodes = first PreProcessParseError $ Parse.parse path pugContent
-  nodes <- except mnodes
-  let ctx =
-        Context
-          { ctxStartPath = path
-          }
-  preprocessNodesE ctx nodes
-
--- Process include statements (i.e. read the given path and parse its content
--- recursively).
-preprocessNodesE :: Context -> [Block] -> ExceptT PreProcessError IO [Block]
-preprocessNodesE ctx nodes = mapM (preprocessNodeE ctx) nodes
+evaluateFile :: FilePath -> IO (Either PreProcess.PreProcessError [Block])
+evaluateFile path = runExceptT $
+  PreProcess.preprocessFileE path >>= evaluate defaultEnv ["toplevel"]
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
-evaluate :: Monad m => Env -> [Text] -> [Block] -> ExceptT PreProcessError m [Block]
+evaluate :: Monad m => Env -> [Text] -> [Block] -> ExceptT PreProcess.PreProcessError m [Block]
 evaluate env stack nodes = do
   -- Note that we pass the environment that we are constructing, so that each
   -- definition sees all definitions (including later ones and itself).
@@ -76,79 +36,7 @@ evaluate env stack nodes = do
       env' = augmentVariables env vars
   mapM (eval env' stack) nodes
 
-preprocessNodeE :: Context -> Block -> ExceptT PreProcessError IO Block
-preprocessNodeE ctx@Context {..} = \case
-  node@BlockDoctype -> pure node
-  BlockElem name mdot attrs nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
-    pure $ BlockElem name mdot attrs nodes'
-  node@(BlockText _ _) -> pure node
-  BlockInclude mname path _ -> do
-    let includedPath = takeDirectory ctxStartPath </> path
-        slabExt = takeExtension includedPath == ".slab"
-    exists <- liftIO $ doesFileExist includedPath
-    if
-        | exists && (not slabExt || mname == Just "escape-html") -> do
-            -- Include the file content as-is.
-            content <- liftIO $ T.readFile includedPath
-            let node = Parse.pugTextInclude content
-            pure $ BlockInclude mname path (Just [node])
-        | exists -> do
-            -- Parse and process the .slab file.
-            nodes' <- preprocessFileE includedPath
-            pure $ BlockInclude mname path (Just nodes')
-        | otherwise ->
-            throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
-  BlockFragmentDef name params nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
-    pure $ BlockFragmentDef name params nodes'
-  BlockFragmentCall name values nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
-    pure $ BlockFragmentCall name values nodes'
-  node@(BlockFor _ _ _ _) -> pure node
-  node@(BlockComment _ _) -> pure node
-  node@(BlockFilter _ _) -> pure node
-  node@(BlockRawElem _ _) -> pure node
-  BlockDefault name nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
-    pure $ BlockDefault name nodes'
-  BlockImport path _ args -> do
-    -- An import is treated like an include used to define a fragment, then
-    -- directly calling that fragment.
-    let includedPath = takeDirectory ctxStartPath </> path
-        slabExt = takeExtension includedPath == ".slab"
-    exists <- liftIO $ doesFileExist includedPath
-    if
-        | exists && not slabExt ->
-            throwE $ PreProcessError $ "Extends requires a .slab file"
-        | exists -> do
-            -- Parse and process the .slab file.
-            body <- preprocessFileE includedPath
-            args' <- mapM (preprocessNodeE ctx) args
-            pure $ BlockImport path (Just body) args'
-        | otherwise ->
-            throwE $ PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
-  node@(BlockRun _ _) -> pure node
-  BlockReadJson name path _ -> do
-    let path' = takeDirectory ctxStartPath </> path
-    content <- liftIO $ BL.readFile path'
-    case Aeson.eitherDecode content of
-      Right val ->
-        pure $ BlockReadJson name path $ Just val
-      Left err ->
-        throwE $ PreProcessError $ "Can't decode JSON: " <> T.pack err
-  node@(BlockAssignVar _ _) -> pure node
-  BlockIf cond as bs -> do
-    -- File inclusion is done right away, without checking the condition.
-    as' <- preprocessNodesE ctx as
-    bs' <- preprocessNodesE ctx bs
-    pure $ BlockIf cond as' bs'
-  BlockList nodes -> do
-    nodes' <- preprocessNodesE ctx nodes
-    pure $ BlockList nodes'
-  node@(BlockCode _) -> pure node
-
-eval :: Monad m => Env -> [Text] -> Block -> ExceptT PreProcessError m Block
+eval :: Monad m => Env -> [Text] -> Block -> ExceptT PreProcess.PreProcessError m Block
 eval env stack = \case
   node@BlockDoctype -> pure node
   BlockElem name mdot attrs nodes -> do
@@ -176,7 +64,7 @@ eval env stack = \case
     collection <- case values' of
       List xs -> pure $ zip xs $ map Int [zero ..]
       Object xs -> pure $ map (\(k, v) -> (v, k)) xs
-      _ -> throwE $ PreProcessError $ "Iterating on something that is not a collection"
+      _ -> throwE $ PreProcess.PreProcessError $ "Iterating on something that is not a collection"
     nodes' <- forM collection $ \(value, index) -> do
       let env' = case mindex of
             Just idxname -> augmentVariables env [(name, value), (idxname, index)]
@@ -196,7 +84,7 @@ eval env stack = \case
       Just (Frag _ capturedEnv nodes') -> do
         nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
         pure $ BlockDefault name nodes''
-      Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
+      Just _ -> throwE $ PreProcess.PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
   BlockImport path _ args -> do
     body <- call env stack (T.pack path) [] args
     pure $ BlockImport path (Just body) args
@@ -224,7 +112,7 @@ eval env stack = \case
     code' <- evalCode env code
     pure $ BlockCode code'
 
-call :: Monad m => Env -> [Text] -> Text -> [Code] -> [Block] -> ExceptT PreProcessError m [Block]
+call :: Monad m => Env -> [Text] -> Text -> [Code] -> [Block] -> ExceptT PreProcess.PreProcessError m [Block]
 call env stack name values args =
   case lookupVariable name env of
     Just (Frag names capturedEnv body) -> do
@@ -234,8 +122,8 @@ call env stack name values args =
           env''' = augmentVariables env'' arguments
       body' <- evaluate env''' ("frag" : stack) body
       pure body'
-    Just _ -> throwE $ PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
-    Nothing -> throwE $ PreProcessError $ "Can't find fragment \"" <> name <> "\""
+    Just _ -> throwE $ PreProcess.PreProcessError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
+    Nothing -> throwE $ PreProcess.PreProcessError $ "Can't find fragment \"" <> name <> "\""
 
 defaultEnv :: Env
 defaultEnv = Env [("true", Int 1), ("false", Int 0)]
@@ -246,32 +134,32 @@ lookupVariable name Env {..} = lookup name envVariables
 augmentVariables :: Env -> [(Text, Code)] -> Env
 augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables}
 
-namedBlocks :: Monad m => [Block] -> ExceptT PreProcessError m [(Text, ([Text], [Block]))]
+namedBlocks :: Monad m => [Block] -> ExceptT PreProcess.PreProcessError m [(Text, ([Text], [Block]))]
 namedBlocks nodes = do
   named <- concat <$> mapM namedBlock nodes
   unnamed <- concat <$> mapM unnamedBlock nodes
   let content = if null unnamed then [] else [("content", ([], unnamed))]
   if isJust (lookup "content" named) && not (null unnamed)
-    then throwE $ PreProcessError $ "A block of content and a content argument are provided"
+    then throwE $ PreProcess.PreProcessError $ "A block of content and a content argument are provided"
     else pure $ named <> content
 
-namedBlock :: Monad m => Block -> ExceptT PreProcessError m [(Text, ([Text], [Block]))]
+namedBlock :: Monad m => Block -> ExceptT PreProcess.PreProcessError m [(Text, ([Text], [Block]))]
 namedBlock (BlockImport path (Just body) _) = pure [(T.pack path, ([], body))]
 namedBlock (BlockFragmentDef name names content) = pure [(name, (names, content))]
 namedBlock _ = pure []
 
-unnamedBlock :: Monad m => Block -> ExceptT PreProcessError m [Block]
+unnamedBlock :: Monad m => Block -> ExceptT PreProcess.PreProcessError m [Block]
 unnamedBlock (BlockImport path _ args) =
   pure [BlockFragmentCall (T.pack path) [] args]
 unnamedBlock (BlockFragmentDef _ _ _) = pure []
 unnamedBlock node = pure [node]
 
-evalCode :: Monad m => Env -> Code -> ExceptT PreProcessError m Code
+evalCode :: Monad m => Env -> Code -> ExceptT PreProcess.PreProcessError m Code
 evalCode env = \case
   Variable name ->
     case lookupVariable name env of
       Just val -> evalCode env val
-      Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
+      Nothing -> throwE $ PreProcess.PreProcessError $ "Can't find variable \"" <> name <> "\""
   Lookup name key ->
     case lookupVariable name env of
       Just (Object obj) -> do
@@ -280,44 +168,44 @@ evalCode env = \case
           Just val -> evalCode env val
           Nothing ->
             pure $ Variable "false"
-      Just _ -> throwE $ PreProcessError $ "Variable \"" <> name <> "\" is not an object"
-      Nothing -> throwE $ PreProcessError $ "Can't find variable \"" <> name <> "\""
+      Just _ -> throwE $ PreProcess.PreProcessError $ "Variable \"" <> name <> "\" is not an object"
+      Nothing -> throwE $ PreProcess.PreProcessError $ "Can't find variable \"" <> name <> "\""
   Add a b -> do
     a' <- evalCode env a
     b' <- evalCode env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i + j
       (Int i, SingleQuoteString s) -> pure . SingleQuoteString $ T.pack (show i) <> s
-      _ -> throwE $ PreProcessError $ "Unimplemented (add): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ PreProcess.PreProcessError $ "Unimplemented (add): " <> T.pack (show (Add a' b'))
   Sub a b -> do
     a' <- evalCode env a
     b' <- evalCode env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i - j
-      _ -> throwE $ PreProcessError $ "Unimplemented (sub): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ PreProcess.PreProcessError $ "Unimplemented (sub): " <> T.pack (show (Add a' b'))
   Times a b -> do
     a' <- evalCode env a
     b' <- evalCode env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i * j
-      _ -> throwE $ PreProcessError $ "Unimplemented (times): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ PreProcess.PreProcessError $ "Unimplemented (times): " <> T.pack (show (Add a' b'))
   Divide a b -> do
     a' <- evalCode env a
     b' <- evalCode env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i `div` j
-      _ -> throwE $ PreProcessError $ "Unimplemented (divide): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ PreProcess.PreProcessError $ "Unimplemented (divide): " <> T.pack (show (Add a' b'))
   Thunk capturedEnv code ->
     evalCode capturedEnv code
   code -> pure code
 
 -- After evaluation, the template should be either empty or contain a single literal.
-evalTemplate :: Monad m => Env -> [Inline] -> ExceptT PreProcessError m [Inline]
+evalTemplate :: Monad m => Env -> [Inline] -> ExceptT PreProcess.PreProcessError m [Inline]
 evalTemplate env inlines = do
   t <- T.concat <$> traverse (evalInline env) inlines
   pure [Lit t]
 
-evalInline :: Monad m => Env -> Inline -> ExceptT PreProcessError m Text
+evalInline :: Monad m => Env -> Inline -> ExceptT PreProcess.PreProcessError m Text
 evalInline env = \case
   Lit s -> pure s
   Place code -> do

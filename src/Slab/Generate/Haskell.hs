@@ -7,13 +7,13 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Prettyprinter
 import Prettyprinter.Render.Text
-import Slab.Evaluate qualified as Evaluate
+import Slab.PreProcess qualified as PreProcess
 import Slab.Syntax qualified as Syntax
 
 --------------------------------------------------------------------------------
 renderHs :: FilePath -> IO ()
 renderHs path = do
-  preprocessed <- Evaluate.preprocessFile path
+  preprocessed <- PreProcess.preprocessFile path
   case preprocessed of
     Left err -> print err
     Right blocks -> T.putStrLn $ renderModule blocks

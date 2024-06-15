@@ -67,6 +67,7 @@ library
     Slab.Evaluate
     Slab.Generate.Haskell
     Slab.Parse
+    Slab.PreProcess
     Slab.Render
     Slab.Report
     Slab.Run
