@@ -7,16 +7,15 @@ import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Prettyprinter
 import Prettyprinter.Render.Text
+import Slab.Error qualified as Error
 import Slab.PreProcess qualified as PreProcess
 import Slab.Syntax qualified as Syntax
 
 --------------------------------------------------------------------------------
 renderHs :: FilePath -> IO ()
 renderHs path = do
-  preprocessed <- PreProcess.preprocessFile path
-  case preprocessed of
-    Left err -> print err
-    Right blocks -> T.putStrLn $ renderModule blocks
+  blocks <- PreProcess.preprocessFile path >>= Error.unwrap
+  T.putStrLn $ renderModule blocks
 
 renderModule :: [Syntax.Block] -> Text
 renderModule = renderStrict . layoutPretty defaultLayoutOptions . prettyModule
