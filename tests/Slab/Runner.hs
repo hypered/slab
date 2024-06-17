@@ -1,3 +1,4 @@
+-- | This module defines the main functions used in the Slab test suite.
 module Slab.Runner
   ( runExamples
   ) where
@@ -12,6 +13,10 @@ import Test.Tasty
 import Test.Tasty.Silver qualified as Silver
 
 --------------------------------------------------------------------------------
+
+-- | This function runs all the Golden tests of the Slab repository. The
+-- example @.slab@ files are located in the @examples/@ directory. It is
+-- exposed in the GHCi development environment.
 runExamples :: IO ()
 runExamples = do
   -- List all examples, comparing them to their corresponding golden files.

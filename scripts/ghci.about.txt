@@ -10,5 +10,6 @@ Other interesting commands and expressions include:
 
 Discover the code base with e.g.:
 
+    :doc runExamples
     :i about
     :e tests/Slab/GHCi.hs
