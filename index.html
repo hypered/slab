@@ -121,6 +121,9 @@ p= b</code></pre><pre><code>&lt;p&gt;
 &lt;/p&gt;</code></pre></div><p>A current limitation is that each declaration requires its own <code>let</code> line.</p><h3>Expressions</h3><p>Simple values (integers and string literals) are supported alongside simple expressions (addition, substraction, multiplication and (integer) division).</p><div class="switcher"><pre><code>let a = 1
 p= a + 2 * 3</code></pre><pre><code>&lt;p&gt;
     7
+&lt;/p&gt;</code></pre></div><p>Strings can be concatenated with the <code>+</code> operator. Integers can be converted to strings using the <code>show</code> function.</p><div class="switcher"><pre><code>let a = 1
+p= show (1 + 2) + &#39;.&#39;</code></pre><pre><code>&lt;p&gt;
+    3.
 &lt;/p&gt;</code></pre></div><h3>String interpolation</h3><p>Expressions can be used within the text content of an element using the the <code>#{...}</code> syntax.</p><div class="switcher"><pre><code>let name = &quot;Bob&quot;
 p Hello, #{name}.</code></pre><pre><code>&lt;p&gt;
     Hello, Bob.
