@@ -161,6 +161,7 @@ data Expr
   | Object [(Expr, Expr)]
   | -- The object[key] lookup. This is quite restrive as a start.
     Lookup Text Expr
+  | Application Expr Expr
   | Add Expr Expr
   | Sub Expr Expr
   | Times Expr Expr

@@ -202,22 +202,24 @@ parserExpr' = do
   pure $ L.IndentNone $ BlockCode content
 
 parserExpr :: Parser Expr
-parserExpr =
-  parserExpression
-    <|> (Object <$> parserObject)
-
-parserVariable :: Parser Text
-parserVariable = parserName
-
-parserExpression :: Parser Expr
-parserExpression = makeExprParser pTerm operatorTable
+parserExpr = makeExprParser pApp operatorTable
  where
+  pApp = do
+    a <- pTerm
+    mb <- optional $ pTerm
+    case mb of
+      Nothing -> pure a
+      Just b -> pure $ Application a b
   pTerm =
     lexeme (Int <$> parserNumber)
       <|> lexeme (SingleQuoteString <$> parserSingleQuoteString)
       <|> lexeme parserVariable'
-      <|> parens parserExpression
-  parens = between (char '(') (char ')')
+      <|> lexeme (Object <$> parserObject)
+      <|> parens parserExpr
+  parens = between (lexeme $ char '(') (lexeme $ char ')')
+
+parserVariable :: Parser Text
+parserVariable = parserName
 
 -- An operator table to define precedence and associativity
 operatorTable :: [[Operator Parser Expr]]
