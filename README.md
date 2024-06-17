@@ -139,6 +139,11 @@ $ nix-shell default.nix -A shell
 $ slab <TAB>
 ```
 
+# Hackage and library documentation
+
+Slab is [available on Hackage](https://hackage.haskell.org/package/slab), where
+the library documentation is visible.
+
 # Code generation
 
 In addition of generating static HTML files from Slab templates, we explore
