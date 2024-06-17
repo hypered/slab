@@ -16,7 +16,10 @@ html(dir="ltr", lang="en")
                             div
                                 span.logo Slab
                     .u-bar__right
-                        -- empty
+                        ul
+                            li
+                                .menu-item
+                                    a(href="https://github.com/hypered/slab").menu-link GitHub
 
         main
             .u-container.u-flow-c-4
@@ -338,3 +341,5 @@ html(dir="ltr", lang="en")
                     h2 Open source
 
                     p Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.
+
+                    p The Haskell package is <a href="https://hackage.haskell.org/package/slab">available on Hackage</a>.
