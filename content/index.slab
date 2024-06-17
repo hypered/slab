@@ -112,7 +112,7 @@ html(dir="ltr", lang="en")
 
                     h3 Attributes
 
-                    p Attributes (including IDs and classes) can be assigned to element using a syntax similar to HTML itself, by writing them in parenthesis, directly after the element name.
+                    p Attributes (including IDs and classes) can be assigned to an element using a syntax similar to HTML itself, by writing them in parenthesis, directly after the element name.
 
                     .switcher
                         pre
@@ -212,7 +212,7 @@ html(dir="ltr", lang="en")
 
                     h3 Expressions
 
-                    p Simple values (integers and string literals) are supported alongside simple expressions (addition, substraction, multiplication and (integer) division).
+                    p Simple values (integers and string literals) are supported alongside simple operations (addition, substraction, multiplication and (integer) division).
 
                     .switcher
                         pre
