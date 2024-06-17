@@ -8,7 +8,7 @@ module Slab.Syntax
   , TrailingSym (..)
   , Attr (..)
   , TextSyntax (..)
-  , Code (..)
+  , Expr (..)
   , Inline (..)
   , Env (..)
   , emptyEnv
@@ -42,8 +42,8 @@ data Block
   | -- | This doesn't exist in Pug. This is like a mixin than receive block arguments.
     -- Or like a parent template that can be @extended@ by a child template.
     BlockFragmentDef Text [Text] [Block]
-  | BlockFragmentCall Text [Code] [Block]
-  | BlockFor Text (Maybe Text) Code [Block]
+  | BlockFragmentCall Text [Expr] [Block]
+  | BlockFor Text (Maybe Text) Expr [Block]
   | -- TODO Should we allow string interpolation here ?
     BlockComment CommentType Text
   | BlockFilter Text Text
@@ -58,10 +58,10 @@ data Block
   | -- | Allow to assign the content of a JSON file to a variable. The syntax
     -- is specific to how Struct has a @require@ function in scope.
     BlockReadJson Text FilePath (Maybe Aeson.Value)
-  | BlockAssignVar Text Code
-  | BlockIf Code [Block] [Block]
+  | BlockAssignVar Text Expr
+  | BlockIf Expr [Block] [Block]
   | BlockList [Block]
-  | BlockCode Code
+  | BlockCode Expr
   deriving (Show, Eq)
 
 isDoctype :: Block -> Bool
@@ -134,7 +134,7 @@ data TrailingSym = HasDot | HasEqual | NoSym
   deriving (Show, Eq)
 
 -- The Code must already be evaluated.
-data Attr = Id Text | Class Text | Attr Text (Maybe Code)
+data Attr = Id Text | Class Text | Attr Text (Maybe Expr)
   deriving (Show, Eq)
 
 -- Tracks the syntax used to enter the text.
@@ -152,35 +152,35 @@ data TextSyntax
     RunOutput
   deriving (Show, Eq)
 
--- Minimal support for some JS expressions.
-data Code
+-- | Simple expression language.
+data Expr
   = Variable Text
   | Int Int
   | SingleQuoteString Text
-  | List [Code]
-  | Object [(Code, Code)]
+  | List [Expr]
+  | Object [(Expr, Expr)]
   | -- The object[key] lookup. This is quite restrive as a start.
-    Lookup Text Code
-  | Add Code Code
-  | Sub Code Code
-  | Times Code Code
-  | Divide Code Code
-  | -- Code can be a fragment, so we can manipulate them with code later.
+    Lookup Text Expr
+  | Add Expr Expr
+  | Sub Expr Expr
+  | Times Expr Expr
+  | Divide Expr Expr
+  | -- Expr can be a fragment, so we can manipulate them with code later.
     -- We also capture the current environment.
     Frag [Text] Env [Block]
-  | -- Same for Code instead of Block.
-    Thunk Env Code
+  | -- Same for Expr instead of Block.
+    Thunk Env Expr
   deriving (Show, Eq)
 
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting
 -- efficient rendering. Use 'parse' to create a template from a text containing
 -- placeholders. 'Lit' is a literal Text value. 'Place' is a placeholder created
 -- with @#{...}@.
-data Inline = Lit {-# UNPACK #-} !Text | Place !Code
+data Inline = Lit {-# UNPACK #-} !Text | Place !Expr
   deriving (Eq, Show)
 
 data Env = Env
-  { envVariables :: [(Text, Code)]
+  { envVariables :: [(Text, Expr)]
   }
   deriving (Eq, Show)
 
@@ -188,7 +188,7 @@ emptyEnv :: Env
 emptyEnv = Env []
 
 --------------------------------------------------------------------------------
-freeVariables :: Code -> [Text]
+freeVariables :: Expr -> [Text]
 freeVariables =
   nub . \case
     Variable a -> [a]
@@ -206,7 +206,7 @@ freeVariables =
 
 -- Capture an environment, but limit its content to only the free variables of
 -- the expression.
-thunk :: Env -> Code -> Code
+thunk :: Env -> Expr -> Expr
 thunk Env {..} code = Thunk env code
  where
   env = Env $ filter ((`elem` frees) . fst) envVariables

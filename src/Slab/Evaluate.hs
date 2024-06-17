@@ -66,7 +66,7 @@ eval env stack = \case
     -- Re-use BlockFor to construct a single node to return.
     let zero :: Int
         zero = 0
-    values' <- evalCode env values
+    values' <- evalExpr env values
     collection <- case values' of
       List xs -> pure $ zip xs $ map Int [zero ..]
       Object xs -> pure $ map (\(k, v) -> (v, k)) xs
@@ -98,7 +98,7 @@ eval env stack = \case
   node@(BlockReadJson _ _ _) -> pure node
   node@(BlockAssignVar _ _) -> pure node
   BlockIf cond as bs -> do
-    cond' <- evalCode env cond
+    cond' <- evalExpr env cond
     case cond' of
       SingleQuoteString s
         | not (T.null s) -> do
@@ -115,10 +115,10 @@ eval env stack = \case
     nodes' <- evaluate env stack nodes
     pure $ BlockList nodes'
   BlockCode code -> do
-    code' <- evalCode env code
+    code' <- evalExpr env code
     pure $ BlockCode code'
 
-call :: Monad m => Env -> [Text] -> Text -> [Code] -> [Block] -> ExceptT Error.Error m [Block]
+call :: Monad m => Env -> [Text] -> Text -> [Expr] -> [Block] -> ExceptT Error.Error m [Block]
 call env stack name values args =
   case lookupVariable name env of
     Just (Frag names capturedEnv body) -> do
@@ -134,10 +134,10 @@ call env stack name values args =
 defaultEnv :: Env
 defaultEnv = Env [("true", Int 1), ("false", Int 0)]
 
-lookupVariable :: Text -> Env -> Maybe Code
+lookupVariable :: Text -> Env -> Maybe Expr
 lookupVariable name Env {..} = lookup name envVariables
 
-augmentVariables :: Env -> [(Text, Code)] -> Env
+augmentVariables :: Env -> [(Text, Expr)] -> Env
 augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables}
 
 namedBlocks :: Monad m => [Block] -> ExceptT Error.Error m [(Text, ([Text], [Block]))]
@@ -160,49 +160,49 @@ unnamedBlock (BlockImport path _ args) =
 unnamedBlock (BlockFragmentDef _ _ _) = pure []
 unnamedBlock node = pure [node]
 
-evalCode :: Monad m => Env -> Code -> ExceptT Error.Error m Code
-evalCode env = \case
+evalExpr :: Monad m => Env -> Expr -> ExceptT Error.Error m Expr
+evalExpr env = \case
   Variable name ->
     case lookupVariable name env of
-      Just val -> evalCode env val
+      Just val -> evalExpr env val
       Nothing -> throwE $ Error.EvaluateError $ "Can't find variable \"" <> name <> "\""
   Lookup name key ->
     case lookupVariable name env of
       Just (Object obj) -> do
-        -- key' <- evalCode env key
+        -- key' <- evalExpr env key
         case lookup key obj of
-          Just val -> evalCode env val
+          Just val -> evalExpr env val
           Nothing ->
             pure $ Variable "false"
       Just _ -> throwE $ Error.EvaluateError $ "Variable \"" <> name <> "\" is not an object"
       Nothing -> throwE $ Error.EvaluateError $ "Can't find variable \"" <> name <> "\""
   Add a b -> do
-    a' <- evalCode env a
-    b' <- evalCode env b
+    a' <- evalExpr env a
+    b' <- evalExpr env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i + j
       (Int i, SingleQuoteString s) -> pure . SingleQuoteString $ T.pack (show i) <> s
       _ -> throwE $ Error.EvaluateError $ "Unimplemented (add): " <> T.pack (show (Add a' b'))
   Sub a b -> do
-    a' <- evalCode env a
-    b' <- evalCode env b
+    a' <- evalExpr env a
+    b' <- evalExpr env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i - j
       _ -> throwE $ Error.EvaluateError $ "Unimplemented (sub): " <> T.pack (show (Add a' b'))
   Times a b -> do
-    a' <- evalCode env a
-    b' <- evalCode env b
+    a' <- evalExpr env a
+    b' <- evalExpr env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i * j
       _ -> throwE $ Error.EvaluateError $ "Unimplemented (times): " <> T.pack (show (Add a' b'))
   Divide a b -> do
-    a' <- evalCode env a
-    b' <- evalCode env b
+    a' <- evalExpr env a
+    b' <- evalExpr env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i `div` j
       _ -> throwE $ Error.EvaluateError $ "Unimplemented (divide): " <> T.pack (show (Add a' b'))
   Thunk capturedEnv code ->
-    evalCode capturedEnv code
+    evalExpr capturedEnv code
   code -> pure code
 
 -- After evaluation, the template should be either empty or contain a single literal.
@@ -215,18 +215,18 @@ evalInline :: Monad m => Env -> Inline -> ExceptT Error.Error m Text
 evalInline env = \case
   Lit s -> pure s
   Place code -> do
-    code' <- evalCode env code
+    code' <- evalExpr env code
     case code' of
       SingleQuoteString s -> pure s
       Int x -> pure . T.pack $ show x
-      -- Variable x -> context x -- Should not happen after evalCode
+      -- Variable x -> context x -- Should not happen after evalExpr
       x -> error $ "evalInline: unhandled value: " <> show x
 
 -- Extract both fragments and assignments.
 -- TODO This should be merged with namedBlocks.
 -- TODO We could filter the env, keeping only the free variables that appear
 -- in the bodies.
-extractVariables :: Env -> [Block] -> [(Text, Code)]
+extractVariables :: Env -> [Block] -> [(Text, Expr)]
 extractVariables env = concatMap f
  where
   f BlockDoctype = []
@@ -243,22 +243,22 @@ extractVariables env = concatMap f
   f (BlockImport path (Just body) _) = [(T.pack path, Frag [] env body)]
   f (BlockImport _ _ _) = []
   f (BlockRun _ _) = []
-  f (BlockReadJson name _ (Just val)) = [(name, jsonToCode val)]
+  f (BlockReadJson name _ (Just val)) = [(name, jsonToExpr val)]
   f (BlockReadJson _ _ Nothing) = []
   f (BlockAssignVar name val) = [(name, val)]
   f (BlockIf _ _ _) = []
   f (BlockList _) = []
   f (BlockCode _) = []
 
-jsonToCode :: Aeson.Value -> Code
-jsonToCode = \case
+jsonToExpr :: Aeson.Value -> Expr
+jsonToExpr = \case
   Aeson.String s -> SingleQuoteString s
   Aeson.Array xs ->
-    List $ map jsonToCode (V.toList xs)
+    List $ map jsonToExpr (V.toList xs)
   Aeson.Object kvs ->
-    let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToCode v)
+    let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToExpr v)
      in Object $ map f (Aeson.KeyMap.toList kvs)
-  x -> error $ "jsonToCode: " <> show x
+  x -> error $ "jsonToExpr: " <> show x
 
 --------------------------------------------------------------------------------
 simplify :: [Block] -> [Block]

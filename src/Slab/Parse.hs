@@ -54,8 +54,8 @@ parse fn = runParser (many pugNode <* eof) fn
 -- @
 --     print $ Parse.parseExpr "1 + 2 * a"
 -- @
-parseExpr :: Text -> Either (ParseErrorBundle Text Void) Code
-parseExpr = runParser (sc *> pugCode <* eof) ""
+parseExpr :: Text -> Either (ParseErrorBundle Text Void) Expr
+parseExpr = runParser (sc *> pugExpr <* eof) ""
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
@@ -69,7 +69,7 @@ pugNode = do
         , try pugInclude
         , pugElement
         , pugPipe
-        , pugCode'
+        , pugExpr'
         , pugFragmentDef
         , pugComment
         , pugFilter
@@ -91,7 +91,7 @@ pugNode = do
 pugIf :: Parser (L.IndentOpt Parser Block Block)
 pugIf = do
   _ <- lexeme $ string "if"
-  cond <- pugCode
+  cond <- pugExpr
   pure $ L.IndentMany Nothing (pure . (\as -> BlockIf cond as [])) pugNode
 
 pugElse :: Parser (L.IndentOpt Parser [Block] Block)
@@ -114,12 +114,12 @@ pugElement = do
           pure $ L.IndentNone $ header [BlockText Dot [Lit $ T.intercalate "\n" items']]
         _ -> pure $ L.IndentNone $ header [BlockText Dot template]
     HasEqual -> do
-      mcontent <- optional pugCode
+      mcontent <- optional pugExpr
       case mcontent of
         Just content -> pure $ L.IndentNone $ header [BlockCode content]
         Nothing -> do
           scn
-          content <- pugCode
+          content <- pugExpr
           pure $ L.IndentNone $ header [BlockCode content]
     NoSym -> do
       template <- parseInlines
@@ -195,21 +195,21 @@ pugTextInclude :: Text -> Block
 pugTextInclude content =
   BlockText Include [Lit $ T.intercalate "\n" $ T.lines content]
 
-pugCode' :: Parser (L.IndentOpt Parser Block Block)
-pugCode' = do
+pugExpr' :: Parser (L.IndentOpt Parser Block Block)
+pugExpr' = do
   _ <- lexeme $ string "="
-  content <- pugCode
+  content <- pugExpr
   pure $ L.IndentNone $ BlockCode content
 
-pugCode :: Parser Code
-pugCode =
+pugExpr :: Parser Expr
+pugExpr =
   pugExpression
     <|> (Object <$> pugObject)
 
 pugVariable :: Parser Text
 pugVariable = pugName
 
-pugExpression :: Parser Code
+pugExpression :: Parser Expr
 pugExpression = makeExprParser pTerm operatorTable
  where
   pTerm =
@@ -220,13 +220,13 @@ pugExpression = makeExprParser pTerm operatorTable
   parens = between (char '(') (char ')')
 
 -- An operator table to define precedence and associativity
-operatorTable :: [[Operator Parser Code]]
+operatorTable :: [[Operator Parser Expr]]
 operatorTable =
   [ [InfixL (symbol "*" $> Times), InfixL (symbol "/" $> Divide)]
   , [InfixL (symbol "+" $> Add), InfixL (symbol "-" $> Sub)]
   ]
 
-pugVariable' :: Parser Code
+pugVariable' :: Parser Expr
 pugVariable' = do
   name <- pugName
   mkey <- optional $ do
@@ -382,7 +382,7 @@ pugAttrList = (<?> "attribute") $ do
   _ <- string ")"
   pure $ map (uncurry Attr) pairs
 
-pugPair :: Parser (Text, Maybe Code)
+pugPair :: Parser (Text, Maybe Expr)
 pugPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
   mb <- optional $ do
@@ -392,7 +392,7 @@ pugPair = do
   _ <- optional (lexeme $ string ",")
   pure (a, mb)
 
-pugValue :: Parser Code
+pugValue :: Parser Expr
 pugValue =
   SingleQuoteString <$> pugSingleQuoteString
     <|> SingleQuoteString <$> pugDoubleQuoteString
@@ -456,8 +456,8 @@ pugFragmentCall = do
   pure $ L.IndentMany Nothing (pure . BlockFragmentCall name args) pugNode
 
 -- E.g. {}, {1, 'a'}
-pugArguments :: Parser [Code]
-pugArguments = pugList' "{" "}" pugCode <?> "arguments"
+pugArguments :: Parser [Expr]
+pugArguments = pugList' "{" "}" pugExpr <?> "arguments"
 
 --------------------------------------------------------------------------------
 pugEach :: Parser (L.IndentOpt Parser Block Block)
@@ -472,8 +472,8 @@ pugEach = do
     (List <$> pugList) <|> (Object <$> pugObject) <|> (Variable <$> pugVariable)
   pure $ L.IndentMany Nothing (pure . BlockFor name mindex collection) pugNode
 
-pugList :: Parser [Code]
-pugList = pugList' "[" "]" pugCode
+pugList :: Parser [Expr]
+pugList = pugList' "[" "]" pugExpr
 
 pugList' :: Text -> Text -> Parser a -> Parser [a]
 pugList' before after p = do
@@ -489,22 +489,22 @@ pugList' before after p = do
   _ <- lexeme $ string after
   pure xs
 
-pugObject :: Parser [(Code, Code)]
+pugObject :: Parser [(Expr, Expr)]
 pugObject = do
   _ <- lexeme (string "{")
   mkv <- optional $ do
-    key <- lexeme pugCode
+    key <- lexeme pugExpr
     _ <- lexeme (string ":")
-    val <- lexeme pugCode
+    val <- lexeme pugExpr
     pure (key, val)
   kvs <- case mkv of
     Nothing -> pure []
     Just kv -> do
       kvs <- many $ do
         _ <- lexeme $ string ","
-        key <- lexeme pugCode
+        key <- lexeme pugExpr
         _ <- lexeme (string ":")
-        val <- lexeme pugCode
+        val <- lexeme pugExpr
         pure (key, val)
       pure $ kv : kvs
   _ <- lexeme (string "}")
@@ -706,7 +706,7 @@ parseLit = do
 parsePlace :: Parser Inline
 parsePlace = do
   _ <- string $ T.pack "#{"
-  e <- pugCode
+  e <- pugExpr
   _ <- string $ T.pack "}"
   pure $ Place e
 
