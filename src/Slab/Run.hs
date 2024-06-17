@@ -1,3 +1,9 @@
+-- |
+-- Module      : Slab.Run
+-- Description : Implementation of Slab's CLI
+--
+-- @Slab.Run@ accepts commands defined in the "Slab.Command" module and
+-- runs them.
 module Slab.Run
   ( run
   ) where

@@ -1,7 +1,9 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
--- | This module is loaded only in the GHCi session.
+-- | This module is loaded only in the GHCi session. It exposes all the Slab
+-- modules qualified (similarly to how they are imported throughout the Slab
+-- code base).
 module Slab.GHCi
   (
   ) where
@@ -10,6 +12,7 @@ import Data.Text qualified as T
 import Slab.Build qualified as Build
 import Slab.Command qualified as Command
 import Slab.Evaluate qualified as Evaluate
+import Slab.Execute qualified as Execute
 import Slab.Generate.Haskell qualified as Generate
 import Slab.Parse qualified as Parse
 import Slab.Render qualified as Render

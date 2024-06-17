@@ -1,5 +1,15 @@
 {-# LANGUAGE ApplicativeDo #-}
 
+-- |
+-- Module      : Slab.Command
+-- Description : Command-line interface to Slab
+--
+-- @Slab.Command@ provides a command line interface for the Slab program.
+--
+-- Commands and options are defined by parsers written using the
+-- @optparse-applicative@ library.
+--
+-- The implementation of each command can be found in the "Slab.Run" module.
 module Slab.Command
   ( Command (..)
   , CommandWithPath (..)
