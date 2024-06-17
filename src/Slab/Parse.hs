@@ -226,6 +226,8 @@ operatorTable :: [[Operator Parser Expr]]
 operatorTable =
   [ [InfixL (symbol "*" $> Times), InfixL (symbol "/" $> Divide)]
   , [InfixL (symbol "+" $> Add), InfixL (symbol "-" $> Sub)]
+  , [InfixL (symbol ">" $> GreaterThan), InfixL (symbol "<" $> LesserThan)]
+  , [InfixL (symbol "==" $> Equal)]
   ]
 
 parserVariable' :: Parser Expr

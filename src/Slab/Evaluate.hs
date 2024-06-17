@@ -193,19 +193,39 @@ evalExpr env = \case
     b' <- evalExpr env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i - j
-      _ -> throwE $ Error.EvaluateError $ "Unimplemented (sub): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (sub): " <> T.pack (show (Sub a' b'))
   Times a b -> do
     a' <- evalExpr env a
     b' <- evalExpr env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i * j
-      _ -> throwE $ Error.EvaluateError $ "Unimplemented (times): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (times): " <> T.pack (show (Times a' b'))
   Divide a b -> do
     a' <- evalExpr env a
     b' <- evalExpr env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i `div` j
-      _ -> throwE $ Error.EvaluateError $ "Unimplemented (divide): " <> T.pack (show (Add a' b'))
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (divide): " <> T.pack (show (Divide a' b'))
+  GreaterThan a b -> do
+    a' <- evalExpr env a
+    b' <- evalExpr env b
+    case (a', b') of
+      (Int i, Int j) -> pure . Bool $ i > j
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (greater-than): " <> T.pack (show (GreaterThan a' b'))
+  LesserThan a b -> do
+    a' <- evalExpr env a
+    b' <- evalExpr env b
+    case (a', b') of
+      (Int i, Int j) -> pure . Bool $ i < j
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (lesser-than): " <> T.pack (show (LesserThan a' b'))
+  Equal a b -> do
+    a' <- evalExpr env a
+    b' <- evalExpr env b
+    case (a', b') of
+      (Bool i, Bool j) -> pure . Bool $ i == j
+      (Int i, Int j) -> pure . Bool $ i == j
+      (SingleQuoteString s, SingleQuoteString t) -> pure . Bool $ s == t
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (equal): " <> T.pack (show (Equal a' b'))
   Application a b -> do
     a' <- evalExpr env a
     b' <- evalExpr env b

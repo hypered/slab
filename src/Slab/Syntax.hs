@@ -167,6 +167,9 @@ data Expr
   | Sub Expr Expr
   | Times Expr Expr
   | Divide Expr Expr
+  | GreaterThan Expr Expr
+  | LesserThan Expr Expr
+  | Equal Expr Expr
   | -- Expr can be a fragment, so we can manipulate them with code later.
     -- We also capture the current environment.
     Frag [Text] Env [Block]
