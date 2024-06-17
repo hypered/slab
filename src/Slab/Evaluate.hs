@@ -35,9 +35,10 @@ evaluateFileE path =
 defaultEnv :: Env
 defaultEnv =
   Env
-    [ ("true", Int 1)
-    , ("false", Int 0)
+    [ ("true", Bool True)
+    , ("false", Bool False)
     , ("show", BuiltIn "show")
+    , ("null", BuiltIn "null")
     ]
 
 --------------------------------------------------------------------------------
@@ -110,17 +111,14 @@ eval env stack = \case
   BlockIf cond as bs -> do
     cond' <- evalExpr env cond
     case cond' of
-      SingleQuoteString s
-        | not (T.null s) -> do
-            as' <- evaluate env ("then" : stack) as
-            pure $ BlockIf cond as' []
-      Int n
-        | n /= 0 -> do
-            as' <- evaluate env ("then" : stack) as
-            pure $ BlockIf cond as' []
-      _ -> do
+      Bool True -> do
+        as' <- evaluate env ("then" : stack) as
+        pure $ BlockIf cond as' []
+      Bool False -> do
         bs' <- evaluate env ("else" : stack) bs
         pure $ BlockIf cond [] bs'
+      _ -> throwE . Error.EvaluateError $
+        "Conditional is not a boolean: " <> T.pack (show cond')
   BlockList nodes -> do
     nodes' <- evaluate env stack nodes
     pure $ BlockList nodes'
@@ -179,8 +177,7 @@ evalExpr env = \case
         -- key' <- evalExpr env key
         case lookup key obj of
           Just val -> evalExpr env val
-          Nothing ->
-            pure $ Variable "false"
+          Nothing -> pure $ Bool False -- TODO Either crash, or we have to implement on option type.
       Just _ -> throwE $ Error.EvaluateError $ "Variable \"" <> name <> "\" is not an object"
       Nothing -> throwE $ Error.EvaluateError $ "Can't find variable \"" <> name <> "\""
   Add a b -> do
@@ -222,6 +219,18 @@ evalApplication env a b =
   case a of
     BuiltIn "show" -> case b of
       Int i -> pure . SingleQuoteString . T.pack $ show i
+      _ -> throwE $ Error.EvaluateError $ "Cannot apply show to: " <> T.pack (show b)
+    BuiltIn "null" -> case b of
+      SingleQuoteString s -> pure . Bool $ T.null s
+      -- TODO Lookup returns False when the key is not present,
+      -- but I have this code around:
+      --   if null entry['journal']
+      -- We need something like:
+      --   if 'journal' in entry
+      --   if elem 'journal' (keys entry)
+      --   ...
+      Bool False -> pure . Bool $ True
+      _ -> throwE $ Error.EvaluateError $ "Cannot apply null to: " <> T.pack (show b)
     _ -> throwE $ Error.EvaluateError $ "Cannot apply: " <> T.pack (show a)
 
 -- After evaluation, the template should be either empty or contain a single literal.

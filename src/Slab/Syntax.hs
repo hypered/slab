@@ -155,6 +155,7 @@ data TextSyntax
 -- | Simple expression language.
 data Expr
   = Variable Text
+  | Bool Bool
   | Int Int
   | SingleQuoteString Text
   | List [Expr]
@@ -194,6 +195,7 @@ freeVariables :: Expr -> [Text]
 freeVariables =
   nub . \case
     Variable a -> [a]
+    Bool _ -> []
     Int _ -> []
     SingleQuoteString _ -> []
     List as -> concatMap freeVariables as

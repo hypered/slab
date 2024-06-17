@@ -403,14 +403,14 @@ parserValue =
 parserSingleQuoteString :: Parser Text
 parserSingleQuoteString = do
   _ <- string "'"
-  s <- T.pack <$> (some (noneOf ("'\n" :: String))) <?> "string"
+  s <- T.pack <$> (many (noneOf ("'\n" :: String))) <?> "string"
   _ <- string "'"
   pure s
 
 parserDoubleQuoteString :: Parser Text
 parserDoubleQuoteString = do
   _ <- string "\""
-  s <- T.pack <$> (some (noneOf ("\"\n" :: String))) <?> "string"
+  s <- T.pack <$> (many (noneOf ("\"\n" :: String))) <?> "string"
   _ <- string "\""
   pure s
 
