@@ -94,11 +94,15 @@ test-suite slab-examples
     , Glob
     , lens
     , pretty-simple
+    , process
     , QuickCheck
     , tasty
     , tasty-silver
     , text
   other-modules:
+    -- The GHCi module is not really used in the test-suite but is mentioned
+    -- here to please Fourmolu.
+    Slab.GHCi
     Slab.Runner
   type: exitcode-stdio-1.0
   main-is: run-examples.hs
