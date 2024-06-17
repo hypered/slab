@@ -52,7 +52,7 @@ parse fn = runParser (many parserNode <* eof) fn
 -- | We expose the expression parser for development:
 --
 -- @
---     print $ Parse.parseExpr "1 + 2 * a"
+--     Parse.parseExpr "1 + 2 * a"
 -- @
 parseExpr :: Text -> Either (ParseErrorBundle Text Void) Expr
 parseExpr = runParser (sc *> parserExpr <* eof) ""

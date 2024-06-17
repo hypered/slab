@@ -6,9 +6,11 @@
 -- runs them.
 module Slab.Run
   ( run
+  , calc
   ) where
 
-import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Control.Monad.Trans.Except (ExceptT, except, runExceptT, withExceptT)
+import Data.Text (Text)
 import Data.Text.IO qualified as T
 import Data.Text.Lazy.IO qualified as TL
 import Slab.Build qualified as Build
@@ -24,7 +26,7 @@ import Slab.Report qualified as Report
 import Slab.Serve qualified as Serve
 import Slab.Syntax qualified as Syntax
 import Slab.Watch qualified as Watch
-import Text.Pretty.Simple (pShowNoColor)
+import Text.Pretty.Simple (pPrintNoColor, pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
@@ -106,3 +108,22 @@ executeWithModeE
   -> ExceptT Error.Error IO [Syntax.Block]
 executeWithModeE path pmode =
   evaluateWithModeE path pmode >>= Execute.execute path
+
+--------------------------------------------------------------------------------
+-- Play with the expression language.
+
+-- | "calc" parses a string as a "Syntax.Expr", and evaluates it. I.e. it
+-- doens't use the fragment syntax, or imports and includes.
+--
+-- @
+--     Run.calc "1 + 2 * 3"
+-- @
+calc :: Text -> IO ()
+calc s = do
+  x <- runExceptT $ parseAndEvaluateExpr s
+  pPrintNoColor x
+
+parseAndEvaluateExpr :: Text -> ExceptT Error.Error IO Syntax.Expr
+parseAndEvaluateExpr s = do
+  expr <- withExceptT Error.ParseError . except $ Parse.parseExpr s
+  Evaluate.evalExpr Evaluate.defaultEnv expr

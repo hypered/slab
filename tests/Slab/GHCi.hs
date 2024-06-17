@@ -8,9 +8,11 @@ module Slab.GHCi
   (
   ) where
 
+import Data.Text (Text)
 import Data.Text qualified as T
 import Slab.Build qualified as Build
 import Slab.Command qualified as Command
+import Slab.Error qualified as Error
 import Slab.Evaluate qualified as Evaluate
 import Slab.Execute qualified as Execute
 import Slab.Generate.Haskell qualified as Generate

@@ -3,6 +3,7 @@
 module Slab.Evaluate
   ( evaluateFile
   , evaluate
+  , evalExpr
   , defaultEnv
   , simplify
   ) where
