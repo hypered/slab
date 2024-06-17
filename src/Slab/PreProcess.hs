@@ -61,7 +61,7 @@ preproc ctx@Context {..} = \case
         | exists && (not slabExt || mname == Just "escape-html") -> do
             -- Include the file content as-is.
             content <- liftIO $ T.readFile includedPath
-            let node = Parse.pugTextInclude content
+            let node = Parse.parserTextInclude content
             pure $ BlockInclude mname path (Just [node])
         | exists -> do
             -- Parse and process the .slab file.

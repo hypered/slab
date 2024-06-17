@@ -5,7 +5,7 @@ module Slab.Parse
   , parseFileE
   , parse
   , parseExpr
-  , pugTextInclude
+  , parserTextInclude
   -- Inline parsing stuff
 
     -- * The @InterpolationContext@ type
@@ -41,13 +41,13 @@ parseFile = runExceptT . parseFileE
 
 parseFileE :: FilePath -> ExceptT Error.Error IO [Block]
 parseFileE path = do
-  pugContent <- liftIO $ T.readFile path
-  withExceptT Error.ParseError . except $ parse path pugContent
+  content <- liftIO $ T.readFile path
+  withExceptT Error.ParseError . except $ parse path content
 
 --------------------------------------------------------------------------------
 
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Block]
-parse fn = runParser (many pugNode <* eof) fn
+parse fn = runParser (many parserNode <* eof) fn
 
 -- | We expose the expression parser for development:
 --
@@ -55,76 +55,76 @@ parse fn = runParser (many pugNode <* eof) fn
 --     print $ Parse.parseExpr "1 + 2 * a"
 -- @
 parseExpr :: Text -> Either (ParseErrorBundle Text Void) Expr
-parseExpr = runParser (sc *> pugExpr <* eof) ""
+parseExpr = runParser (sc *> parserExpr <* eof) ""
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
 
-pugNode :: Parser Block
-pugNode = do
+parserNode :: Parser Block
+parserNode = do
   node <-
     L.indentBlock scn $
       choice
-        [ pugDoctype
-        , try pugInclude
-        , pugElement
-        , pugPipe
-        , pugExpr'
-        , pugFragmentDef
-        , pugComment
-        , pugFilter
-        , pugRawElement
-        , pugDefault
-        , pugImport
-        , pugRun
-        , pugLet
-        , try pugEach
-        , pugIf
-        , pugFragmentCall
+        [ parserDoctype
+        , try parserInclude
+        , parserElement
+        , parserPipe
+        , parserExpr'
+        , parserFragmentDef
+        , parserComment
+        , parserFilter
+        , parserRawElement
+        , parserDefault
+        , parserImport
+        , parserRun
+        , parserLet
+        , try parserEach
+        , parserIf
+        , parserFragmentCall
         ]
   case node of
     BlockIf cond as _ -> do
-      mbs <- optional $ L.indentBlock scn pugElse
+      mbs <- optional $ L.indentBlock scn parserElse
       pure $ BlockIf cond as $ maybe [] id mbs
     _ -> pure node
 
-pugIf :: Parser (L.IndentOpt Parser Block Block)
-pugIf = do
+parserIf :: Parser (L.IndentOpt Parser Block Block)
+parserIf = do
   _ <- lexeme $ string "if"
-  cond <- pugExpr
-  pure $ L.IndentMany Nothing (pure . (\as -> BlockIf cond as [])) pugNode
+  cond <- parserExpr
+  pure $ L.IndentMany Nothing (pure . (\as -> BlockIf cond as [])) parserNode
 
-pugElse :: Parser (L.IndentOpt Parser [Block] Block)
-pugElse = do
+parserElse :: Parser (L.IndentOpt Parser [Block] Block)
+parserElse = do
   _ <- lexeme $ string "else"
-  pure $ L.IndentMany Nothing pure pugNode
+  pure $ L.IndentMany Nothing pure parserNode
 
-pugElement :: Parser (L.IndentOpt Parser Block Block)
-pugElement = do
+parserElement :: Parser (L.IndentOpt Parser Block Block)
+parserElement = do
   ref <- L.indentLevel
-  header <- pugDiv
+  header <- parserDiv
   case trailingSym $ header [] of
     HasDot -> do
       template <- parseInlines
       case template of
         [] -> do
           scn
-          items <- textBlock ref pugText -- TODO Use parseInlines
+          items <- textBlock ref parserText -- TODO Use parseInlines
           let items' = realign items
           pure $ L.IndentNone $ header [BlockText Dot [Lit $ T.intercalate "\n" items']]
         _ -> pure $ L.IndentNone $ header [BlockText Dot template]
     HasEqual -> do
-      mcontent <- optional pugExpr
+      mcontent <- optional parserExpr
       case mcontent of
         Just content -> pure $ L.IndentNone $ header [BlockCode content]
         Nothing -> do
           scn
-          content <- pugExpr
+          content <- parserExpr
           pure $ L.IndentNone $ header [BlockCode content]
     NoSym -> do
       template <- parseInlines
       case template of
-        [] -> pure $ L.IndentMany Nothing (pure . header) pugNode
+        [] -> pure $ L.IndentMany Nothing (pure . header) parserNode
         _ -> pure $ L.IndentNone $ header [BlockText Normal template]
 
 -- | Parse lines of text, indented more than `ref`.
@@ -165,8 +165,8 @@ realign xs = map (T.drop n) xs
 -- parse a single line (and optional indented child lines) and most nodes map
 -- to a single line, but here we want to be able to view such blocks as a
 -- single node, and we make sur to add newlines between each when rendered.
-pugPipe :: Parser (L.IndentOpt Parser Block Block)
-pugPipe = do
+parserPipe :: Parser (L.IndentOpt Parser Block Block)
+parserPipe = do
   ref <- L.indentLevel
   template <- p
   templates <- go ref
@@ -191,32 +191,32 @@ pugPipe = do
 -- | A parser to convert the content of an @include@d to 'Syntax'. The
 -- behavior w.r.t. to newlines should be the same as having each line
 -- directly preceded by a @|@ in the including file.
-pugTextInclude :: Text -> Block
-pugTextInclude content =
+parserTextInclude :: Text -> Block
+parserTextInclude content =
   BlockText Include [Lit $ T.intercalate "\n" $ T.lines content]
 
-pugExpr' :: Parser (L.IndentOpt Parser Block Block)
-pugExpr' = do
+parserExpr' :: Parser (L.IndentOpt Parser Block Block)
+parserExpr' = do
   _ <- lexeme $ string "="
-  content <- pugExpr
+  content <- parserExpr
   pure $ L.IndentNone $ BlockCode content
 
-pugExpr :: Parser Expr
-pugExpr =
-  pugExpression
-    <|> (Object <$> pugObject)
+parserExpr :: Parser Expr
+parserExpr =
+  parserExpression
+    <|> (Object <$> parserObject)
 
-pugVariable :: Parser Text
-pugVariable = pugName
+parserVariable :: Parser Text
+parserVariable = parserName
 
-pugExpression :: Parser Expr
-pugExpression = makeExprParser pTerm operatorTable
+parserExpression :: Parser Expr
+parserExpression = makeExprParser pTerm operatorTable
  where
   pTerm =
-    lexeme (Int <$> pugNumber)
-      <|> lexeme (SingleQuoteString <$> pugSingleQuoteString)
-      <|> lexeme pugVariable'
-      <|> parens pugExpression
+    lexeme (Int <$> parserNumber)
+      <|> lexeme (SingleQuoteString <$> parserSingleQuoteString)
+      <|> lexeme parserVariable'
+      <|> parens parserExpression
   parens = between (char '(') (char ')')
 
 -- An operator table to define precedence and associativity
@@ -226,12 +226,12 @@ operatorTable =
   , [InfixL (symbol "+" $> Add), InfixL (symbol "-" $> Sub)]
   ]
 
-pugVariable' :: Parser Expr
-pugVariable' = do
-  name <- pugName
+parserVariable' :: Parser Expr
+parserVariable' = do
+  name <- parserName
   mkey <- optional $ do
     _ <- string "["
-    key <- pugSingleQuoteString
+    key <- parserSingleQuoteString
     _ <- string "]"
     pure key
   case mkey of
@@ -239,28 +239,28 @@ pugVariable' = do
     Just key -> pure $ Lookup name (SingleQuoteString key)
 
 --------------------------------------------------------------------------------
-pugDoctype :: Parser (L.IndentOpt Parser Block Block)
-pugDoctype = do
+parserDoctype :: Parser (L.IndentOpt Parser Block Block)
+parserDoctype = do
   _ <- lexeme (string "doctype")
   _ <- lexeme (string "html")
   pure $ L.IndentNone BlockDoctype
 
 --------------------------------------------------------------------------------
 -- E.g. div, div.a, .a
-pugDiv :: Parser ([Block] -> Block)
-pugDiv =
-  pugElemWithAttrs <|> pugAttrs
+parserDiv :: Parser ([Block] -> Block)
+parserDiv =
+  parserElemWithAttrs <|> parserAttrs
 
 -- E.g. div, div.a, div()
-pugElemWithAttrs :: Parser ([Block] -> Block)
-pugElemWithAttrs = do
+parserElemWithAttrs :: Parser ([Block] -> Block)
+parserElemWithAttrs = do
   (name, attrs, mdot) <-
     lexeme
       ( do
-          a <- pugElem
+          a <- parserElem
           -- `try` because we want to backtrack if there is a dot
           -- not followed by a class name, for mdot to succeed.
-          b <- many pugAttrs'
+          b <- many parserAttrs'
           mtrailing <-
             optional $
               choice
@@ -272,8 +272,8 @@ pugElemWithAttrs = do
       <?> "div tag"
   pure $ BlockElem name mdot attrs
 
-pugElem :: Parser Elem
-pugElem =
+parserElem :: Parser Elem
+parserElem =
   ( try $ do
       name <-
         T.pack
@@ -340,143 +340,143 @@ pugElem =
     <?> "element name"
 
 -- E.g. .a, ()
-pugAttrs :: Parser ([Block] -> Block)
-pugAttrs = do
+parserAttrs :: Parser ([Block] -> Block)
+parserAttrs = do
   (attrs, mdot) <-
     lexeme
       ( do
-          attrs <- some pugAttrs'
+          attrs <- some parserAttrs'
           mdot <- optional (string ".")
           pure (concat attrs, maybe NoSym (const HasDot) mdot)
       )
       <?> "attributes"
   pure $ BlockElem Div mdot attrs
 
-pugAttrs' :: Parser [Attr]
-pugAttrs' =
+parserAttrs' :: Parser [Attr]
+parserAttrs' =
   -- `try` because we want to backtrack if there is a dot
   -- not followed by a class name, for mdot to succeed.
-  ((: []) <$> pugId) <|> try ((: []) <$> pugClass) <|> pugAttrList
+  ((: []) <$> parserId) <|> try ((: []) <$> parserClass) <|> parserAttrList
 
 -- E.g. #a
-pugId :: Parser Attr
-pugId =
+parserId :: Parser Attr
+parserId =
   Id
     . T.pack
     <$> (char '#' *> some (alphaNumChar <|> oneOf ("-_" :: String)))
     <?> "id"
 
 -- E.g. .a
-pugClass :: Parser Attr
-pugClass =
+parserClass :: Parser Attr
+parserClass =
   Class
     . T.pack
     <$> (char '.' *> some (alphaNumChar <|> oneOf ("-_" :: String)))
     <?> "class name"
 
 -- E.g. (), (class='a')
-pugAttrList :: Parser [Attr]
-pugAttrList = (<?> "attribute") $ do
+parserAttrList :: Parser [Attr]
+parserAttrList = (<?> "attribute") $ do
   _ <- string "("
-  pairs <- many pugPair
+  pairs <- many parserPair
   _ <- string ")"
   pure $ map (uncurry Attr) pairs
 
-pugPair :: Parser (Text, Maybe Expr)
-pugPair = do
+parserPair :: Parser (Text, Maybe Expr)
+parserPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
   mb <- optional $ do
     _ <- string "="
-    b <- lexeme pugValue
+    b <- lexeme parserValue
     pure b
   _ <- optional (lexeme $ string ",")
   pure (a, mb)
 
-pugValue :: Parser Expr
-pugValue =
-  SingleQuoteString <$> pugSingleQuoteString
-    <|> SingleQuoteString <$> pugDoubleQuoteString
-    <|> Int <$> pugNumber
+parserValue :: Parser Expr
+parserValue =
+  SingleQuoteString <$> parserSingleQuoteString
+    <|> SingleQuoteString <$> parserDoubleQuoteString
+    <|> Int <$> parserNumber
 
-pugSingleQuoteString :: Parser Text
-pugSingleQuoteString = do
+parserSingleQuoteString :: Parser Text
+parserSingleQuoteString = do
   _ <- string "'"
   s <- T.pack <$> (some (noneOf ("'\n" :: String))) <?> "string"
   _ <- string "'"
   pure s
 
-pugDoubleQuoteString :: Parser Text
-pugDoubleQuoteString = do
+parserDoubleQuoteString :: Parser Text
+parserDoubleQuoteString = do
   _ <- string "\""
   s <- T.pack <$> (some (noneOf ("\"\n" :: String))) <?> "string"
   _ <- string "\""
   pure s
 
 -- TODO Proper data type.
-pugNumber :: Parser Int
-pugNumber = L.decimal
+parserNumber :: Parser Int
+parserNumber = L.decimal
 
-pugText :: Parser Text
-pugText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
+parserText :: Parser Text
+parserText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
-pugIdentifier :: Parser Text
-pugIdentifier = T.pack <$> lexeme (some (noneOf (" {}\n" :: String))) <?> "identifier"
+parserIdentifier :: Parser Text
+parserIdentifier = T.pack <$> lexeme (some (noneOf (" {}\n" :: String))) <?> "identifier"
 
 --------------------------------------------------------------------------------
-pugInclude :: Parser (L.IndentOpt Parser Block Block)
-pugInclude = do
+parserInclude :: Parser (L.IndentOpt Parser Block Block)
+parserInclude = do
   mname <- lexeme $ do
     _ <- string "include"
     optional $ do
       _ <- string ":"
-      pugIdentifier
-  path <- pugPath
+      parserIdentifier
+  path <- parserPath
   pure $ L.IndentNone $ BlockInclude mname path Nothing
 
-pugPath :: Parser FilePath
-pugPath = lexeme (some (noneOf ['\n'])) <?> "path"
+parserPath :: Parser FilePath
+parserPath = lexeme (some (noneOf ['\n'])) <?> "path"
 
 --------------------------------------------------------------------------------
-pugFragmentDef :: Parser (L.IndentOpt Parser Block Block)
-pugFragmentDef = do
+parserFragmentDef :: Parser (L.IndentOpt Parser Block Block)
+parserFragmentDef = do
   _ <- lexeme (string "fragment" <|> string "frag")
-  name <- pugIdentifier
-  params <- maybe [] id <$> optional pugParameters
-  pure $ L.IndentMany Nothing (pure . BlockFragmentDef name params) pugNode
+  name <- parserIdentifier
+  params <- maybe [] id <$> optional parserParameters
+  pure $ L.IndentMany Nothing (pure . BlockFragmentDef name params) parserNode
 
 -- E.g. {}, {a, b}
-pugParameters :: Parser [Text]
-pugParameters = pugList' "{" "}" pugIdentifier <?> "arguments"
+parserParameters :: Parser [Text]
+parserParameters = parserList' "{" "}" parserIdentifier <?> "arguments"
 
 --------------------------------------------------------------------------------
-pugFragmentCall :: Parser (L.IndentOpt Parser Block Block)
-pugFragmentCall = do
-  name <- pugIdentifier
-  args <- maybe [] id <$> optional pugArguments
-  pure $ L.IndentMany Nothing (pure . BlockFragmentCall name args) pugNode
+parserFragmentCall :: Parser (L.IndentOpt Parser Block Block)
+parserFragmentCall = do
+  name <- parserIdentifier
+  args <- maybe [] id <$> optional parserArguments
+  pure $ L.IndentMany Nothing (pure . BlockFragmentCall name args) parserNode
 
 -- E.g. {}, {1, 'a'}
-pugArguments :: Parser [Expr]
-pugArguments = pugList' "{" "}" pugExpr <?> "arguments"
+parserArguments :: Parser [Expr]
+parserArguments = parserList' "{" "}" parserExpr <?> "arguments"
 
 --------------------------------------------------------------------------------
-pugEach :: Parser (L.IndentOpt Parser Block Block)
-pugEach = do
+parserEach :: Parser (L.IndentOpt Parser Block Block)
+parserEach = do
   _ <- lexeme (string "for")
-  name <- lexeme pugName
+  name <- lexeme parserName
   mindex <- optional $ do
     _ <- lexeme $ string ","
-    lexeme pugName
+    lexeme parserName
   _ <- lexeme (string "in")
   collection <-
-    (List <$> pugList) <|> (Object <$> pugObject) <|> (Variable <$> pugVariable)
-  pure $ L.IndentMany Nothing (pure . BlockFor name mindex collection) pugNode
+    (List <$> parserList) <|> (Object <$> parserObject) <|> (Variable <$> parserVariable)
+  pure $ L.IndentMany Nothing (pure . BlockFor name mindex collection) parserNode
 
-pugList :: Parser [Expr]
-pugList = pugList' "[" "]" pugExpr
+parserList :: Parser [Expr]
+parserList = parserList' "[" "]" parserExpr
 
-pugList' :: Text -> Text -> Parser a -> Parser [a]
-pugList' before after p = do
+parserList' :: Text -> Text -> Parser a -> Parser [a]
+parserList' before after p = do
   _ <- lexeme $ string before
   mx <- optional $ lexeme p
   xs <- case mx of
@@ -489,30 +489,30 @@ pugList' before after p = do
   _ <- lexeme $ string after
   pure xs
 
-pugObject :: Parser [(Expr, Expr)]
-pugObject = do
+parserObject :: Parser [(Expr, Expr)]
+parserObject = do
   _ <- lexeme (string "{")
   mkv <- optional $ do
-    key <- lexeme pugExpr
+    key <- lexeme parserExpr
     _ <- lexeme (string ":")
-    val <- lexeme pugExpr
+    val <- lexeme parserExpr
     pure (key, val)
   kvs <- case mkv of
     Nothing -> pure []
     Just kv -> do
       kvs <- many $ do
         _ <- lexeme $ string ","
-        key <- lexeme pugExpr
+        key <- lexeme parserExpr
         _ <- lexeme (string ":")
-        val <- lexeme pugExpr
+        val <- lexeme parserExpr
         pure (key, val)
       pure $ kv : kvs
   _ <- lexeme (string "}")
   pure kvs
 
 --------------------------------------------------------------------------------
-pugComment :: Parser (L.IndentOpt Parser Block Block)
-pugComment = do
+parserComment :: Parser (L.IndentOpt Parser Block Block)
+parserComment = do
   ref <- L.indentLevel
   b <-
     lexeme $
@@ -520,36 +520,36 @@ pugComment = do
         [ string "---" *> pure PassthroughComment
         , string "--" *> pure NormalComment
         ]
-  mcontent <- optional pugText
+  mcontent <- optional parserText
   case mcontent of
     Just content -> pure $ L.IndentNone $ BlockComment b content
     Nothing -> do
       scn
-      items <- textBlock ref pugText
+      items <- textBlock ref parserText
       let items' = realign items
       pure $ L.IndentNone $ BlockComment b $ T.intercalate "\n" items'
 
 --------------------------------------------------------------------------------
-pugFilter :: Parser (L.IndentOpt Parser Block Block)
-pugFilter = do
+parserFilter :: Parser (L.IndentOpt Parser Block Block)
+parserFilter = do
   ref <- L.indentLevel
   name <-
     lexeme
       ( string ":"
-          *> pugName
+          *> parserName
       )
       <?> "filter name"
-  mcontent <- optional pugText
+  mcontent <- optional parserText
   case mcontent of
     Just content -> pure $ L.IndentNone $ BlockFilter name content
     Nothing -> do
       scn
-      items <- textBlock ref pugText
+      items <- textBlock ref parserText
       let items' = realign items
       pure $ L.IndentNone $ BlockFilter name $ T.intercalate "\n" items'
 
-pugName :: Parser Text
-pugName =
+parserName :: Parser Text
+parserName =
   T.pack
     <$> ( do
             a <- letterChar
@@ -559,57 +559,57 @@ pugName =
     <?> "name"
 
 --------------------------------------------------------------------------------
-pugRawElement :: Parser (L.IndentOpt Parser Block Block)
-pugRawElement = do
-  header <- pugAngleBracket
-  pure $ L.IndentMany Nothing (pure . header) pugNode
+parserRawElement :: Parser (L.IndentOpt Parser Block Block)
+parserRawElement = do
+  header <- parserAngleBracket
+  pure $ L.IndentMany Nothing (pure . header) parserNode
 
-pugAngleBracket :: Parser ([Block] -> Block)
-pugAngleBracket = do
+parserAngleBracket :: Parser ([Block] -> Block)
+parserAngleBracket = do
   _ <- char '<'
-  content <- pugText
+  content <- parserText
   pure $ BlockRawElem $ "<" <> content
 
 --------------------------------------------------------------------------------
-pugDefault :: Parser (L.IndentOpt Parser Block Block)
-pugDefault = do
+parserDefault :: Parser (L.IndentOpt Parser Block Block)
+parserDefault = do
   _ <- lexeme (string "default")
-  name <- pugText
-  pure $ L.IndentMany Nothing (pure . BlockDefault name) pugNode
+  name <- parserText
+  pure $ L.IndentMany Nothing (pure . BlockDefault name) parserNode
 
 --------------------------------------------------------------------------------
-pugImport :: Parser (L.IndentOpt Parser Block Block)
-pugImport = do
+parserImport :: Parser (L.IndentOpt Parser Block Block)
+parserImport = do
   _ <- lexeme (string "import")
-  path <- pugPath
-  pure $ L.IndentMany Nothing (pure . BlockImport path Nothing) pugNode
+  path <- parserPath
+  pure $ L.IndentMany Nothing (pure . BlockImport path Nothing) parserNode
 
 --------------------------------------------------------------------------------
-pugRun :: Parser (L.IndentOpt Parser Block Block)
-pugRun = do
+parserRun :: Parser (L.IndentOpt Parser Block Block)
+parserRun = do
   _ <- lexeme (string "run")
-  cmd <- pugText
+  cmd <- parserText
   pure $ L.IndentNone $ BlockRun cmd Nothing
 
 --------------------------------------------------------------------------------
-pugLet :: Parser (L.IndentOpt Parser Block Block)
-pugLet = do
+parserLet :: Parser (L.IndentOpt Parser Block Block)
+parserLet = do
   _ <- lexeme (string "let")
-  name <- lexeme pugName
+  name <- lexeme parserName
   _ <- lexeme (string "=")
   choice
-    [ pugAssignVar name
-    , pugReadJson name
+    [ parserAssignVar name
+    , parserReadJson name
     ]
 
-pugAssignVar :: Text -> Parser (L.IndentOpt Parser Block Block)
-pugAssignVar name = do
-  val <- lexeme pugValue
+parserAssignVar :: Text -> Parser (L.IndentOpt Parser Block Block)
+parserAssignVar name = do
+  val <- lexeme parserValue
   pure $ L.IndentNone $ BlockAssignVar name val
 
-pugReadJson :: Text -> Parser (L.IndentOpt Parser Block Block)
-pugReadJson name = do
-  path <- pugPath
+parserReadJson :: Text -> Parser (L.IndentOpt Parser Block Block)
+parserReadJson name = do
+  path <- parserPath
   pure $ L.IndentNone $ BlockReadJson name path Nothing
 
 --------------------------------------------------------------------------------
@@ -706,7 +706,7 @@ parseLit = do
 parsePlace :: Parser Inline
 parsePlace = do
   _ <- string $ T.pack "#{"
-  e <- pugExpr
+  e <- parserExpr
   _ <- string $ T.pack "}"
   pure $ Place e
 
