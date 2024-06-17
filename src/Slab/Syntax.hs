@@ -171,6 +171,7 @@ data Expr
     Frag [Text] Env [Block]
   | -- Same for Expr instead of Block.
     Thunk Env Expr
+  | BuiltIn Text
   deriving (Show, Eq)
 
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting

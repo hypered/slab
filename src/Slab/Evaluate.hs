@@ -32,6 +32,15 @@ evaluateFileE path =
   PreProcess.preprocessFileE path >>= evaluate defaultEnv ["toplevel"]
 
 --------------------------------------------------------------------------------
+defaultEnv :: Env
+defaultEnv =
+  Env
+    [ ("true", Int 1)
+    , ("false", Int 0)
+    , ("show", BuiltIn "show")
+    ]
+
+--------------------------------------------------------------------------------
 
 -- Process mixin calls. This should be done after processing the include statement
 -- since mixins may be defined in included files.
@@ -132,9 +141,6 @@ call env stack name values args =
     Just _ -> throwE $ Error.EvaluateError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
     Nothing -> throwE $ Error.EvaluateError $ "Can't find fragment \"" <> name <> "\""
 
-defaultEnv :: Env
-defaultEnv = Env [("true", Int 1), ("false", Int 0)]
-
 lookupVariable :: Text -> Env -> Maybe Expr
 lookupVariable name Env {..} = lookup name envVariables
 
@@ -182,7 +188,8 @@ evalExpr env = \case
     b' <- evalExpr env b
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i + j
-      (Int i, SingleQuoteString s) -> pure . SingleQuoteString $ T.pack (show i) <> s
+      (SingleQuoteString s, SingleQuoteString t) ->
+        pure . SingleQuoteString $ s <> t
       _ -> throwE $ Error.EvaluateError $ "Unimplemented (add): " <> T.pack (show (Add a' b'))
   Sub a b -> do
     a' <- evalExpr env a
@@ -202,9 +209,20 @@ evalExpr env = \case
     case (a', b') of
       (Int i, Int j) -> pure . Int $ i `div` j
       _ -> throwE $ Error.EvaluateError $ "Unimplemented (divide): " <> T.pack (show (Add a' b'))
+  Application a b -> do
+    a' <- evalExpr env a
+    b' <- evalExpr env b
+    evalApplication env a' b'
   Thunk capturedEnv code ->
     evalExpr capturedEnv code
   code -> pure code
+
+evalApplication :: Monad m => Env -> Expr -> Expr -> ExceptT Error.Error m Expr
+evalApplication env a b =
+  case a of
+    BuiltIn "show" -> case b of
+      Int i -> pure . SingleQuoteString . T.pack $ show i
+    _ -> throwE $ Error.EvaluateError $ "Cannot apply: " <> T.pack (show a)
 
 -- After evaluation, the template should be either empty or contain a single literal.
 evalTemplate :: Monad m => Env -> [Inline] -> ExceptT Error.Error m [Inline]

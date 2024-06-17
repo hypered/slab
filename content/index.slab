@@ -219,6 +219,16 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/exprs.html
 
+                    p Strings can be concatenated with the <code>+</code> operator. Integers can be converted to strings using the <code>show</code> function.
+
+                    .switcher
+                        pre
+                            code
+                                include:escape-html ../examples/docs/exprs-strings.slab
+                        pre
+                            code
+                                include:escape-html ../examples/docs/exprs-strings.html
+
                     h3 String interpolation
 
                     p Expressions can be used within the text content of an element using the the <code>##{...}</code> syntax.
