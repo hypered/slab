@@ -106,6 +106,7 @@ renderBlock (Syntax.BlockCode (Syntax.Int i)) =
   H.string $ show i
 renderBlock (Syntax.BlockCode (Syntax.Object _)) =
   H.text "<Object>"
+renderBlock (Syntax.BlockCode (Syntax.Block x)) = renderBlock x
 renderBlock (Syntax.BlockCode c) = error $ "renderBlock called on BlockCode " <> show c
 
 renderTexts :: [Syntax.Block] -> H.Html

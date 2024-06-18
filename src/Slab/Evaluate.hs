@@ -43,6 +43,7 @@ defaultEnv =
       -- in the parser but can be present in the environment as a user-defined
       -- fragment. We need to be able to define @Div@ though.
       ("div", Frag ["content"] emptyEnv [BlockElem Div NoSym [] [BlockDefault "content" []]])
+    , ("br", Block (BlockElem Br NoSym [] []))
     ]
 
 --------------------------------------------------------------------------------
@@ -142,6 +143,7 @@ call env stack name values args =
           env''' = augmentVariables env'' arguments
       body' <- evaluate env''' ("frag" : stack) body
       pure body'
+    Just (Block x) -> pure [x]
     Just _ -> throwE $ Error.EvaluateError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
     Nothing -> throwE $ Error.EvaluateError $ "Can't find fragment \"" <> name <> "\""
 
@@ -193,6 +195,8 @@ evalExpr env = \case
       (Int i, Int j) -> pure . Int $ i + j
       (SingleQuoteString s, SingleQuoteString t) ->
         pure . SingleQuoteString $ s <> t
+      (Block a, Block b) ->
+        pure . Block $ pasteBlocks a b
       _ -> throwE $ Error.EvaluateError $ "Unimplemented (add): " <> T.pack (show (Add a' b'))
   Sub a b -> do
     a' <- evalExpr env a

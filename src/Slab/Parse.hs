@@ -297,7 +297,7 @@ parserElem =
         -- @div@ is now a fragment (function) in the environment.
         -- "div" -> pure Div
         "span" -> pure Span
-        "br" -> pure Br
+        -- "br" -> pure Br
         "hr" -> pure Hr
         "h1" -> pure H1
         "h2" -> pure H2
@@ -429,7 +429,7 @@ parserText :: Parser Text
 parserText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
 parserIdentifier :: Parser Text
-parserIdentifier = T.pack <$> lexeme (some (noneOf (" .(){}\n" :: String))) <?> "identifier"
+parserIdentifier = T.pack <$> lexeme (some (noneOf (" .=(){}\n" :: String))) <?> "identifier"
 
 --------------------------------------------------------------------------------
 parserInclude :: Parser (L.IndentOpt Parser Block Block)
