@@ -3,6 +3,8 @@
 module Slab.Syntax
   ( Block (..)
   , isDoctype
+  , pasteBlocks
+  , setAttrs
   , CommentType (..)
   , Elem (..)
   , TrailingSym (..)
@@ -42,7 +44,7 @@ data Block
   | -- | This doesn't exist in Pug. This is like a mixin than receive block arguments.
     -- Or like a parent template that can be @extended@ by a child template.
     BlockFragmentDef Text [Text] [Block]
-  | BlockFragmentCall Text [Expr] [Block]
+  | BlockFragmentCall Text [Attr] [Expr] [Block]
   | BlockFor Text (Maybe Text) Expr [Block]
   | -- TODO Should we allow string interpolation here ?
     BlockComment CommentType Text
@@ -71,6 +73,19 @@ isDoctype _ = False
 trailingSym :: Block -> TrailingSym
 trailingSym (BlockElem _ sym _ _) = sym
 trailingSym _ = NoSym
+
+-- | Takes two blocks and returns a BlockList containing both, but peel the
+-- outer list of a and b if they are themselves BlockList.
+pasteBlocks :: Block -> Block -> Block
+pasteBlocks a b = BlockList $ peel a <> peel b
+ where
+  peel (BlockList xs) = xs
+  peel x = [x]
+
+-- | Set attrs on a the block, if it is a BlockElem.
+setAttrs attrs (BlockElem name mdot attrs' nodes : bs) =
+  BlockElem name mdot (attrs' <> attrs) nodes : bs
+setAttrs _ bs = bs
 
 -- | A "passthrough" comment will be included in the generated HTML.
 data CommentType = NormalComment | PassthroughComment
@@ -229,7 +244,7 @@ extractClasses = nub . sort . concatMap f
   f (BlockText _ _) = []
   f (BlockInclude _ _ children) = maybe [] extractClasses children
   f (BlockFragmentDef _ _ _) = [] -- We extract them in BlockFragmentCall instead.
-  f (BlockFragmentCall _ _ children) = extractClasses children
+  f (BlockFragmentCall _ attrs _ children) = concatMap g attrs <> extractClasses children
   f (BlockFor _ _ _ children) = extractClasses children
   f (BlockComment _ _) = []
   f (BlockFilter _ _) = []
@@ -265,7 +280,7 @@ extractFragments = concatMap f
   f (BlockText _ _) = []
   f (BlockInclude _ _ children) = maybe [] extractFragments children
   f (BlockFragmentDef name _ children) = [BlockFragmentDef' name children]
-  f (BlockFragmentCall name _ children) = [BlockFragmentCall' name] <> extractFragments children
+  f (BlockFragmentCall name _ _ children) = [BlockFragmentCall' name] <> extractFragments children
   f (BlockFor _ _ _ children) = extractFragments children
   f (BlockComment _ _) = []
   f (BlockFilter _ _) = []

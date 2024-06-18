@@ -45,9 +45,9 @@ exec ctx = \case
   Syntax.BlockFragmentDef name params nodes -> do
     nodes' <- execute ctx nodes
     pure $ Syntax.BlockFragmentDef name params nodes'
-  Syntax.BlockFragmentCall name values nodes -> do
+  Syntax.BlockFragmentCall name attrs values nodes -> do
     nodes' <- execute ctx nodes
-    pure $ Syntax.BlockFragmentCall name values nodes'
+    pure $ Syntax.BlockFragmentCall name attrs values nodes'
   node@(Syntax.BlockFor _ _ _ _) -> pure node
   node@(Syntax.BlockComment _ _) -> pure node
   node@(Syntax.BlockFilter _ _) -> pure node

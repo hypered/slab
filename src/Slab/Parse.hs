@@ -258,23 +258,26 @@ parserDiv =
 -- E.g. div, div.a, div()
 parserElemWithAttrs :: Parser ([Block] -> Block)
 parserElemWithAttrs = do
-  (name, attrs, mdot) <-
-    lexeme
-      ( do
-          a <- parserElem
-          -- `try` because we want to backtrack if there is a dot
-          -- not followed by a class name, for mdot to succeed.
-          b <- many parserAttrs'
-          mtrailing <-
-            optional $
-              choice
-                [ string "." >> pure HasDot
-                , string "=" >> pure HasEqual
-                ]
-          pure (a, concat b, maybe NoSym id mtrailing)
-      )
-      <?> "div tag"
+  (name, attrs, mdot) <- parserNameWithAttrs
   pure $ BlockElem name mdot attrs
+
+parserNameWithAttrs :: Parser (Elem, [Attr], TrailingSym)
+parserNameWithAttrs =
+  lexeme
+    ( do
+        a <- parserElem
+        -- `try` because we want to backtrack if there is a dot
+        -- not followed by a class name, for mdot to succeed.
+        b <- many parserAttrs'
+        mtrailing <-
+          optional $
+            choice
+              [ string "." >> pure HasDot
+              , string "=" >> pure HasEqual
+              ]
+        pure (a, concat b, maybe NoSym id mtrailing)
+    )
+    <?> "div tag"
 
 parserElem :: Parser Elem
 parserElem =
@@ -290,7 +293,8 @@ parserElem =
       case name of
         "html" -> pure Html
         "body" -> pure Body
-        "div" -> pure Div
+        -- @div@ is now a fragment (function) in the environment.
+        -- "div" -> pure Div
         "span" -> pure Span
         "br" -> pure Br
         "hr" -> pure Hr
@@ -424,7 +428,7 @@ parserText :: Parser Text
 parserText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
 parserIdentifier :: Parser Text
-parserIdentifier = T.pack <$> lexeme (some (noneOf (" {}\n" :: String))) <?> "identifier"
+parserIdentifier = T.pack <$> lexeme (some (noneOf (" .(){}\n" :: String))) <?> "identifier"
 
 --------------------------------------------------------------------------------
 parserInclude :: Parser (L.IndentOpt Parser Block Block)
@@ -455,14 +459,16 @@ parserParameters = parserList' "{" "}" parserIdentifier <?> "arguments"
 --------------------------------------------------------------------------------
 parserFragmentCall :: Parser (L.IndentOpt Parser Block Block)
 parserFragmentCall = do
+  -- TODO Use parserNameWithAttrs.
   name <- parserIdentifier
+  attrs <- concat <$> many parserAttrs'
   args <- maybe [] id <$> optional parserArguments
   template <- parseInlines
   case template of
     [] ->
-      pure $ L.IndentMany Nothing (pure . BlockFragmentCall name args) parserNode
+      pure $ L.IndentMany Nothing (pure . BlockFragmentCall name attrs args) parserNode
     _ ->
-      pure $ L.IndentNone $ BlockFragmentCall name args [BlockText Normal template]
+      pure $ L.IndentNone $ BlockFragmentCall name attrs args [BlockText Normal template]
 
 -- E.g. {}, {1, 'a'}
 parserArguments :: Parser [Expr]
