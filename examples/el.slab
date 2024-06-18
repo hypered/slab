@@ -1,0 +1,17 @@
+el x Hello.
+
+el x
+  p Hello.
+
+frag y
+  el y
+    default content
+
+y Hello.
+
+y
+  p Hello.
+
+y
+
+el z.a

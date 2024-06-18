@@ -266,7 +266,9 @@ parserNameWithAttrs :: Parser (Elem, [Attr], TrailingSym)
 parserNameWithAttrs =
   lexeme
     ( do
-        a <- parserElem
+        a <-
+          parserElem
+            <|> (lexeme (string "el") *> (Elem <$> lexeme parserName))
         -- `try` because we want to backtrack if there is a dot
         -- not followed by a class name, for mdot to succeed.
         b <- many parserAttrs'

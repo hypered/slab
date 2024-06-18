@@ -14,6 +14,7 @@ import Text.Blaze.Html.Renderer.Text (renderHtml)
 import Text.Blaze.Html5 (Html, (!))
 import Text.Blaze.Html5 qualified as H
 import Text.Blaze.Html5.Attributes qualified as A
+import Text.Blaze.Internal qualified as I
 import Text.Blaze.Svg11 qualified as S
 
 --------------------------------------------------------------------------------
@@ -195,3 +196,4 @@ renderElem = \case
   Syntax.Svg -> S.svg
   Syntax.Textarea -> H.textarea
   Syntax.Canvas -> H.canvas
+  Syntax.Elem name -> I.customParent (H.textTag name)

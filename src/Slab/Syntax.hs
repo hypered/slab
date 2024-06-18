@@ -143,6 +143,8 @@ data Elem
   | Svg
   | Textarea
   | Canvas
+  | -- | Arbitrary element name, using the @el@ keyword.
+    Elem Text
   deriving (Show, Eq)
 
 data TrailingSym = HasDot | HasEqual | NoSym
