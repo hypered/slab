@@ -128,6 +128,18 @@ suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases). The
 expected HTML is not exactly the same: we pretty print it differently, or some
 tags are explicitely closed in Pug.js (e.g. `<source>` vs. `<source/>`.
 
+# Tests
+
+To run the test suite, use the `runExamples` function within GHCi.
+
+To debug a failing test, use `render --pretty`:
+
+```
+:main render --pretty examples/fragments.slab
+```
+
+The result should match (in this example) `examples/fragments.html`.
+
 # Binary executable test environment
 
 In addition of the above development environment, this repository exposes
