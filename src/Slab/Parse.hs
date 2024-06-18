@@ -213,6 +213,7 @@ parserExpr = makeExprParser pApp operatorTable
   pTerm =
     lexeme (Int <$> parserNumber)
       <|> lexeme (SingleQuoteString <$> parserSingleQuoteString)
+      <|> lexeme (SingleQuoteString <$> parserDoubleQuoteString) -- TODO Double
       <|> lexeme parserVariable'
       <|> lexeme (Object <$> parserObject)
       <|> parens parserExpr
@@ -442,7 +443,7 @@ parserInclude = do
   pure $ L.IndentNone $ BlockInclude mname path Nothing
 
 parserPath :: Parser FilePath
-parserPath = lexeme (some (noneOf ['\n'])) <?> "path"
+parserPath = lexeme (some (noneOf ("'\"\n" :: String))) <?> "path"
 
 --------------------------------------------------------------------------------
 parserFragmentDef :: Parser (L.IndentOpt Parser Block Block)
@@ -619,7 +620,7 @@ parserLet = do
 
 parserAssignVar :: Text -> Parser (L.IndentOpt Parser Block Block)
 parserAssignVar name = do
-  val <- lexeme parserValue
+  val <- parserExpr
   pure $ L.IndentNone $ BlockAssignVar name val
 
 parserReadJson :: Text -> Parser (L.IndentOpt Parser Block Block)
