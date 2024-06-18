@@ -6,6 +6,9 @@
 -- runs them.
 module Slab.Run
   ( run
+  , parse
+  , eval
+  , render
   , calc
   ) where
 
@@ -108,6 +111,36 @@ executeWithModeE
   -> ExceptT Error.Error IO [Syntax.Block]
 executeWithModeE path pmode =
   evaluateWithModeE path pmode >>= Execute.execute path
+
+--------------------------------------------------------------------------------
+-- Play with the whole language.
+
+parse :: Text -> IO ()
+parse s = do
+  blocks <- runExceptT $ withExceptT Error.ParseError . except $ Parse.parse "-" s
+  pPrintNoColor blocks
+
+-- | "eval" parses a string as a "Syntax.Syntax", and evaluates it. This doesn't
+-- run the proprocessing stage.
+--
+-- @
+--     Run.eval "p= 1 + 2 * 3"
+-- @
+eval :: Text -> IO ()
+eval s = do
+  x <- runExceptT $ parseAndEvaluateBlocks s
+  pPrintNoColor x
+
+-- | Run "eval" and render the result.
+render :: Text -> IO ()
+render s = do
+  x <- runExceptT (parseAndEvaluateBlocks s) >>= Error.unwrap
+  T.putStr . Render.prettyHtmls $ Render.renderBlocks x
+
+parseAndEvaluateBlocks :: Text -> ExceptT Error.Error IO [Syntax.Block]
+parseAndEvaluateBlocks s = do
+  blocks <- withExceptT Error.ParseError . except $ Parse.parse "-" s
+  Evaluate.evaluate Evaluate.defaultEnv [] blocks
 
 --------------------------------------------------------------------------------
 -- Play with the expression language.
