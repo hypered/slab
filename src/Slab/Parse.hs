@@ -457,7 +457,12 @@ parserFragmentCall :: Parser (L.IndentOpt Parser Block Block)
 parserFragmentCall = do
   name <- parserIdentifier
   args <- maybe [] id <$> optional parserArguments
-  pure $ L.IndentMany Nothing (pure . BlockFragmentCall name args) parserNode
+  template <- parseInlines
+  case template of
+    [] ->
+      pure $ L.IndentMany Nothing (pure . BlockFragmentCall name args) parserNode
+    _ ->
+      pure $ L.IndentNone $ BlockFragmentCall name args [BlockText Normal template]
 
 -- E.g. {}, {1, 'a'}
 parserArguments :: Parser [Expr]

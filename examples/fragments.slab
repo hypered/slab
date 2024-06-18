@@ -17,6 +17,8 @@ body
 
   post
 
+  post Hello.
+
   post
     frag content
       p Some content.

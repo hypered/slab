@@ -117,8 +117,9 @@ eval env stack = \case
       Bool False -> do
         bs' <- evaluate env ("else" : stack) bs
         pure $ BlockIf cond [] bs'
-      _ -> throwE . Error.EvaluateError $
-        "Conditional is not a boolean: " <> T.pack (show cond')
+      _ ->
+        throwE . Error.EvaluateError $
+          "Conditional is not a boolean: " <> T.pack (show cond')
   BlockList nodes -> do
     nodes' <- evaluate env stack nodes
     pure $ BlockList nodes'
