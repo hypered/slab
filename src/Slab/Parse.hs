@@ -291,11 +291,7 @@ parserElem =
       case name of
         "html" -> pure Html
         "body" -> pure Body
-        -- @div@ is now a fragment (function) in the environment.
-        -- "div" -> pure Div
         "span" -> pure Span
-        -- "br" -> pure Br
-        "hr" -> pure Hr
         "h1" -> pure H1
         "h2" -> pure H2
         "h3" -> pure H3
@@ -304,19 +300,15 @@ parserElem =
         "h6" -> pure H6
         "header" -> pure Header
         "head" -> pure Head
-        "meta" -> pure Meta
         "main" -> pure Main
         "audio" -> pure Audio
         "a" -> pure A
         "code" -> pure Code
-        "img" -> pure Img
         "iframe" -> pure IFrame
-        "input" -> pure Input
         "i" -> pure I
         "pre" -> pure Pre
         "p" -> pure P
         "ul" -> pure Ul
-        "link" -> pure Link
         "li" -> pure Li
         "title" -> pure Title
         "table" -> pure Table
@@ -337,7 +329,6 @@ parserElem =
         "script" -> pure Script
         "style" -> pure Style
         "small" -> pure Small
-        "source" -> pure Source
         "svg" -> pure Svg
         "textarea" -> pure Textarea
         "canvas" -> pure Canvas
@@ -437,7 +428,7 @@ parserText :: Parser Text
 parserText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
 parserIdentifier :: Parser Text
-parserIdentifier = T.pack <$> lexeme (some (noneOf (" .=(){}\n" :: String))) <?> "identifier"
+parserIdentifier = T.pack <$> lexeme (some (noneOf (" .=#(){}\n" :: String))) <?> "identifier"
 
 --------------------------------------------------------------------------------
 parserInclude :: Parser (L.IndentOpt Parser Block Block)

@@ -44,6 +44,12 @@ defaultEnv =
       -- fragment. We need to be able to define @Div@ though.
       ("div", Frag ["content"] emptyEnv [BlockElem Div NoSym [] [BlockDefault "content" []]])
     , ("br", Block (BlockElem Br NoSym [] []))
+    , ("hr", Block (BlockElem Hr NoSym [] []))
+    , ("meta", Block (BlockElem Meta NoSym [] []))
+    , ("link", Block (BlockElem Link NoSym [] []))
+    , ("source", Block (BlockElem Source NoSym [] []))
+    , ("img", Block (BlockElem Img NoSym [] []))
+    , ("input", Block (BlockElem Input NoSym [] []))
     ]
 
 --------------------------------------------------------------------------------
