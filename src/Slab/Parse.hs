@@ -266,21 +266,12 @@ parserNameWithAttrs :: Parser (Elem, [Attr], TrailingSym)
 parserNameWithAttrs =
   lexeme
     ( do
-        a <-
-          parserElem
-            <|> (lexeme (string "el") *> (Elem <$> lexeme parserName))
-        -- `try` because we want to backtrack if there is a dot
-        -- not followed by a class name, for mdot to succeed.
-        b <- many parserAttrs'
-        mtrailing <-
-          optional $
-            choice
-              [ string "." >> pure HasDot
-              , string "=" >> pure HasEqual
-              ]
-        pure (a, concat b, maybe NoSym id mtrailing)
+        el <- parserElem
+        attrs <- concat <$> many parserAttrs'
+        trailing <- parserTrailingSym
+        pure (el, attrs, trailing)
     )
-    <?> "div tag"
+    <?> "element"
 
 parserElem :: Parser Elem
 parserElem =
@@ -348,6 +339,7 @@ parserElem =
         "canvas" -> pure Canvas
         _ -> fail "invalid element name"
   )
+    <|> (lexeme (string "el") *> (Elem <$> lexeme parserName))
     <?> "element name"
 
 -- E.g. .a, ()
@@ -356,9 +348,9 @@ parserAttrs = do
   (attrs, mdot) <-
     lexeme
       ( do
-          attrs <- some parserAttrs'
+          attrs <- concat <$> some parserAttrs'
           mdot <- optional (string ".")
-          pure (concat attrs, maybe NoSym (const HasDot) mdot)
+          pure (attrs, maybe NoSym (const HasDot) mdot)
       )
       <?> "attributes"
   pure $ BlockElem Div mdot attrs
@@ -368,6 +360,16 @@ parserAttrs' =
   -- `try` because we want to backtrack if there is a dot
   -- not followed by a class name, for mdot to succeed.
   ((: []) <$> parserId) <|> try ((: []) <$> parserClass) <|> parserAttrList
+
+parserTrailingSym :: Parser TrailingSym
+parserTrailingSym = do
+  ms <-
+    optional $
+      choice
+        [ string "." >> pure HasDot
+        , string "=" >> pure HasEqual
+        ]
+  pure $ maybe NoSym id ms
 
 -- E.g. #a
 parserId :: Parser Attr
