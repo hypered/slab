@@ -65,8 +65,9 @@ evaluate env stack nodes = do
   mapM (eval env' stack) nodes
 
 eval :: Monad m => Env -> [Text] -> Block -> ExceptT Error.Error m Block
-eval _ stack _ | length stack > 100 =
+eval env stack b | length stack > 100 =
   throwE $ Error.EvaluateError $ "Stack overflow. Is there an infinite loop?"
+    <> " " <> T.pack (show $ reverse stack) <> " " <> displayEnv env
 eval env stack bl = case bl of
   node@BlockDoctype -> pure node
   BlockElem name mdot attrs nodes -> do
@@ -277,7 +278,7 @@ extractVariables' env nodes = do
       unnamed = concatMap unnamedBlock nodes
       content = if null unnamed then [] else [("content", Frag [] env' unnamed)]
       vars = named <> content
-      env' = augmentVariables env vars
+      env' = augmentVariables env named -- Note we don't add the implicit "content" entry.
   if isJust (lookup "content" named) && not (null unnamed)
     then
       throwE $

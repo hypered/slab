@@ -1,0 +1,13 @@
+-- "div" receive a call to "main content", and "main" receives a call to
+-- "content" as argument. They receive those as an implicit "content" entry
+-- in the environment. This example shows that calling "content" works (instead
+-- of making an infinite loop, resolving it as the implicit "content" passed to
+-- "div" or to "main", instead of the one passed to "f").
+
+frag f
+  div
+    main
+      content
+
+f
+  p A.

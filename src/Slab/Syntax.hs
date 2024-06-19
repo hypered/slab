@@ -214,8 +214,15 @@ data Env = Env
 emptyEnv :: Env
 emptyEnv = Env []
 
+-- Similar to `show`, but makes the environment capture by "Frag" and "Thunk"
+-- empty to avoid an infinite data structure.
 displayEnv :: Env -> Text
-displayEnv = T.pack . show . map fst . envVariables
+displayEnv = T.pack . show . map (\(a, b) -> (a, f b)) . envVariables
+ where
+  f = \case
+    Frag names _ children -> Frag names emptyEnv children
+    Thunk _ expr -> Thunk emptyEnv expr
+    expr -> expr
 
 --------------------------------------------------------------------------------
 freeVariables :: Expr -> [Text]
