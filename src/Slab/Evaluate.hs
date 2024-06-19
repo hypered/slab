@@ -39,10 +39,52 @@ defaultEnv =
     , ("false", Bool False)
     , ("show", BuiltIn "show")
     , ("null", BuiltIn "null")
-    , -- Proof-of-concept that @div@ can be implemented without special support
-      -- in the parser but can be present in the environment as a user-defined
-      -- fragment. We need to be able to define @Div@ though.
-      ("div", Frag ["content"] emptyEnv [BlockElem Div NoSym [] [BlockDefault "content" []]])
+    , mkElem "div" Div
+    , mkElem "html" Html
+    , mkElem "body" Body
+    , mkElem "span" Span
+    , mkElem "h1" H1
+    , mkElem "h2" H2
+    , mkElem "h3" H3
+    , mkElem "h4" H4
+    , mkElem "h5" H5
+    , mkElem "h6" H6
+    , mkElem "header" Header
+    , mkElem "head" Head
+    , mkElem "main" Main
+    , mkElem "audio" Audio
+    , mkElem "a" A
+    , mkElem "code" Code
+    , mkElem "iframe" IFrame
+    , mkElem "i" I
+    , mkElem "pre" Pre
+    , mkElem "p" P
+    , mkElem "ul" Ul
+    , mkElem "li" Li
+    , mkElem "title" Title
+    , mkElem "table" Table
+    , mkElem "thead" Thead
+    , mkElem "tbody" Tbody
+    , mkElem "tr" Tr
+    , mkElem "td" Td
+    , mkElem "dl" Dl
+    , mkElem "dt" Dt
+    , mkElem "dd" Dd
+    , mkElem "footer" Footer
+    , mkElem "figure" Figure
+    , mkElem "form" Form
+    , mkElem "label" Label
+    , mkElem "blockquote" Blockquote
+    , mkElem "button" Button
+    , mkElem "figcaption" Figcaption
+    , mkElem "script" Script
+    , mkElem "style" Style
+    , mkElem "small" Small
+    , mkElem "svg" Svg
+    , mkElem "textarea" Textarea
+    , mkElem "canvas" Canvas
+
+    -- Elements with no content.
     , ("br", Block (BlockElem Br NoSym [] []))
     , ("hr", Block (BlockElem Hr NoSym [] []))
     , ("meta", Block (BlockElem Meta NoSym [] []))
@@ -51,6 +93,9 @@ defaultEnv =
     , ("img", Block (BlockElem Img NoSym [] []))
     , ("input", Block (BlockElem Input NoSym [] []))
     ]
+ where
+  mkElem name el =
+    (name, Frag ["content"] emptyEnv [BlockElem el NoSym [] [BlockDefault "content" []]])
 
 --------------------------------------------------------------------------------
 

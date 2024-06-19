@@ -3,13 +3,13 @@
 
 frag page
   h1 A title
-  content
+  xcontent
 
-frag content
+frag xcontent
   p A paragraph.
 
 body
-  frag content
+  frag xcontent
     p Another paragraph.
 
   page

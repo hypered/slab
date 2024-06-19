@@ -79,7 +79,7 @@ parserNode = do
         , parserRun
         , parserLet
         , try parserEach
-        , parserIf
+        , try parserIf
         , parserFragmentCall
         ]
   case node of
@@ -90,7 +90,8 @@ parserNode = do
 
 parserIf :: Parser (L.IndentOpt Parser Block Block)
 parserIf = do
-  _ <- lexeme $ string "if"
+  _ <- string "if"
+  _ <- some (char ' ' <|> char '\t')
   cond <- parserExpr
   pure $ L.IndentMany Nothing (pure . (\as -> BlockIf cond as [])) parserNode
 
@@ -279,62 +280,7 @@ parserNameWithAttrs =
 
 parserElem :: Parser Elem
 parserElem =
-  ( try $ do
-      name <-
-        T.pack
-          <$> ( do
-                  a <- letterChar
-                  as <- many (alphaNumChar <|> oneOf ("-_" :: String))
-                  pure (a : as)
-              )
-          <?> "identifier"
-      case name of
-        "html" -> pure Html
-        "body" -> pure Body
-        "span" -> pure Span
-        "h1" -> pure H1
-        "h2" -> pure H2
-        "h3" -> pure H3
-        "h4" -> pure H4
-        "h5" -> pure H5
-        "h6" -> pure H6
-        "header" -> pure Header
-        "head" -> pure Head
-        "main" -> pure Main
-        "audio" -> pure Audio
-        "a" -> pure A
-        "code" -> pure Code
-        "iframe" -> pure IFrame
-        "i" -> pure I
-        "pre" -> pure Pre
-        "p" -> pure P
-        "ul" -> pure Ul
-        "li" -> pure Li
-        "title" -> pure Title
-        "table" -> pure Table
-        "thead" -> pure Thead
-        "tbody" -> pure Tbody
-        "tr" -> pure Tr
-        "td" -> pure Td
-        "dl" -> pure Dl
-        "dt" -> pure Dt
-        "dd" -> pure Dd
-        "footer" -> pure Footer
-        "figure" -> pure Figure
-        "form" -> pure Form
-        "label" -> pure Label
-        "blockquote" -> pure Blockquote
-        "button" -> pure Button
-        "figcaption" -> pure Figcaption
-        "script" -> pure Script
-        "style" -> pure Style
-        "small" -> pure Small
-        "svg" -> pure Svg
-        "textarea" -> pure Textarea
-        "canvas" -> pure Canvas
-        _ -> fail "invalid element name"
-  )
-    <|> (lexeme (string "el") *> (Elem <$> lexeme parserName))
+  (lexeme (string "el") *> (Elem <$> lexeme parserName))
     <?> "element name"
 
 -- E.g. .a, ()
@@ -428,7 +374,7 @@ parserText :: Parser Text
 parserText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
 parserIdentifier :: Parser Text
-parserIdentifier = T.pack <$> lexeme (some (noneOf (" .=#(){}\n" :: String))) <?> "identifier"
+parserIdentifier = T.pack <$> (some (noneOf (" .=#(){}\n" :: String))) <?> "identifier"
 
 --------------------------------------------------------------------------------
 parserInclude :: Parser (L.IndentOpt Parser Block Block)
@@ -448,23 +394,25 @@ parserPath = lexeme (some (noneOf ("'\"\n" :: String))) <?> "path"
 parserFragmentDef :: Parser (L.IndentOpt Parser Block Block)
 parserFragmentDef = do
   _ <- lexeme (string "fragment" <|> string "frag")
-  name <- parserIdentifier
+  name <- lexeme parserIdentifier
   params <- maybe [] id <$> optional parserParameters
   pure $ L.IndentMany Nothing (pure . BlockFragmentDef name params) parserNode
 
 -- E.g. {}, {a, b}
 parserParameters :: Parser [Text]
-parserParameters = parserList' "{" "}" parserIdentifier <?> "arguments"
+parserParameters = parserList' "{" "}" (lexeme parserIdentifier) <?> "arguments"
 
 --------------------------------------------------------------------------------
 parserFragmentCall :: Parser (L.IndentOpt Parser Block Block)
 parserFragmentCall = do
   ref <- L.indentLevel
   -- TODO Use parserNameWithAttrs.
-  name <- parserIdentifier
-  attrs <- concat <$> many parserAttrs'
-  trailing <- parserTrailingSym
-  args <- maybe [] id <$> optional parserArguments
+  (name, attrs, trailing, args) <- lexeme $ do
+    name <- parserIdentifier
+    attrs <- concat <$> many parserAttrs'
+    trailing <- parserTrailingSym
+    args <- maybe [] id <$> optional parserArguments
+    pure (name, attrs, trailing, args)
   let header = BlockFragmentCall name trailing attrs args
   parserElemBody ref header
 
@@ -475,7 +423,8 @@ parserArguments = parserList' "{" "}" parserExpr <?> "arguments"
 --------------------------------------------------------------------------------
 parserEach :: Parser (L.IndentOpt Parser Block Block)
 parserEach = do
-  _ <- lexeme (string "for")
+  _ <- string "for"
+  _ <- some (char ' ' <|> char '\t')
   name <- lexeme parserName
   mindex <- optional $ do
     _ <- lexeme $ string ","
