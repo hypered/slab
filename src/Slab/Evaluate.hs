@@ -143,7 +143,7 @@ call :: Monad m => Env -> [Text] -> Text -> [Expr] -> [Block] -> ExceptT Error.E
 call env stack name values args =
   case lookupVariable name env of
     Just (Frag names capturedEnv body) -> do
-      env' <- map (\(a, (as, b)) -> (a, Frag as env b)) <$> namedBlocks args
+      env' <- extractVariables' env args
       let env'' = augmentVariables capturedEnv env'
           arguments = zip names (map (thunk env) values)
           env''' = augmentVariables env'' arguments
@@ -158,26 +158,6 @@ lookupVariable name Env {..} = lookup name envVariables
 
 augmentVariables :: Env -> [(Text, Expr)] -> Env
 augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables}
-
-namedBlocks :: Monad m => [Block] -> ExceptT Error.Error m [(Text, ([Text], [Block]))]
-namedBlocks nodes = do
-  named <- concat <$> mapM namedBlock nodes
-  unnamed <- concat <$> mapM unnamedBlock nodes
-  let content = if null unnamed then [] else [("content", ([], unnamed))]
-  if isJust (lookup "content" named) && not (null unnamed)
-    then throwE $ Error.EvaluateError $ "A block of content and a content argument are provided"
-    else pure $ named <> content
-
-namedBlock :: Monad m => Block -> ExceptT Error.Error m [(Text, ([Text], [Block]))]
-namedBlock (BlockImport path (Just body) _) = pure [(T.pack path, ([], body))]
-namedBlock (BlockFragmentDef name names content) = pure [(name, (names, content))]
-namedBlock _ = pure []
-
-unnamedBlock :: Monad m => Block -> ExceptT Error.Error m [Block]
-unnamedBlock (BlockImport path _ args) =
-  pure [BlockFragmentCall (T.pack path) NoSym [] [] args]
-unnamedBlock (BlockFragmentDef _ _ _) = pure []
-unnamedBlock node = pure [node]
 
 evalExpr :: Monad m => Env -> Expr -> ExceptT Error.Error m Expr
 evalExpr env = \case
@@ -286,33 +266,53 @@ evalInline env = \case
       -- Variable x -> context x -- Should not happen after evalExpr
       x -> error $ "evalInline: unhandled value: " <> show x
 
+-- | Same as `extractVariables` plus an implicit @content@ block.
+extractVariables' :: Monad m => Env -> [Block] -> ExceptT Error.Error m [(Text, Expr)]
+extractVariables' env nodes = do
+  let named = extractVariables env nodes
+      unnamed = concatMap unnamedBlock nodes
+      content = if null unnamed then [] else [("content", Frag [] env unnamed)]
+  if isJust (lookup "content" named) && not (null unnamed)
+    then
+      throwE $
+        Error.EvaluateError $
+          "A block of content and a content argument are provided"
+    else pure $ named <> content
+
+unnamedBlock :: Block -> [Block]
+unnamedBlock (BlockImport path _ args) = [BlockFragmentCall (T.pack path) NoSym [] [] args]
+unnamedBlock (BlockFragmentDef _ _ _) = []
+unnamedBlock node = [node]
+
 -- Extract both fragments and assignments.
--- TODO This should be merged with namedBlocks.
+-- TODO This should be merged with extractVariables'.
 -- TODO We could filter the env, keeping only the free variables that appear
 -- in the bodies.
 extractVariables :: Env -> [Block] -> [(Text, Expr)]
-extractVariables env = concatMap f
- where
-  f BlockDoctype = []
-  f (BlockElem _ _ _ _) = []
-  f (BlockText _ _) = []
-  f (BlockInclude _ _ children) = maybe [] (extractVariables env) children
-  f (BlockFor _ _ _ _) = []
-  f (BlockFragmentDef name names children) = [(name, Frag names env children)]
-  f (BlockFragmentCall _ _ _ _ _) = []
-  f (BlockComment _ _) = []
-  f (BlockFilter _ _) = []
-  f (BlockRawElem _ _) = []
-  f (BlockDefault _ _) = []
-  f (BlockImport path (Just body) _) = [(T.pack path, Frag [] env body)]
-  f (BlockImport _ _ _) = []
-  f (BlockRun _ _) = []
-  f (BlockReadJson name _ (Just val)) = [(name, jsonToExpr val)]
-  f (BlockReadJson _ _ Nothing) = []
-  f (BlockAssignVar name val) = [(name, val)]
-  f (BlockIf _ _ _) = []
-  f (BlockList _) = []
-  f (BlockCode _) = []
+extractVariables env = concatMap (extractVariable env)
+
+extractVariable :: Env -> Block -> [(Text, Expr)]
+extractVariable env = \case
+  BlockDoctype -> []
+  (BlockElem _ _ _ _) -> []
+  (BlockText _ _) -> []
+  (BlockInclude _ _ children) -> maybe [] (extractVariables env) children
+  (BlockFor _ _ _ _) -> []
+  (BlockFragmentDef name names children) -> [(name, Frag names env children)]
+  (BlockFragmentCall _ _ _ _ _) -> []
+  (BlockComment _ _) -> []
+  (BlockFilter _ _) -> []
+  (BlockRawElem _ _) -> []
+  (BlockDefault _ _) -> []
+  (BlockImport path (Just body) _) -> [(T.pack path, Frag [] env body)]
+  (BlockImport _ _ _) -> []
+  (BlockRun _ _) -> []
+  (BlockReadJson name _ (Just val)) -> [(name, jsonToExpr val)]
+  (BlockReadJson _ _ Nothing) -> []
+  (BlockAssignVar name val) -> [(name, val)]
+  (BlockIf _ _ _) -> []
+  (BlockList _) -> []
+  (BlockCode _) -> []
 
 jsonToExpr :: Aeson.Value -> Expr
 jsonToExpr = \case
