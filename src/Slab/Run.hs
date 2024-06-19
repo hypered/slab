@@ -14,6 +14,7 @@ module Slab.Run
 
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, withExceptT)
 import Data.Text (Text)
+import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Data.Text.Lazy.IO qualified as TL
 import Slab.Build qualified as Build
@@ -103,7 +104,7 @@ evaluateWithModeE
   -> ExceptT Error.Error IO [Syntax.Block]
 evaluateWithModeE path pmode = do
   parsed <- parseWithModeE path pmode
-  Evaluate.evaluate Evaluate.defaultEnv ["toplevel"] parsed
+  Evaluate.evaluate Evaluate.defaultEnv [T.pack path] parsed
 
 executeWithModeE
   :: FilePath

@@ -29,7 +29,7 @@ evaluateFile = runExceptT . evaluateFileE
 
 evaluateFileE :: FilePath -> ExceptT Error.Error IO [Block]
 evaluateFileE path =
-  PreProcess.preprocessFileE path >>= evaluate defaultEnv ["toplevel"]
+  PreProcess.preprocessFileE path >>= evaluate defaultEnv [T.pack path]
 
 --------------------------------------------------------------------------------
 defaultEnv :: Env
@@ -65,7 +65,9 @@ evaluate env stack nodes = do
   mapM (eval env' stack) nodes
 
 eval :: Monad m => Env -> [Text] -> Block -> ExceptT Error.Error m Block
-eval env stack = \case
+eval _ stack _ | length stack > 100 =
+  throwE $ Error.EvaluateError $ "Stack overflow. Is there an infinite loop?"
+eval env stack bl = case bl of
   node@BlockDoctype -> pure node
   BlockElem name mdot attrs nodes -> do
     nodes' <- evaluate env stack nodes
@@ -111,7 +113,7 @@ eval env stack = \case
         nodes' <- evaluate env ("?block" : stack) nodes
         pure $ BlockDefault name nodes'
       Just (Frag _ capturedEnv nodes') -> do
-        nodes'' <- evaluate capturedEnv ("+block" : stack) nodes'
+        nodes'' <- evaluate capturedEnv ("default block " <> name : stack) nodes'
         pure $ BlockDefault name nodes''
       Just _ -> throwE $ Error.EvaluateError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
   BlockImport path _ args -> do
@@ -147,11 +149,11 @@ call env stack name values args =
       let env'' = augmentVariables capturedEnv env'
           arguments = zip names (map (thunk env) values)
           env''' = augmentVariables env'' arguments
-      body' <- evaluate env''' ("frag" : stack) body
+      body' <- evaluate env''' ("frag " <> name : stack) body
       pure body'
     Just (Block x) -> pure [x]
     Just _ -> throwE $ Error.EvaluateError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
-    Nothing -> throwE $ Error.EvaluateError $ "Can't find fragment \"" <> name <> "\""
+    Nothing -> throwE $ Error.EvaluateError $ "Can't find fragment \"" <> name <> "\" while evaluating " <> T.pack (show $ reverse stack) <> " with environment " <> displayEnv env
 
 lookupVariable :: Text -> Env -> Maybe Expr
 lookupVariable name Env {..} = lookup name envVariables
@@ -267,17 +269,21 @@ evalInline env = \case
       x -> error $ "evalInline: unhandled value: " <> show x
 
 -- | Same as `extractVariables` plus an implicit @content@ block.
+-- Note that unlike `extractVariables`, this version takes also care of
+-- passing the environment being constructed to each definition.
 extractVariables' :: Monad m => Env -> [Block] -> ExceptT Error.Error m [(Text, Expr)]
 extractVariables' env nodes = do
-  let named = extractVariables env nodes
+  let named = extractVariables env' nodes
       unnamed = concatMap unnamedBlock nodes
-      content = if null unnamed then [] else [("content", Frag [] env unnamed)]
+      content = if null unnamed then [] else [("content", Frag [] env' unnamed)]
+      vars = named <> content
+      env' = augmentVariables env vars
   if isJust (lookup "content" named) && not (null unnamed)
     then
       throwE $
         Error.EvaluateError $
           "A block of content and a content argument are provided"
-    else pure $ named <> content
+    else pure vars
 
 unnamedBlock :: Block -> [Block]
 unnamedBlock (BlockImport path _ args) = [BlockFragmentCall (T.pack path) NoSym [] [] args]

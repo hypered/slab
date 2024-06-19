@@ -35,6 +35,9 @@ unwrap = \case
     -- T.putStrLn . parseErrorPretty $ err
     T.putStrLn . T.pack $ errorBundlePretty err
     exitFailure
+  Left (EvaluateError err) -> do
+    T.putStrLn $ "Error during evaluation: " <> err
+    exitFailure
   Left err -> do
     TL.putStrLn $ pShowNoColor err
     exitFailure

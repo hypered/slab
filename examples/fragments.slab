@@ -23,15 +23,17 @@ body
     frag content
       p Some content.
 
-  -- Note that this doesn't pass `content`, but instead pass `default content`
-  -- as an unnamed fragment. This results in twice `default content` in the AST.
-  card
-    default content
-      p Some content.
-
   card
     frag content
       p Some content.
 
   card
     p Some content.
+
+  -- This test ensures that the content passed to post can use a fragment g
+  -- defined within the call.
+  post
+    frag g
+      h1 Title
+
+    g

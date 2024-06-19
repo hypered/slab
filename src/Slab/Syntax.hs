@@ -14,6 +14,7 @@ module Slab.Syntax
   , Inline (..)
   , Env (..)
   , emptyEnv
+  , displayEnv
   , trailingSym
   , freeVariables
   , thunk
@@ -84,6 +85,7 @@ pasteBlocks a b = BlockList $ peel a <> peel b
   peel x = [x]
 
 -- | Set attrs on a the block, if it is a BlockElem.
+setAttrs :: [Attr] -> [Block] -> [Block]
 setAttrs attrs (BlockElem name mdot attrs' nodes : bs) =
   BlockElem name mdot (attrs' <> attrs) nodes : bs
 setAttrs _ bs = bs
@@ -211,6 +213,9 @@ data Env = Env
 
 emptyEnv :: Env
 emptyEnv = Env []
+
+displayEnv :: Env -> Text
+displayEnv = T.pack . show . map fst . envVariables
 
 --------------------------------------------------------------------------------
 freeVariables :: Expr -> [Text]
