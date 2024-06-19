@@ -44,7 +44,7 @@ data Block
   | -- | This doesn't exist in Pug. This is like a mixin than receive block arguments.
     -- Or like a parent template that can be @extended@ by a child template.
     BlockFragmentDef Text [Text] [Block]
-  | BlockFragmentCall Text [Attr] [Expr] [Block]
+  | BlockFragmentCall Text TrailingSym [Attr] [Expr] [Block]
   | BlockFor Text (Maybe Text) Expr [Block]
   | -- TODO Should we allow string interpolation here ?
     BlockComment CommentType Text
@@ -72,6 +72,7 @@ isDoctype _ = False
 
 trailingSym :: Block -> TrailingSym
 trailingSym (BlockElem _ sym _ _) = sym
+trailingSym (BlockFragmentCall _ sym _ _ _) = sym
 trailingSym _ = NoSym
 
 -- | Takes two blocks and returns a BlockList containing both, but peel the
@@ -247,7 +248,7 @@ extractClasses = nub . sort . concatMap f
   f (BlockText _ _) = []
   f (BlockInclude _ _ children) = maybe [] extractClasses children
   f (BlockFragmentDef _ _ _) = [] -- We extract them in BlockFragmentCall instead.
-  f (BlockFragmentCall _ attrs _ children) = concatMap g attrs <> extractClasses children
+  f (BlockFragmentCall _ _ attrs _ children) = concatMap g attrs <> extractClasses children
   f (BlockFor _ _ _ children) = extractClasses children
   f (BlockComment _ _) = []
   f (BlockFilter _ _) = []
@@ -283,7 +284,8 @@ extractFragments = concatMap f
   f (BlockText _ _) = []
   f (BlockInclude _ _ children) = maybe [] extractFragments children
   f (BlockFragmentDef name _ children) = [BlockFragmentDef' name children]
-  f (BlockFragmentCall name _ _ children) = [BlockFragmentCall' name] <> extractFragments children
+  f (BlockFragmentCall name _ _ _ children) =
+    [BlockFragmentCall' name] <> extractFragments children
   f (BlockFor _ _ _ children) = extractFragments children
   f (BlockComment _ _) = []
   f (BlockFilter _ _) = []

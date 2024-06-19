@@ -75,10 +75,10 @@ eval env stack = \case
       Nothing ->
         pure $ BlockInclude mname path Nothing
   node@(BlockFragmentDef _ _ _) -> pure node
-  BlockFragmentCall name attrs values args -> do
+  BlockFragmentCall name mdot attrs values args -> do
     body <- call env stack name values args
     let body' = setAttrs attrs body
-    pure $ BlockFragmentCall name attrs values body'
+    pure $ BlockFragmentCall name mdot attrs values body'
   BlockFor name mindex values nodes -> do
     -- Re-use BlockFor to construct a single node to return.
     let zero :: Int
@@ -169,7 +169,7 @@ namedBlock _ = pure []
 
 unnamedBlock :: Monad m => Block -> ExceptT Error.Error m [Block]
 unnamedBlock (BlockImport path _ args) =
-  pure [BlockFragmentCall (T.pack path) [] [] args]
+  pure [BlockFragmentCall (T.pack path) NoSym [] [] args]
 unnamedBlock (BlockFragmentDef _ _ _) = pure []
 unnamedBlock node = pure [node]
 
@@ -293,7 +293,7 @@ extractVariables env = concatMap f
   f (BlockInclude _ _ children) = maybe [] (extractVariables env) children
   f (BlockFor _ _ _ _) = []
   f (BlockFragmentDef name names children) = [(name, Frag names env children)]
-  f (BlockFragmentCall _ _ _ _) = []
+  f (BlockFragmentCall _ _ _ _ _) = []
   f (BlockComment _ _) = []
   f (BlockFilter _ _) = []
   f (BlockRawElem _ _) = []
@@ -329,7 +329,7 @@ simplify' = \case
   node@(BlockText _ _) -> [node]
   BlockInclude _ _ mnodes -> maybe [] simplify mnodes
   BlockFragmentDef _ _ _ -> []
-  BlockFragmentCall _ _ _ args -> simplify args
+  BlockFragmentCall _ _ _ _ args -> simplify args
   BlockFor _ _ _ nodes -> simplify nodes
   node@(BlockComment _ _) -> [node]
   node@(BlockFilter _ _) -> [node]

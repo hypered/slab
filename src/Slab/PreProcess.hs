@@ -72,9 +72,9 @@ preproc ctx@Context {..} = \case
   BlockFragmentDef name params nodes -> do
     nodes' <- preprocess ctx nodes
     pure $ BlockFragmentDef name params nodes'
-  BlockFragmentCall name attrs values nodes -> do
+  BlockFragmentCall name mdot attrs values nodes -> do
     nodes' <- preprocess ctx nodes
-    pure $ BlockFragmentCall name attrs values nodes'
+    pure $ BlockFragmentCall name mdot attrs values nodes'
   node@(BlockFor _ _ _ _) -> pure node
   node@(BlockComment _ _) -> pure node
   node@(BlockFilter _ _) -> pure node

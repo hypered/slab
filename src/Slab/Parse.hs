@@ -103,6 +103,10 @@ parserElement :: Parser (L.IndentOpt Parser Block Block)
 parserElement = do
   ref <- L.indentLevel
   header <- parserDiv
+  parserElemBody ref header
+
+parserElemBody :: Pos -> ([Block] -> Block) -> Parser (L.IndentOpt Parser Block Block)
+parserElemBody ref header =
   case trailingSym $ header [] of
     HasDot -> do
       template <- parseInlines
@@ -464,16 +468,14 @@ parserParameters = parserList' "{" "}" parserIdentifier <?> "arguments"
 --------------------------------------------------------------------------------
 parserFragmentCall :: Parser (L.IndentOpt Parser Block Block)
 parserFragmentCall = do
+  ref <- L.indentLevel
   -- TODO Use parserNameWithAttrs.
   name <- parserIdentifier
   attrs <- concat <$> many parserAttrs'
+  trailing <- parserTrailingSym
   args <- maybe [] id <$> optional parserArguments
-  template <- parseInlines
-  case template of
-    [] ->
-      pure $ L.IndentMany Nothing (pure . BlockFragmentCall name attrs args) parserNode
-    _ ->
-      pure $ L.IndentNone $ BlockFragmentCall name attrs args [BlockText Normal template]
+  let header = BlockFragmentCall name trailing attrs args
+  parserElemBody ref header
 
 -- E.g. {}, {1, 'a'}
 parserArguments :: Parser [Expr]
