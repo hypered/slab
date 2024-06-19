@@ -186,12 +186,12 @@ ul
   li Item
   li Item
   li Item</code></pre></div><h3>Imports</h3><p>An import makes it possible to call a Slab file as if it was a fragment. Its body is the content of the file. As with fragments, it is possible to pass fragments as arguments.</p><p>Assuming a file called <code>aux-imported.slab</code> with the following content:</p><pre><code>div
-  default name
+  default first
 div
-  default content</code></pre><p>It can be called as a fragment:</p><div class="switcher"><pre><code>import aux-imported.slab
-  frag name
+  default second</code></pre><p>It can be called as a fragment:</p><div class="switcher"><pre><code>import aux-imported.slab
+  frag first
     h1 A title
-  frag content
+  frag second
     p A paragraph.</code></pre><pre><code>&lt;div&gt;
     &lt;h1&gt;
         A title
