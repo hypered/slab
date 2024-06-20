@@ -5,3 +5,8 @@ script.
 script.
     c
   b
+script.
+  a
+    b
+
+    c

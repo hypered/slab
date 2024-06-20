@@ -106,6 +106,7 @@ parserElement = do
   header <- parserDiv
   parserElemBody ref header
 
+-- | Parse the indented content of an HTML element or a fragment call.
 parserElemBody :: Pos -> ([Block] -> Block) -> Parser (L.IndentOpt Parser Block Block)
 parserElemBody ref header =
   case trailingSym $ header [] of
@@ -154,7 +155,7 @@ textBlock ref p = go
             l <- p
             ls <- go
             let prefix = T.replicate (unPos pos - unPos ref) " "
-                n' = replicate (n - 1) prefix
+                n' = replicate (n - 1) ""
                 l' = prefix <> l
             pure $ n' <> (l' : ls)
 
@@ -164,7 +165,7 @@ textBlock ref p = go
 realign :: [Text] -> [Text]
 realign xs = map (T.drop n) xs
  where
-  n = minimum $ map (T.length . T.takeWhile (== ' ')) xs
+  n = minimum $ map (T.length . T.takeWhile (== ' ')) $ filter (not . T.null) xs
 
 -- | Parse multiple lines starting each with a pipe prefix. Most of our parsers
 -- parse a single line (and optional indented child lines) and most nodes map
