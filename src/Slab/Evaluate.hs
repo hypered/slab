@@ -287,6 +287,9 @@ evalExpr env = \case
   frag@(Frag _ _ _) -> do
     blocks <- evalFrag env ["frag"] "-" [] [] frag
     pure . Block $ BlockList blocks
+  Block b -> do
+    b' <- eval env ["block"] b
+    pure $ Block b'
   code -> pure code
 
 evalApplication :: Monad m => Env -> Expr -> Expr -> ExceptT Error.Error m Expr

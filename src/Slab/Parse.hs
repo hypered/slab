@@ -407,6 +407,11 @@ parserParameters = parserList' "{" "}" (lexeme parserIdentifier) <?> "arguments"
 parserFragmentCall :: Parser (L.IndentOpt Parser Block Block)
 parserFragmentCall = do
   ref <- L.indentLevel
+  header <- parserCall
+  parserElemBody ref header
+
+parserCall :: Parser ([Block] -> Block)
+parserCall = do
   -- TODO Use parserNameWithAttrs.
   (name, attrs, trailing, args) <- lexeme $ do
     name <- parserIdentifier
@@ -414,8 +419,7 @@ parserFragmentCall = do
     trailing <- parserTrailingSym
     args <- maybe [] id <$> optional parserArguments
     pure (name, attrs, trailing, args)
-  let header = BlockFragmentCall name trailing attrs args
-  parserElemBody ref header
+  pure $ BlockFragmentCall name trailing attrs args
 
 -- E.g. {}, {1, 'a'}
 parserArguments :: Parser [Expr]
@@ -600,14 +604,15 @@ symbol = L.symbol sc
 
 -- Text interpolation modeled on the @template@ library by Johan Tibell.
 -- - This uses Megaparsec instead of an internal State monad parser.
--- - This uses @#@ instead of @$@, and @()@ instead of @{}@.
+-- - This uses @#@ instead of @$@, and both @()@ and @{}@.
+--   - @()@ uses the expression syntax.
+--   - @{}@ uses the block syntax (although limited).
 -- - Only the safe parsers are provided.
 -- - Only the applicative interface is provided.
 -- - We don't support #name, but only #(name), because # can appear
 --   in character entities, URLs, ...
 -- TODO Mention the BSD-3 license and Johan.
 -- TODO Actually support #name.
--- TODO Use #{...} to allow the block syntax.
 
 --------------------------------------------------------------------------------
 
@@ -656,7 +661,8 @@ parseInline :: Parser Inline
 parseInline =
   M.choice
     [ parseLit
-    , parsePlace
+    , parsePlaceExpr
+    , parsePlaceBlock
     , parseEscape
     , parseSharpLit
     ]
@@ -668,11 +674,18 @@ parseLit = do
   s <- M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n')
   pure $ Lit s
 
-parsePlace :: Parser Inline
-parsePlace = do
+parsePlaceExpr :: Parser Inline
+parsePlaceExpr = do
   _ <- string $ T.pack "#("
   e <- parserExpr
   _ <- string $ T.pack ")"
+  pure $ Place e
+
+parsePlaceBlock :: Parser Inline
+parsePlaceBlock = do
+  _ <- string $ T.pack "#{"
+  e <- (Block . ($ [])) <$> (parserDiv <|> parserCall)
+  _ <- string $ T.pack "}"
   pure $ Place e
 
 parseEscape :: Parser Inline
