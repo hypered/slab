@@ -9,4 +9,5 @@ p Hello, #('Charlie').
 p Hello, #(42).
 p Hello, #(a).
 p Hello, #{a}.
+p Hello, #{a number #(1)}.
 p Hello, #{el x}.

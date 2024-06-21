@@ -47,7 +47,7 @@ parseFileE path = do
 --------------------------------------------------------------------------------
 
 parse :: FilePath -> Text -> Either (ParseErrorBundle Text Void) [Block]
-parse fn = runParser (many parserNode <* eof) fn
+parse fn = runParser (many parserBlock <* eof) fn
 
 -- | We expose the expression parser for development:
 --
@@ -60,8 +60,8 @@ parseExpr = runParser (sc *> parserExpr <* eof) ""
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
 
-parserNode :: Parser Block
-parserNode = do
+parserBlock :: Parser Block
+parserBlock = do
   node <-
     L.indentBlock scn $
       choice
@@ -93,12 +93,12 @@ parserIf = do
   _ <- string "if"
   _ <- some (char ' ' <|> char '\t')
   cond <- parserExpr
-  pure $ L.IndentMany Nothing (pure . (\as -> BlockIf cond as [])) parserNode
+  pure $ L.IndentMany Nothing (pure . (\as -> BlockIf cond as [])) parserBlock
 
 parserElse :: Parser (L.IndentOpt Parser [Block] Block)
 parserElse = do
   _ <- lexeme $ string "else"
-  pure $ L.IndentMany Nothing pure parserNode
+  pure $ L.IndentMany Nothing pure parserBlock
 
 parserElement :: Parser (L.IndentOpt Parser Block Block)
 parserElement = do
@@ -130,7 +130,7 @@ parserElemBody ref header =
     NoSym -> do
       template <- parseInlines
       case template of
-        [] -> pure $ L.IndentMany Nothing (pure . header) parserNode
+        [] -> pure $ L.IndentMany Nothing (pure . header) parserBlock
         _ -> pure $ L.IndentNone $ header [BlockText Normal template]
 
 -- | Parse lines of text, indented more than `ref`.
@@ -397,7 +397,7 @@ parserFragmentDef = do
   _ <- lexeme (string "fragment" <|> string "frag")
   name <- lexeme parserIdentifier
   params <- maybe [] id <$> optional parserParameters
-  pure $ L.IndentMany Nothing (pure . BlockFragmentDef name params) parserNode
+  pure $ L.IndentMany Nothing (pure . BlockFragmentDef name params) parserBlock
 
 -- E.g. {}, {a, b}
 parserParameters :: Parser [Text]
@@ -437,7 +437,7 @@ parserEach = do
   _ <- lexeme (string "in")
   collection <-
     (List <$> parserList) <|> (Object <$> parserObject) <|> (Variable <$> parserVariable)
-  pure $ L.IndentMany Nothing (pure . BlockFor name mindex collection) parserNode
+  pure $ L.IndentMany Nothing (pure . BlockFor name mindex collection) parserBlock
 
 parserList :: Parser [Expr]
 parserList = parserList' "[" "]" parserExpr
@@ -529,7 +529,7 @@ parserName =
 parserRawElement :: Parser (L.IndentOpt Parser Block Block)
 parserRawElement = do
   header <- parserAngleBracket
-  pure $ L.IndentMany Nothing (pure . header) parserNode
+  pure $ L.IndentMany Nothing (pure . header) parserBlock
 
 parserAngleBracket :: Parser ([Block] -> Block)
 parserAngleBracket = do
@@ -542,14 +542,14 @@ parserDefault :: Parser (L.IndentOpt Parser Block Block)
 parserDefault = do
   _ <- lexeme (string "default")
   name <- parserText
-  pure $ L.IndentMany Nothing (pure . BlockDefault name) parserNode
+  pure $ L.IndentMany Nothing (pure . BlockDefault name) parserBlock
 
 --------------------------------------------------------------------------------
 parserImport :: Parser (L.IndentOpt Parser Block Block)
 parserImport = do
   _ <- lexeme (string "import")
   path <- parserPath
-  pure $ L.IndentMany Nothing (pure . BlockImport path Nothing) parserNode
+  pure $ L.IndentMany Nothing (pure . BlockImport path Nothing) parserBlock
 
 --------------------------------------------------------------------------------
 parserRun :: Parser (L.IndentOpt Parser Block Block)
@@ -654,13 +654,22 @@ combineLits xs =
 --------------------------------------------------------------------------------
 -- Template parser
 
-parseInlines :: Parser [Inline]
-parseInlines = combineLits <$> M.many parseInline
+-- | Record whether we are parsing a template within the normal block syntax,
+-- or within an inline block syntax (introduced by #{...}). This is allow a
+-- closing curly bracket in the normal case without requiring to escape it, and
+-- disallowing it in the inline case (since it is used to end the inline case).
+data InlineContext = NormalBlock | InlineBlock
 
-parseInline :: Parser Inline
-parseInline =
+parseInlines :: Parser [Inline]
+parseInlines = parseInlines' NormalBlock
+
+parseInlines' :: InlineContext -> Parser [Inline]
+parseInlines' ctx = combineLits <$> M.many (parseInline ctx)
+
+parseInline :: InlineContext -> Parser Inline
+parseInline ctx =
   M.choice
-    [ parseLit
+    [ parseLit ctx
     , parsePlaceExpr
     , parsePlaceBlock
     , parseEscape
@@ -669,9 +678,11 @@ parseInline =
 
 -- TODO The \n condition could be optional if we want this module to be useful
 -- outside Slab.
-parseLit :: Parser Inline
-parseLit = do
-  s <- M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n')
+parseLit :: InlineContext -> Parser Inline
+parseLit ctx = do
+  s <- case ctx of
+    NormalBlock -> M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n')
+    InlineBlock -> M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n' && c/= '}')
   pure $ Lit s
 
 parsePlaceExpr :: Parser Inline
@@ -684,9 +695,20 @@ parsePlaceExpr = do
 parsePlaceBlock :: Parser Inline
 parsePlaceBlock = do
   _ <- string $ T.pack "#{"
-  e <- (Block . ($ [])) <$> (parserDiv <|> parserCall)
+  e <- Block <$> parseInlineBlock
   _ <- string $ T.pack "}"
   pure $ Place e
+
+-- | Equivalent to `parserBlock` but in an inline context.
+parseInlineBlock :: Parser Block
+parseInlineBlock = do
+ header <- parserDiv <|> parserCall
+ template <- parseInlines' InlineBlock
+ -- Don't return anything of the template is empty. to avoid a newline when
+ -- rendering.
+ if null template
+   then pure $ header []
+   else pure $ header [BlockText Dot template]
 
 parseEscape :: Parser Inline
 parseEscape = do
