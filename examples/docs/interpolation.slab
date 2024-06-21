@@ -1,2 +1,2 @@
 let name = "Bob"
-p Hello, #{name}.
+p Hello, #(name).

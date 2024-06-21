@@ -1,7 +1,7 @@
 ul
   for val, index in [1, 2]
-    li val: #{val}, index: #{index}
+    li val: #(val), index: #(index)
 
 ul
   for val, key in {1: 'one', 2: 'two'}
-    li val: #{val}, key: #{key}
+    li val: #(val), key: #(key)

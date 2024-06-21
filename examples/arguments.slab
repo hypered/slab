@@ -1,5 +1,5 @@
 frag hello{name}
-  p Hello, #{name}.
+  p Hello, #(name).
 
 hello{1}
 

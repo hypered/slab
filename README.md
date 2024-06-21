@@ -18,7 +18,7 @@ $ cat data/values.json
 $ cat example.slab
 frag hello{name}
   li.greeting
-    p Hello, #{name}.
+    p Hello, #(name).
     content
 
 let values = data/values.json

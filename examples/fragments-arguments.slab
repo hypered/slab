@@ -1,6 +1,6 @@
 frag hello{name}
   .greeting
-    p Hello, #{name}.
+    p Hello, #(name).
     content
 
 hello{1}

@@ -1,9 +1,9 @@
 let name = "Alice"
-p Hello, #{name}.
+p Hello, #(name).
 
 body
   let name = "Bob"
-  p Hello, #{name}.
+  p Hello, #(name).
 
-p Hello, #{'Charlie'}.
-p Hello, #{42}.
+p Hello, #('Charlie').
+p Hello, #(42).

@@ -234,7 +234,7 @@ html(dir="ltr", lang="en")
 
                     h3 String interpolation
 
-                    p Expressions can be used within the text content of an element using the the <code>##{...}</code> syntax.
+                    p Expressions can be used within the text content of an element using the the <code>##(...)</code> syntax.
 
                     .switcher
                         pre

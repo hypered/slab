@@ -600,12 +600,14 @@ symbol = L.symbol sc
 
 -- Text interpolation modeled on the @template@ library by Johan Tibell.
 -- - This uses Megaparsec instead of an internal State monad parser.
--- - This uses @#@ instead of @$@.
+-- - This uses @#@ instead of @$@, and @()@ instead of @{}@.
 -- - Only the safe parsers are provided.
 -- - Only the applicative interface is provided.
--- - We don't support #name, but only #{name}, because # can appear
+-- - We don't support #name, but only #(name), because # can appear
 --   in character entities, URLs, ...
 -- TODO Mention the BSD-3 license and Johan.
+-- TODO Actually support #name.
+-- TODO Use #{...} to allow the block syntax.
 
 --------------------------------------------------------------------------------
 
@@ -668,9 +670,9 @@ parseLit = do
 
 parsePlace :: Parser Inline
 parsePlace = do
-  _ <- string $ T.pack "#{"
+  _ <- string $ T.pack "#("
   e <- parserExpr
-  _ <- string $ T.pack "}"
+  _ <- string $ T.pack ")"
   pure $ Place e
 
 parseEscape :: Parser Inline
