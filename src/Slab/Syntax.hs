@@ -5,6 +5,7 @@ module Slab.Syntax
   , isDoctype
   , pasteBlocks
   , setAttrs
+  , setContent
   , CommentType (..)
   , Elem (..)
   , TrailingSym (..)
@@ -84,11 +85,17 @@ pasteBlocks a b = BlockList $ peel a <> peel b
   peel (BlockList xs) = xs
   peel x = [x]
 
--- | Set attrs on a the block, if it is a BlockElem.
+-- | Set attrs on a the first block, if it is a BlockElem.
 setAttrs :: [Attr] -> [Block] -> [Block]
 setAttrs attrs (BlockElem name mdot attrs' nodes : bs) =
   BlockElem name mdot (attrs' <> attrs) nodes : bs
 setAttrs _ bs = bs
+
+-- | Set the content on a block, if it is a BlockElem.
+setContent :: [Block] -> Block -> Block
+setContent nodes (BlockElem name mdot attrs _) =
+  BlockElem name mdot attrs nodes
+setContent _ b = b
 
 -- | A "passthrough" comment will be included in the generated HTML.
 data CommentType = NormalComment | PassthroughComment
@@ -190,6 +197,9 @@ data Expr
   | GreaterThan Expr Expr
   | LesserThan Expr Expr
   | Equal Expr Expr
+  | -- Not really a cons for lists, but instead to add content to an element.
+    -- E.g. p : "Hello."
+    Cons Expr Expr
   | Block Block
   | -- Expr can be a fragment, so we can manipulate them with code later.
     -- We also capture the current environment.

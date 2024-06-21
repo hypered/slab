@@ -235,6 +235,8 @@ operatorTable =
   , [InfixL (symbol "+" $> Add), InfixL (symbol "-" $> Sub)]
   , [InfixL (symbol ">" $> GreaterThan), InfixL (symbol "<" $> LesserThan)]
   , [InfixL (symbol "==" $> Equal)]
+  , -- I'd like to use : instead, but it is already used for objects...
+    [InfixR (symbol "|" $> Cons)]
   ]
 
 parserVariable' :: Parser Expr
@@ -682,7 +684,7 @@ parseLit :: InlineContext -> Parser Inline
 parseLit ctx = do
   s <- case ctx of
     NormalBlock -> M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n')
-    InlineBlock -> M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n' && c/= '}')
+    InlineBlock -> M.takeWhile1P (Just "literal") (\c -> c /= '#' && c /= '\n' && c /= '}')
   pure $ Lit s
 
 parsePlaceExpr :: Parser Inline
@@ -702,13 +704,13 @@ parsePlaceBlock = do
 -- | Equivalent to `parserBlock` but in an inline context.
 parseInlineBlock :: Parser Block
 parseInlineBlock = do
- header <- parserDiv <|> parserCall
- template <- parseInlines' InlineBlock
- -- Don't return anything of the template is empty. to avoid a newline when
- -- rendering.
- if null template
-   then pure $ header []
-   else pure $ header [BlockText Dot template]
+  header <- parserDiv <|> parserCall
+  template <- parseInlines' InlineBlock
+  -- Don't return anything of the template is empty. to avoid a newline when
+  -- rendering.
+  if null template
+    then pure $ header []
+    else pure $ header [BlockText Dot template]
 
 parseEscape :: Parser Inline
 parseEscape = do

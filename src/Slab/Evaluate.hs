@@ -278,6 +278,15 @@ evalExpr env = \case
       (Int i, Int j) -> pure . Bool $ i == j
       (SingleQuoteString s, SingleQuoteString t) -> pure . Bool $ s == t
       _ -> throwE $ Error.EvaluateError $ "Unimplemented (equal): " <> T.pack (show (Equal a' b'))
+  Cons a b -> do
+    a' <- evalExpr env a
+    b' <- evalExpr env b
+    case (a', b') of
+      (Block bl, Block c) ->
+        pure . Block $ setContent [c] bl
+      (Block bl, SingleQuoteString s) ->
+        pure . Block $ setContent [BlockText Normal [Lit s]] bl
+      _ -> throwE $ Error.EvaluateError $ "Unimplemented (cons): " <> T.pack (show (Cons a' b'))
   Application a b -> do
     a' <- evalExpr env a
     b' <- evalExpr env b
@@ -286,7 +295,9 @@ evalExpr env = \case
     evalExpr capturedEnv code
   frag@(Frag _ _ _) -> do
     blocks <- evalFrag env ["frag"] "-" [] [] frag
-    pure . Block $ BlockList blocks
+    case blocks of
+      [bl] -> pure $ Block bl
+      _ -> pure . Block $ BlockList blocks
   Block b -> do
     b' <- eval env ["block"] b
     pure $ Block b'
@@ -322,6 +333,7 @@ evalInline env = \case
     code' <- evalExpr env code
     case code' of
       SingleQuoteString _ -> pure $ Place code'
+      Bool _ -> pure $ Place code'
       Int _ -> pure $ Place code'
       Block _ -> pure $ Place code'
       -- Variable x -> context x -- Should not happen after evalExpr

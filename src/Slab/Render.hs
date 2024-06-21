@@ -156,6 +156,7 @@ renderInline = \case
   Syntax.Place code -> do
     case code of
       Syntax.SingleQuoteString s -> s
+      Syntax.Bool x -> T.pack $ show x
       Syntax.Int x -> T.pack $ show x
       Syntax.Block b -> TL.toStrict . renderHtml $ renderBlock b
       x -> error $ "renderInline: unhandled value: " <> show x
