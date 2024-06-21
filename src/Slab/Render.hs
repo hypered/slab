@@ -63,10 +63,11 @@ renderBlock (Syntax.BlockElem name mdot attrs children) =
   attrs' = Syntax.namesFromAttrs attrs
 renderBlock (Syntax.BlockText _ []) =
   H.preEscapedText "\n" -- This allows to force some whitespace.
-renderBlock (Syntax.BlockText _ [Syntax.Lit s])
-  | s == T.empty = H.preEscapedText "\n" -- This allows to force some whitespace.
-  | otherwise = H.preEscapedText s -- TODO
-renderBlock (Syntax.BlockText _ _) = error "Template is not rendered."
+renderBlock (Syntax.BlockText _ t) =
+  let s = renderTemplate t
+   in if s == T.empty
+        then H.preEscapedText "\n" -- This allows to force some whitespace.
+        else H.preEscapedText s -- TODO
 renderBlock (Syntax.BlockInclude (Just "escape-html") _ (Just nodes)) =
   escapeTexts nodes
 renderBlock (Syntax.BlockInclude _ _ (Just nodes)) = mapM_ renderBlock nodes
@@ -142,6 +143,22 @@ extractText = f
   f (Syntax.BlockIf _ _ _) = error "extractTexts called on a BlockIf"
   f (Syntax.BlockList _) = error "extractTexts called on a BlockList"
   f (Syntax.BlockCode _) = error "extractTexts called on a BlockCode"
+
+-- After evaluation, we should have only reduced values (e.g. no variables).
+renderTemplate :: [Syntax.Inline] -> Text
+renderTemplate inlines =
+  let t = map renderInline inlines
+   in T.concat t
+
+renderInline :: Syntax.Inline -> Text
+renderInline = \case
+  Syntax.Lit s -> s
+  Syntax.Place code -> do
+    case code of
+      Syntax.SingleQuoteString s -> s
+      Syntax.Int x -> T.pack $ show x
+      Syntax.Block b -> TL.toStrict . renderHtml $ renderBlock b
+      x -> error $ "renderInline: unhandled value: " <> show x
 
 renderElem :: Syntax.Elem -> Html -> Html
 renderElem = \case

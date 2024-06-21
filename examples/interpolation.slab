@@ -7,3 +7,4 @@ body
 
 p Hello, #('Charlie').
 p Hello, #(42).
+p Hello, #(a).

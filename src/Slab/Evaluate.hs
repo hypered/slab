@@ -83,9 +83,8 @@ defaultEnv =
     , mkElem "svg" Svg
     , mkElem "textarea" Textarea
     , mkElem "canvas" Canvas
-
-    -- Elements with no content.
-    , ("br", Block (BlockElem Br NoSym [] []))
+    , -- Elements with no content.
+      ("br", Block (BlockElem Br NoSym [] []))
     , ("hr", Block (BlockElem Hr NoSym [] []))
     , ("meta", Block (BlockElem Meta NoSym [] []))
     , ("link", Block (BlockElem Link NoSym [] []))
@@ -110,9 +109,15 @@ evaluate env stack nodes = do
   mapM (eval env' stack) nodes
 
 eval :: Monad m => Env -> [Text] -> Block -> ExceptT Error.Error m Block
-eval env stack b | length stack > 100 =
-  throwE $ Error.EvaluateError $ "Stack overflow. Is there an infinite loop?"
-    <> " " <> T.pack (show $ reverse stack) <> " " <> displayEnv env
+eval env stack b
+  | length stack > 100 =
+      throwE $
+        Error.EvaluateError $
+          "Stack overflow. Is there an infinite loop?"
+            <> " "
+            <> T.pack (show $ reverse stack)
+            <> " "
+            <> displayEnv env
 eval env stack bl = case bl of
   node@BlockDoctype -> pure node
   BlockElem name mdot attrs nodes -> do
@@ -190,13 +195,7 @@ eval env stack bl = case bl of
 call :: Monad m => Env -> [Text] -> Text -> [Expr] -> [Block] -> ExceptT Error.Error m [Block]
 call env stack name values args =
   case lookupVariable name env of
-    Just (Frag names capturedEnv body) -> do
-      env' <- extractVariables' env args
-      let env'' = augmentVariables capturedEnv env'
-          arguments = zip names (map (thunk env) values)
-          env''' = augmentVariables env'' arguments
-      body' <- evaluate env''' ("frag " <> name : stack) body
-      pure body'
+    Just frag@(Frag _ _ _) -> evalFrag env stack name values args frag
     Just (Block x) -> pure [x]
     Just _ -> throwE $ Error.EvaluateError $ "Calling something that is not a fragment \"" <> name <> "\" in " <> T.pack (show stack)
     Nothing -> throwE $ Error.EvaluateError $ "Can't find fragment \"" <> name <> "\" while evaluating " <> T.pack (show $ reverse stack) <> " with environment " <> displayEnv env
@@ -206,6 +205,15 @@ lookupVariable name Env {..} = lookup name envVariables
 
 augmentVariables :: Env -> [(Text, Expr)] -> Env
 augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables}
+
+evalFrag :: Monad m => Env -> [Text] -> Text -> [Expr] -> [Block] -> Expr -> ExceptT Error.Error m [Block]
+evalFrag env stack name values args (Frag names capturedEnv body) = do
+  env' <- extractVariables' env args
+  let env'' = augmentVariables capturedEnv env'
+      arguments = zip names (map (thunk env) values)
+      env''' = augmentVariables env'' arguments
+  body' <- evaluate env''' ("frag " <> name : stack) body
+  pure body'
 
 evalExpr :: Monad m => Env -> Expr -> ExceptT Error.Error m Expr
 evalExpr env = \case
@@ -276,6 +284,9 @@ evalExpr env = \case
     evalApplication env a' b'
   Thunk capturedEnv code ->
     evalExpr capturedEnv code
+  frag@(Frag _ _ _) -> do
+    blocks <- evalFrag env ["frag"] "-" [] [] frag
+    pure . Block $ BlockList blocks
   code -> pure code
 
 evalApplication :: Monad m => Env -> Expr -> Expr -> ExceptT Error.Error m Expr
@@ -297,20 +308,19 @@ evalApplication env a b =
       _ -> throwE $ Error.EvaluateError $ "Cannot apply null to: " <> T.pack (show b)
     _ -> throwE $ Error.EvaluateError $ "Cannot apply: " <> T.pack (show a)
 
--- After evaluation, the template should be either empty or contain a single literal.
 evalTemplate :: Monad m => Env -> [Inline] -> ExceptT Error.Error m [Inline]
-evalTemplate env inlines = do
-  t <- T.concat <$> traverse (evalInline env) inlines
-  pure [Lit t]
+evalTemplate env inlines =
+  traverse (evalInline env) inlines
 
-evalInline :: Monad m => Env -> Inline -> ExceptT Error.Error m Text
+evalInline :: Monad m => Env -> Inline -> ExceptT Error.Error m Inline
 evalInline env = \case
-  Lit s -> pure s
+  Lit s -> pure $ Lit s
   Place code -> do
     code' <- evalExpr env code
     case code' of
-      SingleQuoteString s -> pure s
-      Int x -> pure . T.pack $ show x
+      SingleQuoteString _ -> pure $ Place code'
+      Int _ -> pure $ Place code'
+      Block _ -> pure $ Place code'
       -- Variable x -> context x -- Should not happen after evalExpr
       x -> error $ "evalInline: unhandled value: " <> show x
 
