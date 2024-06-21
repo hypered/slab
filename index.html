@@ -99,7 +99,7 @@ card</code></pre><pre><code>&lt;h1&gt;
     Default paragraph.
 &lt;/p&gt;</code></pre></div><h3>Expression arguments</h3><p>Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.</p><p>A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragments, (non-fragments) arguments are passed between curly braces.</p><div class="switcher"><pre><code>frag hello{name}
   .greeting
-    p Hello, #{name}.
+    p Hello, #(name).
     content
 
 hello{&#39;Alice&#39;}
@@ -124,8 +124,8 @@ p= a + 2 * 3</code></pre><pre><code>&lt;p&gt;
 &lt;/p&gt;</code></pre></div><p>Strings can be concatenated with the <code>+</code> operator. Integers can be converted to strings using the <code>show</code> function. Strings can be "converted" to booleans using the <code>null</code> function.</p><div class="switcher"><pre><code>let a = 1
 p= show (a + 2) + &#39;.&#39;</code></pre><pre><code>&lt;p&gt;
     3.
-&lt;/p&gt;</code></pre></div><h3>String interpolation</h3><p>Expressions can be used within the text content of an element using the the <code>#{...}</code> syntax.</p><div class="switcher"><pre><code>let name = &quot;Bob&quot;
-p Hello, #{name}.</code></pre><pre><code>&lt;p&gt;
+&lt;/p&gt;</code></pre></div><h3>String interpolation</h3><p>Expressions can be used within the text content of an element using the the <code>#(...)</code> syntax.</p><div class="switcher"><pre><code>let name = &quot;Bob&quot;
+p Hello, #(name).</code></pre><pre><code>&lt;p&gt;
     Hello, Bob.
 &lt;/p&gt;</code></pre></div><h3>JSON support</h3><p>Static JSON files can be loaded by using their relative path.</p><p>Assuming a file with the following content:</p><pre><code>[
   {
@@ -153,11 +153,11 @@ else
     A.
 &lt;/p&gt;</code></pre></div><h3>Loops</h3><p>It is possible to iterate on lists and objects. In the following example, the index and the key are optional.</p><div class="switcher"><pre><code>ul
   for val, index in [1, 2]
-    li val: #{val}, index: #{index}
+    li val: #(val), index: #(index)
 
 ul
   for val, key in {1: &#39;one&#39;, 2: &#39;two&#39;}
-    li val: #{val}, key: #{key}</code></pre><pre><code>&lt;ul&gt;
+    li val: #(val), key: #(key)</code></pre><pre><code>&lt;ul&gt;
     &lt;li&gt;
         val: 1, index: 0
     &lt;/li&gt;
