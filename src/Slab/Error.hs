@@ -1,6 +1,7 @@
 module Slab.Error
   ( Error (..)
   , unwrap
+  , display
   ) where
 
 import Data.List.NonEmpty qualified as NE (toList)
@@ -30,18 +31,21 @@ data Error
 -- | Extract a Right value, or die, emitting an error message.
 unwrap :: Either Error a -> IO a
 unwrap = \case
-  Left (ParseError err) -> do
+  Left err -> do
+    display err
+    exitFailure
+  Right a -> pure a
+
+display :: Error -> IO ()
+display = \case
+  ParseError err ->
     -- Our custom function seems actually worse than errorBundlePretty.
     -- T.putStrLn . parseErrorPretty $ err
     T.putStrLn . T.pack $ errorBundlePretty err
-    exitFailure
-  Left (EvaluateError err) -> do
+  EvaluateError err ->
     T.putStrLn $ "Error during evaluation: " <> err
-    exitFailure
-  Left err -> do
+  err ->
     TL.putStrLn $ pShowNoColor err
-    exitFailure
-  Right a -> pure a
 
 --------------------------------------------------------------------------------
 -- Convert parse errors to a user-friendly message.

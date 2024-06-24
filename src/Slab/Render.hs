@@ -1,9 +1,11 @@
 module Slab.Render
   ( prettyHtmls
   , renderHtmls
+  , renderHtmlsUtf8
   , renderBlocks
   ) where
 
+import Data.ByteString.Lazy qualified as BSL
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -11,6 +13,7 @@ import Data.Text.Lazy qualified as TL
 import Slab.Syntax qualified as Syntax
 import Text.Blaze.Html.Renderer.Pretty qualified as Pretty (renderHtml)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
+import Text.Blaze.Html.Renderer.Utf8 qualified as Utf8 (renderHtml)
 import Text.Blaze.Html5 (Html, (!))
 import Text.Blaze.Html5 qualified as H
 import Text.Blaze.Html5.Attributes qualified as A
@@ -23,6 +26,9 @@ prettyHtmls = T.pack . concat . map Pretty.renderHtml
 
 renderHtmls :: [Html] -> TL.Text
 renderHtmls = TL.concat . map renderHtml
+
+renderHtmlsUtf8 :: [Html] -> BSL.ByteString
+renderHtmlsUtf8 = BSL.concat . map Utf8.renderHtml
 
 --------------------------------------------------------------------------------
 renderBlocks :: [Syntax.Block] -> [H.Html]

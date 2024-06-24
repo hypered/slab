@@ -37,7 +37,7 @@ run :: Command.Command -> IO ()
 run (Command.Build srcDir renderMode distDir) = Build.buildDir srcDir renderMode distDir
 run (Command.Watch srcDir renderMode distDir) =
   Watch.run srcDir (Build.buildFile srcDir renderMode distDir)
-run (Command.Serve distDir) = Serve.run distDir
+run (Command.Serve srcDir distDir) = Serve.run srcDir distDir
 run (Command.Report srcDir) = Report.run srcDir
 run (Command.Generate path) = Generate.renderHs path
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do

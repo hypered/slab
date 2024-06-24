@@ -1,6 +1,6 @@
 cabal-version:      2.2
 name:               slab
-version:            0.0.1.0
+version:            0.0.2.0
 license:            BSD-2-Clause
 license-file:       LICENSE
 copyright:          2024 Võ Minh Thu, Hypered SRL
@@ -59,6 +59,7 @@ library
     , filepath
     , fsnotify
     , Glob
+    , http-types
     , megaparsec
     , parser-combinators
     , prettyprinter
@@ -67,6 +68,7 @@ library
     , servant
     , servant-blaze
     , servant-server
+    , stm
     , text
     , transformers
     , vector

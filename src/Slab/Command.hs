@@ -26,7 +26,7 @@ import Options.Applicative qualified as A
 data Command
   = Build FilePath RenderMode FilePath
   | Watch FilePath RenderMode FilePath
-  | Serve FilePath
+  | Serve FilePath FilePath
   | Report FilePath
   | -- | Generate code. Only Haskell for now.
     Generate FilePath
@@ -158,15 +158,19 @@ parserBuild = do
 
 parserServe :: A.Parser Command
 parserServe = do
+  srcDir <-
+    A.argument
+      A.str
+      (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Slab templates to build.")
   distDir <-
     A.strOption
       ( A.long "dist"
           <> A.value "./_site"
           <> A.metavar "DIR"
           <> A.help
-            "A destination directory for the generated HTML files."
+            "A directory with existing static files."
       )
-  pure $ Serve distDir
+  pure $ Serve srcDir distDir
 
 parserReport :: A.Parser Command
 parserReport = do
