@@ -1,3 +1,10 @@
+-- |
+-- Module      : Slab.Error
+-- Description : Errors that the different Slab stages can produce
+--
+-- @Slab.Error@ provides a data type to represent all the errors emitted by
+-- Slab. It also provides helper functions to report errors in a human-readable
+-- way.
 module Slab.Error
   ( Error (..)
   , unwrap

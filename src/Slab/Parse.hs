@@ -1,5 +1,13 @@
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+-- Module      : Slab.Parse
+-- Description : Parse the concrete Slab syntax to an AST
+--
+-- @Slab.Parse@ provides parsers to read text and construct an abstract syntax
+-- tree, as represented by "Slab.Syntax".
+--
+-- Parsers are written using the @megaparsec@ library.
 module Slab.Parse
   ( parseFile
   , parseFileE

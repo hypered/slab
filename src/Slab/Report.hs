@@ -1,3 +1,9 @@
+-- |
+-- Module      : Slab.Report
+-- Description : Report information about Slab templates (mostly empty for now)
+--
+-- This module serves as a way to explore new Slab features, e.g. creating a
+-- module system, or analyzing a growing HTML code base to help refactor it.
 module Slab.Report
   ( run
   ) where
@@ -28,6 +34,7 @@ isPage _ = False
 
 --------------------------------------------------------------------------------
 -- Similar to Build.buildDir and buildFile, but don't render HTML to disk.
+-- TODO Move this code to (and combine it with) with @Slab.Build@.
 
 buildDir :: FilePath -> IO [Module]
 buildDir srcDir = do

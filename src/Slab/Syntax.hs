@@ -1,5 +1,11 @@
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+-- Module      : Slab.Syntax
+-- Description : The abstract syntax used by Slab
+--
+-- @Slab.Syntax@ provides data types to represent the syntax used by the Slab
+-- language. It also provides small helpers functions to operate on the syntax.
 module Slab.Syntax
   ( Block (..)
   , isDoctype

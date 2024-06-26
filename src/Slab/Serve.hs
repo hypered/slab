@@ -2,6 +2,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- |
+-- Module      : Slab.Serve
+-- Description : Run a development server to preview Slab templates
+--
+-- @Slab.Serve@ watches a set of Slab templates, continuously rebuilding them
+-- as they change, and runs a web server to serve them.
 module Slab.Serve
   ( run
   ) where

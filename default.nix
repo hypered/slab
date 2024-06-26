@@ -6,6 +6,7 @@ in rec
   {
     # Build with nix-build -A <attr>
     binaries = nixpkgs.haskellPackages.slab;
+    haddock = nixpkgs.haskellPackages.slab.doc;
 
     # A shell to try out our binaries
     # Run with nix-shell default.nix -A shell

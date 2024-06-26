@@ -1,3 +1,9 @@
+-- |
+-- Module      : Slab.Watch
+-- Description : Continuously build a set of Slab templates
+--
+-- @Slab.Watch@ watches a set of Slab templates, continuously rebuilding them
+-- as they change.
 module Slab.Watch
   ( run
   ) where

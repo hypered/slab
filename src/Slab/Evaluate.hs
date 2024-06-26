@@ -1,5 +1,19 @@
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+-- Module      : Slab.Evaluate
+-- Description : Evaluate an AST (to a non-reducible AST)
+--
+-- @Slab.Evaluate@ implements the evaluation stage of Slab, following both the
+-- parsing and pre-processing stages. This is responsible of reducing for
+-- instance @1 + 2@ to @3@, or transforming a loop construct to an actual list
+-- of HTML blocks.
+--
+-- Evaluation works on an abstract syntax tree (defined in "Slab.Syntax") and
+-- currently reuses the sames types for its result.
+--
+-- The stage following evaluation is "Slab.Execute", responsible of running
+-- external commands.
 module Slab.Evaluate
   ( evaluateFile
   , evaluate

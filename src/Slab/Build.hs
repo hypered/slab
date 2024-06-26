@@ -1,3 +1,13 @@
+-- |
+-- Module      : Slab.Build
+-- Description : Build Slab templates to HTML
+--
+-- @Slab.Build@ provides types and functions to easily build Slab templates.
+-- There are mostly two ways to build templates: by writing the resulting HTML
+-- to files, or by writing them to an @STM@-based store.
+--
+-- Writing to disk is used by the @slab watch@ command. Writing to the @STM@
+-- store is used by the @slab serve@ command.
 module Slab.Build
   ( buildDir
   , buildFile

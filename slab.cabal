@@ -11,7 +11,7 @@ synopsis:           A programmable markup language to generate HTML
 description:
     Slab is an alternative syntax for writing HTML, plus some programming
     language features (often found in templating languages, like conditionals
-    and loops).
+    and loops). You can visit the project homepage at <https://slab-lang.org>.
 category:           text
 
 source-repository head

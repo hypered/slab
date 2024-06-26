@@ -1,3 +1,11 @@
+-- |
+-- Module      : Slab.Generate.Haskell
+-- Description : Translate from the Slab syntax to Haskell
+--
+-- @Slab.Generate.Haskell@ is an attempt to translate Slab to Haskell. This
+-- could make it possible to use Slab within Haskell projects without needing
+-- to interpret Slab templates at runtime. If this proves useful, other
+-- languages could also be supported.
 module Slab.Generate.Haskell
   ( renderHs
   ) where

@@ -1,6 +1,13 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+-- Module      : Slab.PreProcess
+-- Description : Parse and process included and imported files
+--
+-- @Slab.PreProcess@ recursively parses files, following includes and imports.
+-- This is also responsible of reading JSON files referenced in the expression
+-- language.
 module Slab.PreProcess
   ( Context (..)
   , preprocessFile

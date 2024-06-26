@@ -1,3 +1,9 @@
+-- |
+-- Module      : Slab.Render
+-- Description : Render an AST to HTML
+--
+-- @Slab.Render@ transforms an evaluated syntax tree to HTML. In practice this
+-- can be @blaze-html@'s @Html@, or @Text@ and lazy @ByteString@.
 module Slab.Render
   ( prettyHtmls
   , renderHtmls

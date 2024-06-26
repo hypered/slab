@@ -1,6 +1,16 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- |
+-- Module      : Slab.Execute
+-- Description : Run external commands referenced by an AST
+--
+-- @Slab.Execute@ implements the execution stage of Slab, i.e. running external
+-- commands (for instance referenced by the @run@ syntax). This is done after
+-- the evaluation stage (implemented in "Slab.Evaluate").
+--
+-- After execution, the resulting blocks can be rendered to HTML by
+-- "Slab.Render".
 module Slab.Execute
   ( executeFile
   , execute
