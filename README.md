@@ -128,6 +128,15 @@ suite](https://github.com/pugjs/pug/tree/master/packages/pug/test/cases). The
 expected HTML is not exactly the same: we pretty print it differently, or some
 tags are explicitely closed in Pug.js (e.g. `<source>` vs. `<source/>`.
 
+Modules from the code base are almost always imported "qualified". For example,
+the module `Slab.Parse` is imported within `Slab.Run` as `Parse`. This is
+replicated within GHCi too:
+
+```
+ghci> :i Parse.parseExpr
+ghci> Parse.parseExpr "1 + 2 * a"
+```
+
 # Tests
 
 To run the test suite, use the `runExamples` function within GHCi.
