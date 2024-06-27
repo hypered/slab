@@ -12,6 +12,7 @@ module Slab.Syntax
   , pasteBlocks
   , setAttrs
   , setContent
+  , addScript
   , CommentType (..)
   , Elem (..)
   , TrailingSym (..)
@@ -102,6 +103,17 @@ setContent :: [Block] -> Block -> Block
 setContent nodes (BlockElem name mdot attrs _) =
   BlockElem name mdot attrs nodes
 setContent _ b = b
+
+-- | Find the head element and add a script element at its end.  TODO This
+-- doesn't go through all children to find the head. It's best to use
+-- "Evaluate.simplify" before using this function.
+addScript :: Text -> [Block] -> [Block]
+addScript t = map f
+ where
+  f (BlockElem Head mdot attrs children) = BlockElem Head mdot attrs (children <> [s])
+  f (BlockElem name mdot attrs children) = BlockElem name mdot attrs (map f children)
+  f block = block
+  s = BlockElem Script NoSym [] [BlockText Dot [Lit t]]
 
 -- | A "passthrough" comment will be included in the generated HTML.
 data CommentType = NormalComment | PassthroughComment

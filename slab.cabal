@@ -68,6 +68,7 @@ library
     , servant
     , servant-blaze
     , servant-server
+    , servant-websockets
     , stm
     , text
     , transformers
@@ -75,6 +76,7 @@ library
     , wai
     , wai-app-static
     , warp
+    , websockets
   exposed-modules:
     Slab.Build
     Slab.Command
