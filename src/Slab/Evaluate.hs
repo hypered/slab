@@ -424,7 +424,7 @@ simplify' = \case
   node@BlockDoctype -> [node]
   BlockElem name mdot attrs nodes -> [BlockElem name mdot attrs $ simplify nodes]
   node@(BlockText _ _) -> [node]
-  BlockInclude _ _ mnodes -> maybe [] simplify mnodes
+  BlockInclude mfilter path mnodes -> [BlockInclude mfilter path $ simplify <$> mnodes]
   BlockFragmentDef _ _ _ -> []
   BlockFragmentCall _ _ _ _ args -> simplify args
   BlockFor _ _ _ nodes -> simplify nodes
