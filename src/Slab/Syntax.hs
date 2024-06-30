@@ -30,6 +30,7 @@ module Slab.Syntax
   , extractFragments
   , findFragment
   , idNamesFromAttrs
+  , idNamesFromAttrs'
   , classNamesFromAttrs
   , namesFromAttrs
   , groupAttrs
@@ -360,6 +361,16 @@ idNamesFromAttrs =
   f "id" (Just (SingleQuoteString x)) = [x]
   f "id" (Just _) = error "The id is not a string"
   f _ _ = []
+
+idNamesFromAttrs' :: [Attr] -> Maybe Text
+idNamesFromAttrs' attrs =
+  if idNames == []
+    then Nothing
+    else Just idNames'
+ where
+  idNames = idNamesFromAttrs attrs
+  -- TODO Refuse multiple Ids in some kind of validation step after parsing ?
+  idNames' = T.intercalate "-" idNames
 
 classNamesFromAttrs :: [Attr] -> [Text]
 classNamesFromAttrs =

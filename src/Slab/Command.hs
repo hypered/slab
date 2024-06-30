@@ -27,7 +27,8 @@ data Command
   = Build FilePath RenderMode FilePath
   | Watch FilePath RenderMode FilePath
   | Serve FilePath FilePath
-  | Report FilePath
+  | ReportPages FilePath
+  | ReportHeadings FilePath
   | -- | Generate code. Only Haskell for now.
     Generate FilePath
   | CommandWithPath FilePath ParseMode CommandWithPath
@@ -173,12 +174,34 @@ parserServe = do
   pure $ Serve srcDir distDir
 
 parserReport :: A.Parser Command
-parserReport = do
+parserReport =
+  A.subparser
+    ( A.command
+        "pages"
+        ( A.info (parserReportPages <**> A.helper) $
+            A.progDesc
+              "Report pages found in a directory"
+        )
+        <> A.command
+          "headings"
+          ( A.info (parserReportHeadings <**> A.helper) $
+              A.progDesc
+                "Report the headings of a page"
+          )
+    )
+
+parserReportPages :: A.Parser Command
+parserReportPages = do
   srcDir <-
     A.argument
       A.str
       (A.metavar "DIR" <> A.action "file" <> A.help "Directory of Slab templates to analyse.")
-  pure $ Report srcDir
+  pure $ ReportPages srcDir
+
+parserReportHeadings :: A.Parser Command
+parserReportHeadings = do
+  path <- parserTemplatePath
+  pure $ ReportHeadings path
 
 parserWatch :: A.Parser Command
 parserWatch = do

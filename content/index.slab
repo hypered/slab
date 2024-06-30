@@ -31,7 +31,7 @@ html(dir="ltr", lang="en")
                         p This project is still very young. Features demonstrated on this page work as shown but they don't always generalize as expected.
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
-                    h2 Introduction
+                    h2#introduction Introduction
 
                     p Slab is an alternative syntax for writing HTML, plus some programming language features (often found in templating languages, like conditionals and loops). <code>slab</code> is a command-line tool to process <code>.slab</code> files and render them into HTML.
 
@@ -58,8 +58,8 @@ html(dir="ltr", lang="en")
                                 <body><h1>A title</h1><p>A paragraph.</p></body>
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
-                    h2 Basic syntax
-                    h3 Elements
+                    h2#basic-syntax Basic syntax
+                    h3#elements Elements
 
                     p At its core, Slab is a short-hand notation to represent HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to the one used in Pug, which inspired Slab.
 
@@ -78,7 +78,7 @@ html(dir="ltr", lang="en")
                             :escape-html
                                 <ul><li>Item</li><li>Item</li><li>Item</li></ul>
 
-                    h3 IDs and classes
+                    h3#ids-and-classes IDs and classes
 
                     p To assign an ID to an element, the regular attribute notation can be used (see below). Slab also supports tacking the ID directly to the element name with a <code>#</code> character.
 
@@ -110,7 +110,7 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/basic-div.html
 
-                    h3 Attributes
+                    h3#attributes Attributes
 
                     p Attributes (including IDs and classes) can be assigned to an element using a syntax similar to HTML itself, by writing them in parenthesis, directly after the element name.
 
@@ -122,7 +122,7 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/basic-attr.html
 
-                    h3 Comments
+                    h3#comments Comments
 
                     p Comments are introduced with <code>--</code> or <code>---</code>, either with the comment itself on the same line, or as an indented text block on the floowing lines.
 
@@ -135,11 +135,11 @@ html(dir="ltr", lang="en")
                                 include:escape-html ../examples/docs/basic-comments.html
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
-                    h2 Fragments
+                    h2#fragments Fragments
 
                     p Fragments are blocks of HTML that can be named and reused.
 
-                    h3 Basics
+                    h3#basics Basics
 
                     p To define a new fragment, the <code>frag</code> keyword is used, followed by the name of the fragment. The body of the fragment is made of the following indented lines. To call a fragment, its name is used like a regular element.
 
@@ -153,7 +153,7 @@ html(dir="ltr", lang="en")
 
                     p In the above example, the fragment <code>card</code> is defined. In its body, it itself calls another fragment, <code>content</code>. That fragment is passed as an argument when <code>card</code> called. Arguments are given by defining fragments with the corresponding name, indented below the call.
 
-                    h3 Implicit <code>content</code> argument
+                    h3#implicit-content-argument Implicit <code>content</code> argument
 
                     p To make a call to a fragment look more similar to regular HTML elements, indented lines below the call are passed as an argument called <code>content</code> when an expicit fragment with the same name is not defined. I.e. the following example is equivalent to the example above:
 
@@ -165,7 +165,7 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/fragments-short.html
 
-                    h3 Default arguments
+                    h3#default-arguments Default arguments
 
                     p Fragments can define default contents for their arguments (making them optional) by using the <code>default</code> keyword before calling an argument.
 
@@ -177,7 +177,7 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/fragments-default.html
 
-                    h3 Expression arguments
+                    h3#expression-arguments Expression arguments
 
                     p Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.
 
@@ -196,7 +196,7 @@ html(dir="ltr", lang="en")
 
                     p In addition of its lightweight syntax equivalent to HTML, Slab supports some constructs usually found in programming languages.
 
-                    h3 Variable declarations
+                    h3#variable-declarations Variable declarations
 
                     p Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element by following the element name directly with a <code>=</code> character.
 
@@ -210,7 +210,7 @@ html(dir="ltr", lang="en")
 
                     p A current limitation is that each declaration requires its own <code>let</code> line.
 
-                    h3 Expressions
+                    h3#expressions Expressions
 
                     p Simple values (booleans, integers and string literals) are supported alongside simple operations: addition, substraction, multiplication, and division for integers, and comparison for all types.
 
@@ -232,7 +232,7 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/exprs-strings.html
 
-                    h3 String interpolation
+                    h3#string-interpolation String interpolation
 
                     p Expressions can be used within the text content of an element using the the <code>##(...)</code> syntax.
 
@@ -244,7 +244,7 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/interpolation.html
 
-                    h3 JSON support
+                    h3#json-support JSON support
 
                     p Static JSON files can be loaded by using their relative path.
 
@@ -262,11 +262,11 @@ html(dir="ltr", lang="en")
                                 include:escape-html ../examples/docs/expr-json.html
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
-                    h2 Control flow
+                    h2#control-flow Control flow
 
                     p Slab supports conditionals and loops using <code>if</code> and <code>for</code> blocks.
 
-                    h3 Conditionals
+                    h3#conditionals Conditionals
 
                     p The <code>else</code> branch is optional.
 
@@ -278,7 +278,7 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/flow-if.html
 
-                    h3 Loops
+                    h3#loops Loops
 
                     p It is possible to iterate on lists and objects. In the following example, the index and the key are optional.
 
@@ -291,11 +291,11 @@ html(dir="ltr", lang="en")
                                 include:escape-html ../examples/docs/flow-for.html
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
-                    h2 Modularity
+                    h2#modularity Modularity
 
                     p Slab code can be split in multiple files in two ways: include statements and imports.
 
-                    h3 Includes
+                    h3#includes Includes
 
                     p An include works by inlining the content of the included file in the including file. When the included file has a <code>.slab</code> extension, it is interpreted as if its code was present in the including file. In particular, any toplevel code that is not <code>let</code> expressions or fragment definitions will render as-if directly written in the including code, and definitions can be used in the including file.
 
@@ -317,7 +317,7 @@ html(dir="ltr", lang="en")
                             code
                                 include:escape-html ../examples/docs/mod-include-filter.html
 
-                    h3 Imports
+                    h3#imports Imports
 
                     p An import makes it possible to call a Slab file as if it was a fragment. Its body is the content of the file. As with fragments, it is possible to pass fragments as arguments.
 
@@ -338,7 +338,7 @@ html(dir="ltr", lang="en")
                                 include:escape-html ../examples/docs/mod-import.html
 
                 .c-content.flow-all.u-flow-c-4.limit-42em
-                    h2 Open source
+                    h2#open-source Open source
 
                     p Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.
 

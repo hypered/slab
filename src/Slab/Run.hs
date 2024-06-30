@@ -38,7 +38,8 @@ run (Command.Build srcDir renderMode distDir) = Build.buildDir srcDir renderMode
 run (Command.Watch srcDir renderMode distDir) =
   Watch.run srcDir (Build.buildFile srcDir renderMode distDir)
 run (Command.Serve srcDir distDir) = Serve.run srcDir distDir
-run (Command.Report srcDir) = Report.run srcDir
+run (Command.ReportPages srcDir) = Report.reportPages srcDir
+run (Command.ReportHeadings path) = Report.reportHeadings path
 run (Command.Generate path) = Generate.renderHs path
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
   nodes <- executeWithMode path pmode >>= Error.unwrap

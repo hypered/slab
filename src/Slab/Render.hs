@@ -9,6 +9,7 @@ module Slab.Render
   , renderHtmls
   , renderHtmlsUtf8
   , renderBlocks
+  , extractTexts
   ) where
 
 import Data.ByteString.Lazy qualified as BSL
@@ -54,12 +55,10 @@ renderBlock (Syntax.BlockElem name mdot attrs children) =
  where
   mAddId :: H.Html -> H.Html
   mAddId e =
-    if idNames == []
-      then e
-      else e ! A.id (H.toValue idNames')
-  idNames = Syntax.idNamesFromAttrs attrs
-  idNames' :: Text
-  idNames' = T.intercalate "-" idNames -- TODO Refuse multiple Ids in some kind of validation step after parsing ?
+    case idNames of
+      Nothing -> e
+      Just names -> e ! A.id (H.toValue names)
+  idNames = Syntax.idNamesFromAttrs' attrs
   mAddClass :: H.Html -> H.Html
   mAddClass e =
     if classNames == []
@@ -124,14 +123,13 @@ renderBlock (Syntax.BlockCode (Syntax.Block x)) = renderBlock x
 renderBlock (Syntax.BlockCode c) = error $ "renderBlock called on BlockCode " <> show c
 
 renderTexts :: [Syntax.Block] -> H.Html
-renderTexts xs = H.preEscapedText xs'
- where
-  xs' = T.intercalate "\n" $ map extractText xs
+renderTexts = H.preEscapedText . extractTexts
 
 escapeTexts :: [Syntax.Block] -> H.Html
-escapeTexts xs = H.text xs'
- where
-  xs' = T.intercalate "\n" $ map extractText xs
+escapeTexts = H.text . extractTexts
+
+extractTexts :: [Syntax.Block] -> Text
+extractTexts = T.intercalate "\n" . map extractText
 
 extractText :: Syntax.Block -> Text
 extractText = f
