@@ -113,12 +113,13 @@ command-line.
 
 During development, it helps to create small `.slab` files and run our code on
 them. In particular, given an `examples/a.slab` file, we can use `parse` and
-`eval` to introspect the ASTs at the different stages.
+`evaluate` to introspect the ASTs at the different stages.
 
 ```
 ghci> :main parse --shallow examples/a.slab
 ghci> :main parse examples/a.slab
-ghci> :main eval examples/a.slab
+ghci> :main evaluate examples/a.slab
+ghci> :main evaluate --simplify examples/a.slab
 ghci> :main render --pretty examples/a.slab
 ghci> :main render examples/a.slab
 ```
