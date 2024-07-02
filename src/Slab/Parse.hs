@@ -385,7 +385,7 @@ parserText :: Parser Text
 parserText = T.pack <$> lexeme (some (noneOf ['\n'])) <?> "text content"
 
 parserIdentifier :: Parser Text
-parserIdentifier = T.pack <$> (some (noneOf (" .=#(){}\n" :: String))) <?> "identifier"
+parserIdentifier = T.pack <$> (some (noneOf (" ,.=#(){}\n" :: String))) <?> "identifier"
 
 --------------------------------------------------------------------------------
 parserInclude :: Parser (L.IndentOpt Parser Block Block)
