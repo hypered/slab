@@ -186,7 +186,7 @@ eval env stack bl = case bl of
     pure $ BlockImport path (Just body) args
   node@(BlockRun _ _) -> pure node
   node@(BlockReadJson _ _ _) -> pure node
-  node@(BlockAssignVar _ _) -> pure node
+  node@(BlockAssignVars _) -> pure node
   BlockIf cond as bs -> do
     cond' <- evalExpr env cond
     case cond' of
@@ -400,7 +400,7 @@ extractVariable env = \case
   (BlockRun _ _) -> []
   (BlockReadJson name _ (Just val)) -> [(name, jsonToExpr val)]
   (BlockReadJson _ _ Nothing) -> []
-  (BlockAssignVar name val) -> [(name, val)]
+  (BlockAssignVars pairs) -> pairs
   (BlockIf _ _ _) -> []
   (BlockList _) -> []
   (BlockCode _) -> []
@@ -435,7 +435,7 @@ simplify' = \case
   BlockImport _ mbody _ -> maybe [] simplify mbody
   BlockRun _ mbody -> maybe [] simplify mbody
   BlockReadJson _ _ _ -> []
-  BlockAssignVar _ _ -> []
+  BlockAssignVars _ -> []
   BlockIf _ [] bs -> simplify bs
   BlockIf _ as _ -> simplify as
   BlockList nodes -> simplify nodes

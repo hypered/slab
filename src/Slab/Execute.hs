@@ -77,7 +77,7 @@ exec ctx = \case
       Syntax.BlockRun cmd $
         Just [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack out]]
   node@(Syntax.BlockReadJson _ _ _) -> pure node
-  node@(Syntax.BlockAssignVar _ _) -> pure node
+  node@(Syntax.BlockAssignVars _) -> pure node
   Syntax.BlockIf cond as bs -> do
     as' <- execute ctx as
     bs' <- execute ctx bs

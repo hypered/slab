@@ -114,7 +114,7 @@ preproc ctx@Context {..} = \case
         pure $ BlockReadJson name path $ Just val
       Left err ->
         throwE $ Error.PreProcessError $ "Can't decode JSON: " <> T.pack err
-  node@(BlockAssignVar _ _) -> pure node
+  node@(BlockAssignVars _) -> pure node
   BlockIf cond as bs -> do
     -- File inclusion is done right away, without checking the condition.
     as' <- preprocess ctx as

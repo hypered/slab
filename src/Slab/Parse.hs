@@ -30,7 +30,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, withExceptT)
 import Data.Char (isSpace)
 import Data.Functor (($>))
-import Data.List (intercalate)
+import Data.List (intercalate, isSuffixOf)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -433,7 +433,16 @@ parserInclude = do
   pure $ L.IndentNone $ BlockInclude mname path Nothing
 
 parserPath :: Parser FilePath
-parserPath = lexeme (some (noneOf ("'\"\n" :: String))) <?> "path"
+parserPath = do
+  path <- lexeme (some (noneOf ("'\"\n" :: String))) <?> "path"
+  -- TODO Simply require a slash.
+  guard
+    ( ".slab" `isSuffixOf` path
+      || ".json" `isSuffixOf` path
+      || ".html" `isSuffixOf` path
+      || ".txt" `isSuffixOf` path
+    )
+  pure path
 
 --------------------------------------------------------------------------------
 parserFragmentDef :: Parser (L.IndentOpt Parser Block Block)
@@ -604,23 +613,32 @@ parserRun = do
 
 --------------------------------------------------------------------------------
 parserLet :: Parser (L.IndentOpt Parser Block Block)
-parserLet = do
-  _ <- lexeme (string "let")
-  initialIndent <- getSourcePos
-  name <- lexeme' initialIndent parserName
-  _ <- lexeme' initialIndent (string "=")
+parserLet =
   choice
-    [ parserAssignVar initialIndent name
-    , parserReadJson name
+    [ try parserReadJson
+    , parserAssignVar
     ]
 
-parserAssignVar :: SourcePos -> Text -> Parser (L.IndentOpt Parser Block Block)
-parserAssignVar initialIndent name = do
-  val <- parserExprInd initialIndent
-  pure $ L.IndentNone $ BlockAssignVar name val
+parserAssignVar :: Parser (L.IndentOpt Parser Block Block)
+parserAssignVar = do
+  _ <- lexeme (string "let")
+  blockIndent <- getSourcePos
+  pairs <- some $ do
+    initialIndent <- getSourcePos
+    guard
+      (sourceColumn blockIndent == sourceColumn initialIndent
+      )
+    name <- lexeme' initialIndent parserName
+    _ <- lexeme' initialIndent (string "=")
+    val <- parserExprInd initialIndent
+    pure (name, val)
+  pure $ L.IndentNone $ BlockAssignVars pairs
 
-parserReadJson :: Text -> Parser (L.IndentOpt Parser Block Block)
-parserReadJson name = do
+parserReadJson :: Parser (L.IndentOpt Parser Block Block)
+parserReadJson = do
+  _ <- lexeme (string "let")
+  name <- lexeme parserName
+  _ <- lexeme (string "=")
   path <- parserPath
   pure $ L.IndentNone $ BlockReadJson name path Nothing
 

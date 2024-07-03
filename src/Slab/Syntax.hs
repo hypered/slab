@@ -67,10 +67,9 @@ data Block
     -- content of the referenced file.
     BlockImport FilePath (Maybe [Block]) [Block]
   | BlockRun Text (Maybe [Block])
-  | -- | Allow to assign the content of a JSON file to a variable. The syntax
-    -- is specific to how Struct has a @require@ function in scope.
+  | -- | Allow to assign the content of a JSON file to a variable.
     BlockReadJson Text FilePath (Maybe Aeson.Value)
-  | BlockAssignVar Text Expr
+  | BlockAssignVars [(Text, Expr)]
   | BlockIf Expr [Block] [Block]
   | BlockList [Block]
   | BlockCode Expr
@@ -299,7 +298,7 @@ extractClasses = nub . sort . concatMap f
   f (BlockImport _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
   f (BlockRun _ _) = []
   f (BlockReadJson _ _ _) = []
-  f (BlockAssignVar _ _) = []
+  f (BlockAssignVars _) = []
   f (BlockIf _ as bs) = extractClasses as <> extractClasses bs
   f (BlockList children) = extractClasses children
   f (BlockCode _) = []
@@ -335,7 +334,7 @@ extractFragments = concatMap f
   f (BlockImport _ children args) = maybe [] extractFragments children <> extractFragments args
   f (BlockRun _ _) = []
   f (BlockReadJson _ _ _) = []
-  f (BlockAssignVar _ _) = []
+  f (BlockAssignVars _) = []
   f (BlockIf _ as bs) = extractFragments as <> extractFragments bs
   f (BlockList children) = extractFragments children
   f (BlockCode _) = []
