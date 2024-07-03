@@ -24,7 +24,7 @@ module Slab.Parse
   , parseInlines
   ) where
 
-import Control.Monad (void)
+import Control.Monad (guard, void)
 import Control.Monad.Combinators.Expr
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, withExceptT)
@@ -63,7 +63,7 @@ parse fn = runParser (many parserBlock <* eof) fn
 --     Parse.parseExpr "1 + 2 * a"
 -- @
 parseExpr :: Text -> Either (ParseErrorBundle Text Void) Expr
-parseExpr = runParser (sc *> parserExpr <* eof) ""
+parseExpr = runParser (sc *> (getSourcePos >>= parserExprInd) <* eof) ""
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
@@ -215,6 +215,7 @@ parserExpr' = do
   content <- parserExpr
   pure $ L.IndentNone $ BlockCode content
 
+-- | Parse an expression on a single line.
 parserExpr :: Parser Expr
 parserExpr = makeExprParser pApp operatorTable
  where
@@ -233,6 +234,27 @@ parserExpr = makeExprParser pApp operatorTable
       <|> parens parserExpr
   parens = between (lexeme $ char '(') (lexeme $ char ')')
 
+-- | Same as "parserExpr" but allow expressions to be written on multiple lines.
+-- Subsequent lines must be indented compared to the first line.
+parserExprInd :: SourcePos -> Parser Expr
+parserExprInd initialIndent = makeExprParser pApp (operatorTable' initialIndent)
+ where
+  pApp = do
+    a <- pTerm
+    mb <- optional $ pTerm
+    case mb of
+      Nothing -> pure a
+      Just b -> pure $ Application a b
+  pTerm =
+    lx (Int <$> parserNumber)
+      <|> lx (SingleQuoteString <$> parserSingleQuoteString)
+      <|> lx (SingleQuoteString <$> parserDoubleQuoteString) -- TODO Double
+      <|> lx parserVariable'
+      <|> lx (Object <$> parserObject)
+      <|> parens (parserExprInd initialIndent)
+  parens = between (lx $ char '(') (lx $ char ')')
+  lx = lexeme' initialIndent
+
 parserVariable :: Parser Text
 parserVariable = parserName
 
@@ -246,6 +268,18 @@ operatorTable =
   , -- I'd like to use : instead, but it is already used for objects...
     [InfixR (symbol "|" $> Cons)]
   ]
+
+operatorTable' :: SourcePos -> [[Operator Parser Expr]]
+operatorTable' initialIndent =
+  [ [InfixL (sym "*" $> Times), InfixL (sym "/" $> Divide)]
+  , [InfixL (sym "+" $> Add), InfixL (sym "-" $> Sub)]
+  , [InfixL (sym ">" $> GreaterThan), InfixL (sym "<" $> LesserThan)]
+  , [InfixL (sym "==" $> Equal)]
+  , -- I'd like to use : instead, but it is already used for objects...
+    [InfixR (sym "|" $> Cons)]
+  ]
+ where
+  sym = symbol' initialIndent
 
 parserVariable' :: Parser Expr
 parserVariable' = do
@@ -572,16 +606,17 @@ parserRun = do
 parserLet :: Parser (L.IndentOpt Parser Block Block)
 parserLet = do
   _ <- lexeme (string "let")
-  name <- lexeme parserName
-  _ <- lexeme (string "=")
+  initialIndent <- getSourcePos
+  name <- lexeme' initialIndent parserName
+  _ <- lexeme' initialIndent (string "=")
   choice
-    [ parserAssignVar name
+    [ parserAssignVar initialIndent name
     , parserReadJson name
     ]
 
-parserAssignVar :: Text -> Parser (L.IndentOpt Parser Block Block)
-parserAssignVar name = do
-  val <- parserExpr
+parserAssignVar :: SourcePos -> Text -> Parser (L.IndentOpt Parser Block Block)
+parserAssignVar initialIndent name = do
+  val <- parserExprInd initialIndent
   pure $ L.IndentNone $ BlockAssignVar name val
 
 parserReadJson :: Text -> Parser (L.IndentOpt Parser Block Block)
@@ -590,14 +625,14 @@ parserReadJson name = do
   pure $ L.IndentNone $ BlockReadJson name path Nothing
 
 --------------------------------------------------------------------------------
-scn :: Parser ()
-scn = L.space space1 empty empty
-
 -- Similar to space, but counts newlines
 space' :: Parser Int
 space' = do
   s <- takeWhileP (Just "white space") isSpace
   pure . length $ filter (== '\n') $ T.unpack s
+
+scn :: Parser ()
+scn = L.space space1 empty empty
 
 sc :: Parser ()
 sc = L.space (void $ some (char ' ' <|> char '\t')) empty empty
@@ -607,6 +642,27 @@ lexeme = L.lexeme sc
 
 symbol :: Text -> Parser Text
 symbol = L.symbol sc
+
+--------------------------------------------------------------------------------
+-- Custom lexeme that checks against the passed indentation.
+lexeme' :: SourcePos -> Parser a -> Parser a
+lexeme' initialIndent p = do
+  currentIndent <- getSourcePos
+  guard
+    ( sourceLine currentIndent == sourceLine initialIndent
+      || sourceColumn currentIndent > sourceColumn initialIndent
+    )
+  L.lexeme scn p
+
+-- Custom symbol that checks against the passed indentation.
+symbol' :: SourcePos -> Text -> Parser Text
+symbol' initialIndent s = do
+  currentIndent <- getSourcePos
+  guard
+    ( sourceLine currentIndent == sourceLine initialIndent
+      || sourceColumn currentIndent > sourceColumn initialIndent
+    )
+  L.symbol scn s
 
 --------------------------------------------------------------------------------
 

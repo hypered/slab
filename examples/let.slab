@@ -1,0 +1,10 @@
+let a = 1
+let b = 2 + 3
+let c = 4
+     + 5
+let d = 6 +
+     7
+let e =
+     8 +
+     7
+p #(a) #(b) #(c) #(d) #(e)
