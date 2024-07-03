@@ -101,7 +101,6 @@ renderBlock (Syntax.BlockImport _ (Just nodes) _) = mapM_ renderBlock nodes
 renderBlock (Syntax.BlockRun _ (Just nodes)) = mapM_ renderBlock nodes
 renderBlock (Syntax.BlockRun cmd _) = H.textComment $ "run " <> cmd
 renderBlock (Syntax.BlockImport path Nothing _) = H.stringComment $ "extends " <> path
-renderBlock (Syntax.BlockReadJson _ _ _) = mempty
 renderBlock (Syntax.BlockAssignVars _) = mempty
 renderBlock (Syntax.BlockIf _ as bs) = do
   -- The evaluation code transforms a BlockIf into a BlockList, so this should
@@ -148,7 +147,6 @@ extractText = f
   f (Syntax.BlockDefault _ _) = error "extractTexts called on a BlockDefault"
   f (Syntax.BlockImport _ _ _) = error "extractTexts called on a BlockImport"
   f (Syntax.BlockRun _ _) = error "extractTexts called on a BlockRun"
-  f (Syntax.BlockReadJson _ _ _) = error "extractTexts called on a BlockReadJson"
   f (Syntax.BlockAssignVars _) = error "extractTexts called on a BlockAssignVars"
   f (Syntax.BlockIf _ _ _) = error "extractTexts called on a BlockIf"
   f (Syntax.BlockList _) = error "extractTexts called on a BlockList"

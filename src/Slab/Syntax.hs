@@ -36,7 +36,6 @@ module Slab.Syntax
   , groupAttrs
   ) where
 
-import Data.Aeson qualified as Aeson
 import Data.List (nub, sort)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -67,8 +66,6 @@ data Block
     -- content of the referenced file.
     BlockImport FilePath (Maybe [Block]) [Block]
   | BlockRun Text (Maybe [Block])
-  | -- | Allow to assign the content of a JSON file to a variable.
-    BlockReadJson Text FilePath (Maybe Aeson.Value)
   | BlockAssignVars [(Text, Expr)]
   | BlockIf Expr [Block] [Block]
   | BlockList [Block]
@@ -224,6 +221,8 @@ data Expr
     Frag [Text] Env [Block]
   | -- Same for Expr instead of Block.
     Thunk Env Expr
+  | -- | Allow to assign the content of a JSON file to a variable.
+    JsonPath FilePath
   | BuiltIn Text
   deriving (Show, Eq)
 
@@ -297,7 +296,6 @@ extractClasses = nub . sort . concatMap f
   f (BlockDefault _ children) = extractClasses children
   f (BlockImport _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
   f (BlockRun _ _) = []
-  f (BlockReadJson _ _ _) = []
   f (BlockAssignVars _) = []
   f (BlockIf _ as bs) = extractClasses as <> extractClasses bs
   f (BlockList children) = extractClasses children
@@ -333,7 +331,6 @@ extractFragments = concatMap f
   f (BlockDefault _ children) = extractFragments children
   f (BlockImport _ children args) = maybe [] extractFragments children <> extractFragments args
   f (BlockRun _ _) = []
-  f (BlockReadJson _ _ _) = []
   f (BlockAssignVars _) = []
   f (BlockIf _ as bs) = extractFragments as <> extractFragments bs
   f (BlockList children) = extractFragments children

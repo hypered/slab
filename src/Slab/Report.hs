@@ -108,7 +108,6 @@ extractHeadings = concatMap f
   f (Syntax.BlockDefault _ children) = extractHeadings children
   f (Syntax.BlockImport _ children args) = maybe [] extractHeadings children <> extractHeadings args
   f (Syntax.BlockRun _ _) = []
-  f (Syntax.BlockReadJson _ _ _) = []
   f (Syntax.BlockAssignVars _) = []
   f (Syntax.BlockIf _ as bs) = extractHeadings as <> extractHeadings bs
   f (Syntax.BlockList children) = extractHeadings children

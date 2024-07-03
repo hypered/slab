@@ -251,6 +251,7 @@ parserExprInd initialIndent = makeExprParser pApp (operatorTable' initialIndent)
       <|> lx (SingleQuoteString <$> parserDoubleQuoteString) -- TODO Double
       <|> lx parserVariable'
       <|> lx (Object <$> parserObject)
+      <|> lx (JsonPath <$> try parserPath) -- TODO Force the .json extension.
       <|> parens (parserExprInd initialIndent)
   parens = between (lx $ char '(') (lx $ char ')')
   lx = lexeme' initialIndent
@@ -613,14 +614,7 @@ parserRun = do
 
 --------------------------------------------------------------------------------
 parserLet :: Parser (L.IndentOpt Parser Block Block)
-parserLet =
-  choice
-    [ try parserReadJson
-    , parserAssignVar
-    ]
-
-parserAssignVar :: Parser (L.IndentOpt Parser Block Block)
-parserAssignVar = do
+parserLet = do
   _ <- lexeme (string "let")
   scn
   blockIndent <- getSourcePos
@@ -634,14 +628,6 @@ parserAssignVar = do
     val <- parserExprInd initialIndent
     pure (name, val)
   pure $ L.IndentNone $ BlockAssignVars pairs
-
-parserReadJson :: Parser (L.IndentOpt Parser Block Block)
-parserReadJson = do
-  _ <- lexeme (string "let")
-  name <- lexeme parserName
-  _ <- lexeme (string "=")
-  path <- parserPath
-  pure $ L.IndentNone $ BlockReadJson name path Nothing
 
 --------------------------------------------------------------------------------
 -- Similar to space, but counts newlines

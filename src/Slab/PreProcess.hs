@@ -17,9 +17,12 @@ module Slab.PreProcess
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Data.Aeson qualified as Aeson
+import Data.Aeson.Key qualified as Aeson.Key
+import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.ByteString.Lazy qualified as BL
 import Data.Text qualified as T
 import Data.Text.IO qualified as T
+import Data.Vector qualified as V
 import Slab.Error qualified as Error
 import Slab.Parse qualified as Parse
 import Slab.Syntax
@@ -106,15 +109,18 @@ preproc ctx@Context {..} = \case
         | otherwise ->
             throwE $ Error.PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
   node@(BlockRun _ _) -> pure node
-  BlockReadJson name path _ -> do
-    let path' = takeDirectory ctxStartPath </> path
-    content <- liftIO $ BL.readFile path'
-    case Aeson.eitherDecode content of
-      Right val ->
-        pure $ BlockReadJson name path $ Just val
-      Left err ->
-        throwE $ Error.PreProcessError $ "Can't decode JSON: " <> T.pack err
-  node@(BlockAssignVars _) -> pure node
+  BlockAssignVars pairs -> do
+    let f (name, JsonPath path) = do
+          let path' = takeDirectory ctxStartPath </> path
+          content <- liftIO $ BL.readFile path'
+          case Aeson.eitherDecode content of
+            Right val ->
+              pure (name, jsonToExpr val)
+            Left err ->
+              throwE $ Error.PreProcessError $ "Can't decode JSON: " <> T.pack err
+        f pair = pure pair
+    pairs' <- mapM f pairs
+    pure $ BlockAssignVars pairs'
   BlockIf cond as bs -> do
     -- File inclusion is done right away, without checking the condition.
     as' <- preprocess ctx as
@@ -124,3 +130,13 @@ preproc ctx@Context {..} = \case
     nodes' <- preprocess ctx nodes
     pure $ BlockList nodes'
   node@(BlockCode _) -> pure node
+
+jsonToExpr :: Aeson.Value -> Expr
+jsonToExpr = \case
+  Aeson.String s -> SingleQuoteString s
+  Aeson.Array xs ->
+    List $ map jsonToExpr (V.toList xs)
+  Aeson.Object kvs ->
+    let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToExpr v)
+     in Object $ map f (Aeson.KeyMap.toList kvs)
+  x -> error $ "jsonToExpr: " <> show x

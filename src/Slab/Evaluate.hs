@@ -24,13 +24,9 @@ module Slab.Evaluate
 
 import Control.Monad (forM)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
-import Data.Aeson qualified as Aeson
-import Data.Aeson.Key qualified as Aeson.Key
-import Data.Aeson.KeyMap qualified as Aeson.KeyMap
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
-import Data.Vector qualified as V
 import Slab.Error qualified as Error
 import Slab.PreProcess qualified as PreProcess
 import Slab.Syntax
@@ -185,7 +181,6 @@ eval env stack bl = case bl of
     body <- call env stack (T.pack path) [] args
     pure $ BlockImport path (Just body) args
   node@(BlockRun _ _) -> pure node
-  node@(BlockReadJson _ _ _) -> pure node
   node@(BlockAssignVars _) -> pure node
   BlockIf cond as bs -> do
     cond' <- evalExpr env cond
@@ -398,22 +393,10 @@ extractVariable env = \case
   (BlockImport path (Just body) _) -> [(T.pack path, Frag [] env body)]
   (BlockImport _ _ _) -> []
   (BlockRun _ _) -> []
-  (BlockReadJson name _ (Just val)) -> [(name, jsonToExpr val)]
-  (BlockReadJson _ _ Nothing) -> []
   (BlockAssignVars pairs) -> pairs
   (BlockIf _ _ _) -> []
   (BlockList _) -> []
   (BlockCode _) -> []
-
-jsonToExpr :: Aeson.Value -> Expr
-jsonToExpr = \case
-  Aeson.String s -> SingleQuoteString s
-  Aeson.Array xs ->
-    List $ map jsonToExpr (V.toList xs)
-  Aeson.Object kvs ->
-    let f (k, v) = (SingleQuoteString $ Aeson.Key.toText k, jsonToExpr v)
-     in Object $ map f (Aeson.KeyMap.toList kvs)
-  x -> error $ "jsonToExpr: " <> show x
 
 --------------------------------------------------------------------------------
 simplify :: [Block] -> [Block]
@@ -434,7 +417,6 @@ simplify' = \case
   BlockDefault _ nodes -> simplify nodes
   BlockImport _ mbody _ -> maybe [] simplify mbody
   BlockRun _ mbody -> maybe [] simplify mbody
-  BlockReadJson _ _ _ -> []
   BlockAssignVars _ -> []
   BlockIf _ [] bs -> simplify bs
   BlockIf _ as _ -> simplify as
