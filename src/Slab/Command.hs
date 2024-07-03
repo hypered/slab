@@ -36,7 +36,8 @@ data Command
 -- | Commands operating on a path.
 data CommandWithPath
   = Render RenderMode
-  | Execute
+  | -- | If True, simplify the evaluated AST.
+    Execute Bool
   | -- | If True, simplify the evaluated AST.
     Evaluate Bool
   | Parse
@@ -228,7 +229,11 @@ parserWatch = do
 parserExectue :: A.Parser Command
 parserExectue = do
   pathAndmode <- parserWithPath
-  pure $ uncurry CommandWithPath pathAndmode $ Execute
+  simpl <-
+    A.switch
+      ( A.long "simplify" <> A.help "Simplify the AST"
+      )
+  pure $ uncurry CommandWithPath pathAndmode $ Execute simpl
 
 parserRender :: A.Parser Command
 parserRender = do

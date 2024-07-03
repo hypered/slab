@@ -47,9 +47,11 @@ run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) =
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderPretty)) = do
   nodes <- executeWithMode path pmode >>= Error.unwrap
   T.putStr . Render.prettyHtmls $ Render.renderBlocks nodes
-run (Command.CommandWithPath path pmode Command.Execute) = do
+run (Command.CommandWithPath path pmode (Command.Execute simpl)) = do
   nodes <- executeWithMode path pmode >>= Error.unwrap
-  TL.putStrLn $ pShowNoColor nodes
+  if simpl
+    then TL.putStrLn $ pShowNoColor $ Evaluate.simplify nodes
+    else TL.putStrLn $ pShowNoColor nodes
 run (Command.CommandWithPath path pmode (Command.Evaluate simpl)) = do
   nodes <- evaluateWithMode path pmode >>= Error.unwrap
   if simpl
