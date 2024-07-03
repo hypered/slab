@@ -622,6 +622,7 @@ parserLet =
 parserAssignVar :: Parser (L.IndentOpt Parser Block Block)
 parserAssignVar = do
   _ <- lexeme (string "let")
+  scn
   blockIndent <- getSourcePos
   pairs <- some $ do
     initialIndent <- getSourcePos
