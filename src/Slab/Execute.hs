@@ -17,13 +17,14 @@ module Slab.Execute
   ) where
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Data.Text qualified as T
 import Slab.Error qualified as Error
 import Slab.Evaluate qualified as Evaluate
 import Slab.PreProcess qualified as PreProcess
 import Slab.Syntax qualified as Syntax
-import System.Process (cwd, readCreateProcess, shell)
+import System.Exit (ExitCode (..))
+import System.Process (readCreateProcessWithExitCode, shell)
 
 --------------------------------------------------------------------------------
 
@@ -70,12 +71,15 @@ exec ctx = \case
     pure $ Syntax.BlockImport path mbody' args
   node@(Syntax.BlockRun _ (Just _)) -> pure node
   Syntax.BlockRun cmd Nothing -> do
-    out <-
+    (code, out, err) <-
       liftIO $
-        readCreateProcess ((shell $ T.unpack cmd) {cwd = Just "/tmp/"}) ""
-    pure $
-      Syntax.BlockRun cmd $
-        Just [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack out]]
+        readCreateProcessWithExitCode (shell $ T.unpack cmd) ""
+    case code of
+      ExitSuccess -> pure $
+        Syntax.BlockRun cmd $
+          Just [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack out]]
+      ExitFailure _ -> throwE $
+        Error.ExecuteError $ T.pack err <> T.pack out
   node@(Syntax.BlockAssignVars _) -> pure node
   Syntax.BlockIf cond as bs -> do
     as' <- execute ctx as

@@ -12,6 +12,7 @@ module Slab.Run
   , calc
   ) where
 
+import Control.Monad (when)
 import Control.Monad.Trans.Except (ExceptT, except, runExceptT, withExceptT)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -30,13 +31,16 @@ import Slab.Report qualified as Report
 import Slab.Serve qualified as Serve
 import Slab.Syntax qualified as Syntax
 import Slab.Watch qualified as Watch
+import System.FilePath (takeExtension)
 import Text.Pretty.Simple (pPrintNoColor, pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
 run (Command.Build srcDir renderMode distDir) = Build.buildDir srcDir renderMode distDir
 run (Command.Watch srcDir renderMode distDir) =
-  Watch.run srcDir (Build.buildFile srcDir renderMode distDir)
+  Watch.run srcDir $ \path -> do
+    when (takeExtension path == ".slab") $
+      Build.buildFile srcDir renderMode distDir path
 run (Command.Serve srcDir distDir) = Serve.run srcDir distDir
 run (Command.ReportPages srcDir) = Report.reportPages srcDir
 run (Command.ReportHeadings path) = Report.reportHeadings path

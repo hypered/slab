@@ -9,7 +9,7 @@ module Slab.Watch
   ) where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (forever)
+import Control.Monad (forever, when)
 import System.Directory (canonicalizePath)
 import System.FSNotify
 import System.FilePath (makeRelative, takeExtension, (</>))
@@ -29,7 +29,7 @@ run srcDir update = do
         srcDir
         ( \e -> do
             case e of
-              Modified path _ _ | takeExtension path == ".slab" -> True
+              Modified path _ _ | takeExtension path `elem` [".slab", ".pikchr"] -> True
               _ -> False
         )
         ( \e -> do

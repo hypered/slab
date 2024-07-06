@@ -57,7 +57,7 @@ buildFile srcDir mode distDir path = do
 
 --------------------------------------------------------------------------------
 
-type Store = M.Map FilePath [Syntax.Block]
+type Store = M.Map FilePath (Either Error.Error [Syntax.Block])
 
 type StmStore = STM.TVar Store
 
@@ -80,13 +80,15 @@ buildFileInMemory srcDir mode store path = do
         then putStrLn $ "No generated content for " <> path
         else case mode of
           Command.RenderNormal ->
-            atomically $ STM.modifyTVar store (writeStore path' nodes)
+            atomically $ STM.modifyTVar store (writeStore path' $ Right nodes)
           Command.RenderPretty ->
-            atomically $ STM.modifyTVar store (writeStore path' nodes)
-    Left err -> Error.display err
+            atomically $ STM.modifyTVar store (writeStore path' $ Right nodes)
+    Left err -> do
+      Error.display err
+      atomically $ STM.modifyTVar store (writeStore path' $ Left err)
 
-writeStore :: FilePath -> [Syntax.Block] -> Store -> Store
-writeStore path blocks = M.insert path blocks
+writeStore :: FilePath -> Either Error.Error [Syntax.Block] -> Store -> Store
+writeStore path mblocks = M.insert path mblocks
 
 --------------------------------------------------------------------------------
 listTemplates :: FilePath -> IO [FilePath]

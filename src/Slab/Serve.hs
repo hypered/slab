@@ -18,6 +18,7 @@ import Control.Concurrent.Chan qualified as Chan
 import Control.Concurrent.STM qualified as STM
 import Data.Map qualified as M
 import Data.Text qualified as T
+import Data.Text.Lazy.Encoding qualified as TLE
 import Network.HTTP.Types (status200)
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
@@ -37,7 +38,9 @@ import Slab.Evaluate qualified as Evaluate
 import Slab.Render qualified as Render
 import Slab.Syntax qualified as Syntax
 import Slab.Watch qualified as Watch
+import System.FilePath (takeExtension)
 import Text.Blaze.Html5 (Html)
+import Text.Pretty.Simple (pShowNoColor)
 import WaiAppStatic.Storage.Filesystem
   ( defaultWebAppSettings
   )
@@ -53,7 +56,12 @@ run srcDir distDir = do
   _ <-
     forkIO $
       Watch.run srcDir $ \path -> do
-        Build.buildFileInMemory srcDir Command.RenderNormal store path
+        when (takeExtension path == ".slab") $
+          Build.buildFileInMemory srcDir Command.RenderNormal store path
+        when (takeExtension path /= ".slab") $
+          -- Rebuild everything. TODO create a dependency graph and rebuild
+          -- only what is needed.
+          Build.buildDirInMemory srcDir Command.RenderNormal store
         Chan.writeChan chan path
   Warp.run 9000 $ serve distDir store chan
 
@@ -105,13 +113,21 @@ app' root store req sendRes = do
       path' = if T.null path then "index.html" else path
   -- TODO Check requestMethod is GET.
   case M.lookup (T.unpack path') templates of
-    Just blocks -> do
-      let blocks' = Syntax.addScript autoreloadScript $ Evaluate.simplify blocks
-      sendRes $
-        Wai.responseLBS
-          status200
-          [("Content-Type", "text/html")]
-          (Render.renderHtmlsUtf8 $ Render.renderBlocks blocks')
+    Just mblocks -> do
+      case mblocks of
+        Right blocks -> do
+          let blocks' = Syntax.addScript autoreloadScript $ Evaluate.simplify blocks
+          sendRes $
+            Wai.responseLBS
+              status200
+              [("Content-Type", "text/html")]
+              (Render.renderHtmlsUtf8 $ Render.renderBlocks blocks')
+        Left err -> do
+          sendRes $
+            Wai.responseLBS
+              status200
+              [("Content-Type", "text/plain")]
+              (TLE.encodeUtf8 $ pShowNoColor err)
     Nothing -> do
       let Tagged staticApp = serveStatic root
       staticApp req sendRes
