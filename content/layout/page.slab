@@ -1,0 +1,26 @@
+frag page
+  doctype html
+  html(dir="ltr", lang="en")
+    head
+      meta(charset="utf-8")
+      meta(name="viewport" content="width=device-width, initial-scale=1")
+      link(rel="stylesheet", href="/static/css/struct.css")
+      title The Slab markup language
+    body.u-container-vertical
+      header
+        .u-container
+          .u-bar
+            .u-bar__left
+              style.
+                .a-logo { color: black; text-decoration: none; }
+              a.a-logo(href="/")
+                div
+                  span.logo Slab
+            .u-bar__right
+              ul
+                li
+                  .menu-item
+                    a(href="https://github.com/hypered/slab").menu-link GitHub
+ 
+      main
+        content
