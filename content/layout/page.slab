@@ -20,6 +20,9 @@ frag page
               ul
                 li
                   .menu-item
+                    a(href="/tutorial.html").menu-link Tutorial
+                li
+                  .menu-item
                     a(href="https://github.com/hypered/slab").menu-link GitHub
  
       main
