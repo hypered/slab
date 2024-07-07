@@ -136,6 +136,7 @@ data Elem
   | Link
   | A
   | P
+  | Em
   | Ul
   | Li
   | Title

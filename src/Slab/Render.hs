@@ -190,6 +190,7 @@ renderElem = \case
   Syntax.Link -> const H.link
   Syntax.A -> H.a
   Syntax.P -> H.p
+  Syntax.Em -> H.em
   Syntax.Ul -> H.ul
   Syntax.Li -> H.li
   Syntax.Title -> H.title
