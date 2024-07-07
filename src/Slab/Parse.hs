@@ -438,10 +438,14 @@ parserPath = do
   path <- lexeme (some (noneOf ("'\"\n" :: String))) <?> "path"
   -- TODO Simply require a slash.
   guard
-    ( ".slab" `isSuffixOf` path
-      || ".json" `isSuffixOf` path
-      || ".html" `isSuffixOf` path
-      || ".txt" `isSuffixOf` path
+    ( ".slab"
+        `isSuffixOf` path
+        || ".json"
+        `isSuffixOf` path
+        || ".html"
+        `isSuffixOf` path
+        || ".txt"
+        `isSuffixOf` path
     )
   pure path
 
@@ -621,7 +625,7 @@ parserLet = do
   pairs <- some $ do
     initialIndent <- getSourcePos
     guard
-      (sourceColumn blockIndent == sourceColumn initialIndent
+      ( sourceColumn blockIndent == sourceColumn initialIndent
       )
     name <- lexeme' initialIndent parserName
     _ <- lexeme' initialIndent (string "=")
@@ -655,7 +659,7 @@ lexeme' initialIndent p = do
   currentIndent <- getSourcePos
   guard
     ( sourceLine currentIndent == sourceLine initialIndent
-      || sourceColumn currentIndent > sourceColumn initialIndent
+        || sourceColumn currentIndent > sourceColumn initialIndent
     )
   L.lexeme scn p
 
@@ -665,7 +669,7 @@ symbol' initialIndent s = do
   currentIndent <- getSourcePos
   guard
     ( sourceLine currentIndent == sourceLine initialIndent
-      || sourceColumn currentIndent > sourceColumn initialIndent
+        || sourceColumn currentIndent > sourceColumn initialIndent
     )
   L.symbol scn s
 

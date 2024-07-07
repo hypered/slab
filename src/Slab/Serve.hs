@@ -51,17 +51,17 @@ run srcDir distDir = do
   store <- atomically $ STM.newTVar M.empty
   chan <- Chan.newChan
   -- Initial build to populate the store...
-  Build.buildDirInMemory srcDir Command.RenderNormal store
+  Build.buildDirInMemory srcDir Command.RenderNormal Command.RunPassthrough store
   -- ...then rebuild individual files upon change, and notify the channel.
   _ <-
     forkIO $
       Watch.run srcDir $ \path -> do
         when (takeExtension path == ".slab") $
-          Build.buildFileInMemory srcDir Command.RenderNormal store path
+          Build.buildFileInMemory srcDir Command.RenderNormal Command.RunPassthrough store path
         when (takeExtension path /= ".slab") $
           -- Rebuild everything. TODO create a dependency graph and rebuild
           -- only what is needed.
-          Build.buildDirInMemory srcDir Command.RenderNormal store
+          Build.buildDirInMemory srcDir Command.RenderNormal Command.RunPassthrough store
         Chan.writeChan chan path
   Warp.run 9000 $ serve distDir store chan
 

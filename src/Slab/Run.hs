@@ -36,23 +36,24 @@ import Text.Pretty.Simple (pPrintNoColor, pShowNoColor)
 
 --------------------------------------------------------------------------------
 run :: Command.Command -> IO ()
-run (Command.Build srcDir renderMode distDir) = Build.buildDir srcDir renderMode distDir
-run (Command.Watch srcDir renderMode distDir) =
+run (Command.Build srcDir renderMode passthrough distDir) =
+  Build.buildDir srcDir renderMode passthrough distDir
+run (Command.Watch srcDir renderMode passthrough distDir) =
   Watch.run srcDir $ \path -> do
     when (takeExtension path == ".slab") $
-      Build.buildFile srcDir renderMode distDir path
+      Build.buildFile srcDir renderMode passthrough distDir path
 run (Command.Serve srcDir distDir) = Serve.run srcDir distDir
 run (Command.ReportPages srcDir) = Report.reportPages srcDir
 run (Command.ReportHeadings path) = Report.reportHeadings path
 run (Command.Generate path) = Generate.renderHs path
-run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal)) = do
-  nodes <- executeWithMode path pmode >>= Error.unwrap
+run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal passthrough)) = do
+  nodes <- executeWithMode path pmode passthrough >>= Error.unwrap
   TL.putStrLn . Render.renderHtmls $ Render.renderBlocks nodes
-run (Command.CommandWithPath path pmode (Command.Render Command.RenderPretty)) = do
-  nodes <- executeWithMode path pmode >>= Error.unwrap
+run (Command.CommandWithPath path pmode (Command.Render Command.RenderPretty passthrough)) = do
+  nodes <- executeWithMode path pmode passthrough >>= Error.unwrap
   T.putStr . Render.prettyHtmls $ Render.renderBlocks nodes
-run (Command.CommandWithPath path pmode (Command.Execute simpl)) = do
-  nodes <- executeWithMode path pmode >>= Error.unwrap
+run (Command.CommandWithPath path pmode (Command.Execute simpl passthrough)) = do
+  nodes <- executeWithMode path pmode passthrough >>= Error.unwrap
   if simpl
     then TL.putStrLn $ pShowNoColor $ Evaluate.simplify nodes
     else TL.putStrLn $ pShowNoColor nodes
@@ -92,8 +93,9 @@ evaluateWithMode path pmode = runExceptT $ evaluateWithModeE path pmode
 executeWithMode
   :: FilePath
   -> Command.ParseMode
+  -> Command.RunMode
   -> IO (Either Error.Error [Syntax.Block])
-executeWithMode path pmode = runExceptT $ executeWithModeE path pmode
+executeWithMode path pmode passthrough = runExceptT $ executeWithModeE path pmode passthrough
 
 --------------------------------------------------------------------------------
 parseWithModeE
@@ -116,9 +118,10 @@ evaluateWithModeE path pmode = do
 executeWithModeE
   :: FilePath
   -> Command.ParseMode
+  -> Command.RunMode
   -> ExceptT Error.Error IO [Syntax.Block]
-executeWithModeE path pmode =
-  evaluateWithModeE path pmode >>= Execute.execute path
+executeWithModeE path pmode passthrough =
+  evaluateWithModeE path pmode >>= Execute.execute (Execute.Context path passthrough)
 
 --------------------------------------------------------------------------------
 -- Play with the whole language.

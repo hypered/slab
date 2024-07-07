@@ -12,13 +12,15 @@
 -- After execution, the resulting blocks can be rendered to HTML by
 -- "Slab.Render".
 module Slab.Execute
-  ( executeFile
+  ( Context (..)
+  , executeFile
   , execute
   ) where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import Data.Text qualified as T
+import Slab.Command qualified as Command
 import Slab.Error qualified as Error
 import Slab.Evaluate qualified as Evaluate
 import Slab.PreProcess qualified as PreProcess
@@ -27,24 +29,28 @@ import System.Exit (ExitCode (..))
 import System.Process (readCreateProcessWithExitCode, shell)
 
 --------------------------------------------------------------------------------
+data Context = Context
+  { ctxPath :: FilePath
+  , ctxRunMode :: Command.RunMode
+  }
 
 -- | Similar to `evaluateFile` but run external commands.
-executeFile :: FilePath -> IO (Either Error.Error [Syntax.Block])
-executeFile path =
+executeFile :: Context -> IO (Either Error.Error [Syntax.Block])
+executeFile ctx@(Context {..}) =
   runExceptT $
-    PreProcess.preprocessFileE path
+    PreProcess.preprocessFileE ctxPath
       >>= Evaluate.evaluate Evaluate.defaultEnv ["toplevel"]
-      >>= execute path
+      >>= execute ctx
 
 --------------------------------------------------------------------------------
 execute
-  :: FilePath
+  :: Context
   -> [Syntax.Block]
   -> ExceptT Error.Error IO [Syntax.Block]
 execute ctx = mapM (exec ctx)
 
-exec :: FilePath -> Syntax.Block -> ExceptT Error.Error IO Syntax.Block
-exec ctx = \case
+exec :: Context -> Syntax.Block -> ExceptT Error.Error IO Syntax.Block
+exec ctx@(Context {..}) = \case
   node@Syntax.BlockDoctype -> pure node
   Syntax.BlockElem name mdot attrs nodes -> do
     nodes' <- execute ctx nodes
@@ -75,11 +81,30 @@ exec ctx = \case
       liftIO $
         readCreateProcessWithExitCode (shell $ T.unpack cmd) ""
     case code of
-      ExitSuccess -> pure $
-        Syntax.BlockRun cmd $
-          Just [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack out]]
-      ExitFailure _ -> throwE $
-        Error.ExecuteError $ T.pack err <> T.pack out
+      ExitSuccess ->
+        pure $
+          Syntax.BlockRun cmd $
+            Just [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack out]]
+      ExitFailure _ -> case ctxRunMode of
+        Command.RunNormal ->
+          throwE $
+            Error.ExecuteError $
+              T.pack err <> T.pack out
+        Command.RunPassthrough ->
+          pure $
+            Syntax.BlockRun cmd $
+              Just $
+                [ Syntax.BlockElem
+                    Syntax.Pre
+                    Syntax.NoSym
+                    []
+                    [ Syntax.BlockElem
+                        Syntax.Code
+                        Syntax.HasDot
+                        []
+                        [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack (err <> out)]]
+                    ]
+                ]
   node@(Syntax.BlockAssignVars _) -> pure node
   Syntax.BlockIf cond as bs -> do
     as' <- execute ctx as

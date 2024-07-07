@@ -34,19 +34,20 @@ import System.FilePath (makeRelative, replaceExtension, takeDirectory, (</>))
 import System.FilePath.Glob qualified as Glob
 
 --------------------------------------------------------------------------------
-buildDir :: FilePath -> Command.RenderMode -> FilePath -> IO ()
-buildDir srcDir mode distDir = do
+buildDir :: FilePath -> Command.RenderMode -> Command.RunMode -> FilePath -> IO ()
+buildDir srcDir mode passthrough distDir = do
   templates <- listTemplates srcDir
-  mapM_ (buildFile srcDir mode distDir) templates
+  mapM_ (buildFile srcDir mode passthrough distDir) templates
 
-buildFile :: FilePath -> Command.RenderMode -> FilePath -> FilePath -> IO ()
-buildFile srcDir mode distDir path = do
+buildFile :: FilePath -> Command.RenderMode -> Command.RunMode -> FilePath -> FilePath -> IO ()
+buildFile srcDir mode passthrough distDir path = do
   let path' = distDir </> replaceExtension (makeRelative srcDir path) ".html"
       dir' = takeDirectory path'
+      ctx = Execute.Context path passthrough
   putStrLn $ "Building " <> path' <> "..."
   createDirectoryIfMissing True dir'
 
-  nodes <- Execute.executeFile path >>= Error.unwrap
+  nodes <- Execute.executeFile ctx >>= Error.unwrap
   if Evaluate.simplify nodes == []
     then putStrLn $ "No generated content for " <> path
     else case mode of
@@ -63,17 +64,18 @@ type StmStore = STM.TVar Store
 
 -- | A version of `buildDir` that doesn't write files to disk, but instead
 -- record the generated `Syntax.Block`s in STM.
-buildDirInMemory :: FilePath -> Command.RenderMode -> StmStore -> IO ()
-buildDirInMemory srcDir mode store = do
+buildDirInMemory :: FilePath -> Command.RenderMode -> Command.RunMode -> StmStore -> IO ()
+buildDirInMemory srcDir mode passthrough store = do
   templates <- listTemplates srcDir
-  mapM_ (buildFileInMemory srcDir mode store) templates
+  mapM_ (buildFileInMemory srcDir mode passthrough store) templates
 
-buildFileInMemory :: FilePath -> Command.RenderMode -> StmStore -> FilePath -> IO ()
-buildFileInMemory srcDir mode store path = do
+buildFileInMemory :: FilePath -> Command.RenderMode -> Command.RunMode -> StmStore -> FilePath -> IO ()
+buildFileInMemory srcDir mode passthrough store path = do
   let path' = replaceExtension (makeRelative srcDir path) ".html"
+      ctx = Execute.Context path passthrough
   putStrLn $ "Building " <> path' <> "..."
 
-  mnodes <- Execute.executeFile path
+  mnodes <- Execute.executeFile ctx
   case mnodes of
     Right nodes ->
       if Evaluate.simplify nodes == []

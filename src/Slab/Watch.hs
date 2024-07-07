@@ -9,7 +9,7 @@ module Slab.Watch
   ) where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (forever, when)
+import Control.Monad (forever)
 import System.Directory (canonicalizePath)
 import System.FSNotify
 import System.FilePath (makeRelative, takeExtension, (</>))

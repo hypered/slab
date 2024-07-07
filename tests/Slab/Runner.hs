@@ -5,6 +5,7 @@ module Slab.Runner
 
 import Data.List (sort)
 import Data.Text (Text)
+import Slab.Command qualified as Command
 import Slab.Execute qualified as Execute
 import Slab.Render qualified as Render
 import System.FilePath
@@ -52,7 +53,8 @@ mkGoldenTest path = do
  where
   action :: IO Text
   action = do
-    evaluated <- Execute.executeFile path
+    let ctx = Execute.Context path Command.RunNormal
+    evaluated <- Execute.executeFile ctx
     case evaluated of
       Left _ -> pure "TODO"
       Right nodes -> do

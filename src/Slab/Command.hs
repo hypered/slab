@@ -15,6 +15,7 @@ module Slab.Command
   , CommandWithPath (..)
   , RenderMode (..)
   , ParseMode (..)
+  , RunMode (..)
   , parserInfo
   ) where
 
@@ -24,8 +25,8 @@ import Options.Applicative qualified as A
 
 --------------------------------------------------------------------------------
 data Command
-  = Build FilePath RenderMode FilePath
-  | Watch FilePath RenderMode FilePath
+  = Build FilePath RenderMode RunMode FilePath
+  | Watch FilePath RenderMode RunMode FilePath
   | Serve FilePath FilePath
   | ReportPages FilePath
   | ReportHeadings FilePath
@@ -35,9 +36,9 @@ data Command
 
 -- | Commands operating on a path.
 data CommandWithPath
-  = Render RenderMode
+  = Render RenderMode RunMode
   | -- | If True, simplify the evaluated AST.
-    Execute Bool
+    Execute Bool RunMode
   | -- | If True, simplify the evaluated AST.
     Evaluate Bool
   | Parse
@@ -53,6 +54,13 @@ data ParseMode
     ParseShallow
   | -- | Process the include statements, creating a complete template.
     ParseDeep
+
+data RunMode
+  = -- | A failing external command fails the template.
+    RunNormal
+  | -- | A failing external command doesn't fail the template and its output is
+    -- rendered in the template.
+    RunPassthrough
 
 --------------------------------------------------------------------------------
 parserInfo :: A.ParserInfo Command
@@ -148,6 +156,7 @@ parserBuild = do
       RenderPretty
       ( A.long "pretty" <> A.help "Use pretty-printing"
       )
+  passthrough <- parserPassthroughFlag
   distDir <-
     A.strOption
       ( A.long "dist"
@@ -156,7 +165,7 @@ parserBuild = do
           <> A.help
             "A destination directory for the generated HTML files."
       )
-  pure $ Build srcDir mode distDir
+  pure $ Build srcDir mode passthrough distDir
 
 parserServe :: A.Parser Command
 parserServe = do
@@ -216,6 +225,7 @@ parserWatch = do
       RenderPretty
       ( A.long "pretty" <> A.help "Use pretty-printing"
       )
+  passthrough <- parserPassthroughFlag
   distDir <-
     A.strOption
       ( A.long "dist"
@@ -224,7 +234,7 @@ parserWatch = do
           <> A.help
             "A destination directory for the generated HTML files."
       )
-  pure $ Watch srcDir mode distDir
+  pure $ Watch srcDir mode passthrough distDir
 
 parserExectue :: A.Parser Command
 parserExectue = do
@@ -233,7 +243,8 @@ parserExectue = do
     A.switch
       ( A.long "simplify" <> A.help "Simplify the AST"
       )
-  pure $ uncurry CommandWithPath pathAndmode $ Execute simpl
+  passthrough <- parserPassthroughFlag
+  pure $ uncurry CommandWithPath pathAndmode $ Execute simpl passthrough
 
 parserRender :: A.Parser Command
 parserRender = do
@@ -244,7 +255,8 @@ parserRender = do
       ( A.long "pretty" <> A.help "Use pretty-printing"
       )
   pathAndmode <- parserWithPath
-  pure $ uncurry CommandWithPath pathAndmode $ Render mode
+  passthrough <- parserPassthroughFlag
+  pure $ uncurry CommandWithPath pathAndmode $ Render mode passthrough
 
 parserEvaluate :: A.Parser Command
 parserEvaluate = do
@@ -296,4 +308,13 @@ parserShallowFlag =
     ParseDeep
     ParseShallow
     ( A.long "shallow" <> A.help "Don't parse recursively the included Slab files"
+    )
+
+--------------------------------------------------------------------------------
+parserPassthroughFlag :: A.Parser RunMode
+parserPassthroughFlag =
+  A.flag
+    RunNormal
+    RunPassthrough
+    ( A.long "passthrough" <> A.help "Allow external command failures"
     )
