@@ -59,10 +59,10 @@ p.lede.muted Catching summary.</code></pre><pre><code>&lt;h1 class=&quot;hero&qu
 in the generated
 HTML. --&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="fragments">Fragments</h2><p>Fragments are blocks of HTML that can be named and reused.</p><h3 id="basics">Basics</h3><p>To define a new fragment, the <code>frag</code> keyword is used, followed by the name of the fragment. The body of the fragment is made of the following indented lines. To call a fragment, its name is used like a regular element.</p><div class="switcher"><pre><code>frag card
   h1 Card
-  content
+  para
 
 card
-  frag content
+  with para
     p A paragraph.</code></pre><pre><code>&lt;h1&gt;
     Card
 &lt;/h1&gt;
@@ -189,9 +189,9 @@ ul
   default first
 div
   default second</code></pre><p>It can be called as a fragment:</p><div class="switcher"><pre><code>import aux-imported.slab
-  frag first
+  with first
     h1 A title
-  frag second
+  with second
     p A paragraph.</code></pre><pre><code>&lt;div&gt;
     &lt;h1&gt;
         A title
