@@ -83,7 +83,7 @@ renderBlock (Syntax.BlockInclude (Just "escape-html") _ (Just nodes)) =
   escapeTexts nodes
 renderBlock (Syntax.BlockInclude _ _ (Just nodes)) = mapM_ renderBlock nodes
 renderBlock (Syntax.BlockInclude _ path Nothing) = H.stringComment $ "include " <> path
-renderBlock (Syntax.BlockFragmentDef _ _ _) = mempty
+renderBlock (Syntax.BlockFragmentDef _ _ _ _) = mempty
 renderBlock (Syntax.BlockFragmentCall _ _ _ _ nodes) = mapM_ renderBlock nodes
 renderBlock (Syntax.BlockFor _ _ _ nodes) = mapM_ renderBlock nodes
 renderBlock (Syntax.BlockComment b content) =
@@ -138,7 +138,7 @@ extractText = f
   f (Syntax.BlockText _ [Syntax.Lit s]) = s
   f (Syntax.BlockText _ _) = error "extractTexts called on unevaluated BlockText"
   f (Syntax.BlockInclude _ _ _) = error "extractTexts called on a BlockInclude"
-  f (Syntax.BlockFragmentDef _ _ _) = error "extractTexts called on a BlockFragmentDef"
+  f (Syntax.BlockFragmentDef _ _ _ _) = error "extractTexts called on a BlockFragmentDef"
   f (Syntax.BlockFragmentCall _ _ _ _ _) = error "extractTexts called on a BlockFragmentCall"
   f (Syntax.BlockFor _ _ _ _) = error "extractTexts called on a BlockFor"
   f (Syntax.BlockComment _ _) = error "extractTexts called on a BlockComment"

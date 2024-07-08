@@ -20,11 +20,11 @@ body
   post Hello.
 
   post
-    frag content
+    with content
       p Some content.
 
   card
-    frag content
+    with content
       p Some content.
 
   card
@@ -33,7 +33,7 @@ body
   -- This test ensures that the content passed to post can use a fragment g
   -- defined within the call.
   post
-    frag g
+    with g
       h1 Title
 
     g

@@ -1,5 +1,5 @@
 import body.slab
 
-  frag content
+  with content
     include mixins-def.slab
     list

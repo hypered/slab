@@ -1,7 +1,7 @@
 frag card
   h1 Card
-  content
+  para
 
 card
-  frag content
+  with para
     p A paragraph.

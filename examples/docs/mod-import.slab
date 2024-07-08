@@ -1,5 +1,5 @@
 import aux-imported.slab
-  frag first
+  with first
     h1 A title
-  frag second
+  with second
     p A paragraph.

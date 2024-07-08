@@ -98,7 +98,7 @@ extractHeadings = concatMap f
           _ -> extractHeadings children
   f (Syntax.BlockText _ _) = []
   f (Syntax.BlockInclude _ _ children) = maybe [] extractHeadings children
-  f (Syntax.BlockFragmentDef _ _ _) = []
+  f (Syntax.BlockFragmentDef _ _ _ _) = []
   f (Syntax.BlockFragmentCall _ _ _ _ children) =
     extractHeadings children
   f (Syntax.BlockFor _ _ _ children) = extractHeadings children

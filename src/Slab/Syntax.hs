@@ -15,6 +15,7 @@ module Slab.Syntax
   , addScript
   , CommentType (..)
   , Elem (..)
+  , DefinitionUse (..)
   , TrailingSym (..)
   , Attr (..)
   , TextSyntax (..)
@@ -50,9 +51,7 @@ data Block
     -- preprocessing (i.e. actually running the include statement).
     -- The filter name follows the same behavior as BlockFilter.
     BlockInclude (Maybe Text) FilePath (Maybe [Block])
-  | -- | This doesn't exist in Pug. This is like a mixin than receive block arguments.
-    -- Or like a parent template that can be @extended@ by a child template.
-    BlockFragmentDef Text [Text] [Block]
+  | BlockFragmentDef DefinitionUse Text [Text] [Block]
   | BlockFragmentCall Text TrailingSym [Attr] [Expr] [Block]
   | BlockFor Text (Maybe Text) Expr [Block]
   | -- TODO Should we allow string interpolation here ?
@@ -173,6 +172,11 @@ data Elem
     Elem Text
   deriving (Show, Eq)
 
+-- | Specifies if a fragment definition is a normal definition, or one meant to
+-- be an argument of a fragment call.
+data DefinitionUse = DefinitionNormal | DefinitionArg
+  deriving (Show, Eq)
+
 data TrailingSym = HasDot | HasEqual | NoSym
   deriving (Show, Eq)
 
@@ -287,7 +291,7 @@ extractClasses = nub . sort . concatMap f
   f (BlockElem _ _ attrs children) = concatMap g attrs <> extractClasses children
   f (BlockText _ _) = []
   f (BlockInclude _ _ children) = maybe [] extractClasses children
-  f (BlockFragmentDef _ _ _) = [] -- We extract them in BlockFragmentCall instead.
+  f (BlockFragmentDef _ _ _ _) = [] -- We extract them in BlockFragmentCall instead.
   f (BlockFragmentCall _ _ attrs _ children) = concatMap g attrs <> extractClasses children
   f (BlockFor _ _ _ children) = extractClasses children
   f (BlockComment _ _) = []
@@ -322,7 +326,8 @@ extractFragments = concatMap f
   f (BlockElem _ _ _ children) = extractFragments children
   f (BlockText _ _) = []
   f (BlockInclude _ _ children) = maybe [] extractFragments children
-  f (BlockFragmentDef name _ children) = [BlockFragmentDef' name children]
+  f (BlockFragmentDef DefinitionNormal name _ children) = [BlockFragmentDef' name children]
+  f (BlockFragmentDef DefinitionArg _ _ _) = []
   f (BlockFragmentCall name _ _ _ children) =
     [BlockFragmentCall' name] <> extractFragments children
   f (BlockFor _ _ _ children) = extractFragments children

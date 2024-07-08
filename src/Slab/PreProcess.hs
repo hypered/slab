@@ -79,9 +79,9 @@ preproc ctx@Context {..} = \case
             pure $ BlockInclude mname path (Just nodes')
         | otherwise ->
             throwE $ Error.PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
-  BlockFragmentDef name params nodes -> do
+  BlockFragmentDef usage name params nodes -> do
     nodes' <- preprocess ctx nodes
-    pure $ BlockFragmentDef name params nodes'
+    pure $ BlockFragmentDef usage name params nodes'
   BlockFragmentCall name mdot attrs values nodes -> do
     nodes' <- preprocess ctx nodes
     pure $ BlockFragmentCall name mdot attrs values nodes'

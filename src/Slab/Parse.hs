@@ -79,6 +79,7 @@ parserBlock = do
         , parserPipe
         , parserExpr'
         , parserFragmentDef
+        , parserFragmentArg
         , parserComment
         , parserFilter
         , parserRawElement
@@ -455,7 +456,14 @@ parserFragmentDef = do
   _ <- lexeme (string "fragment" <|> string "frag")
   name <- lexeme parserIdentifier
   params <- maybe [] id <$> optional parserParameters
-  pure $ L.IndentMany Nothing (pure . BlockFragmentDef name params) parserBlock
+  pure $ L.IndentMany Nothing (pure . BlockFragmentDef DefinitionNormal name params) parserBlock
+
+parserFragmentArg :: Parser (L.IndentOpt Parser Block Block)
+parserFragmentArg = do
+  _ <- lexeme (string "with")
+  name <- lexeme parserIdentifier
+  params <- maybe [] id <$> optional parserParameters
+  pure $ L.IndentMany Nothing (pure . BlockFragmentDef DefinitionArg name params) parserBlock
 
 -- E.g. {}, {a, b}
 parserParameters :: Parser [Text]

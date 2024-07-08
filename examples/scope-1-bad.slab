@@ -8,5 +8,5 @@ frag content
   p A paragraph.
 
 page
-  frag content
+  with content
     p Another paragraph.

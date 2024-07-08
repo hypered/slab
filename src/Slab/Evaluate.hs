@@ -144,7 +144,7 @@ eval env stack bl = case bl of
         pure $ BlockInclude mname path (Just nodes')
       Nothing ->
         pure $ BlockInclude mname path Nothing
-  node@(BlockFragmentDef _ _ _) -> pure node
+  node@(BlockFragmentDef _ _ _ _) -> pure node
   BlockFragmentCall name mdot attrs values args -> do
     body <- call env stack name values args
     let body' = setAttrs attrs body
@@ -357,9 +357,10 @@ extractVariables' env nodes = do
   let named = extractVariables env' nodes
       unnamed = concatMap unnamedBlock nodes
       content = if null unnamed then [] else [("content", Frag [] env' unnamed)]
-      vars = named <> content
       env' = augmentVariables env named -- Note we don't add the implicit "content" entry.
-  if isJust (lookup "content" named) && not (null unnamed)
+      args = extractArguments env' nodes
+      vars = args <> content
+  if isJust (lookup "content" args) && not (null unnamed)
     then
       throwE $
         Error.EvaluateError $
@@ -368,7 +369,7 @@ extractVariables' env nodes = do
 
 unnamedBlock :: Block -> [Block]
 unnamedBlock (BlockImport path _ args) = [BlockFragmentCall (T.pack path) NoSym [] [] args]
-unnamedBlock (BlockFragmentDef _ _ _) = []
+unnamedBlock (BlockFragmentDef DefinitionArg _ _ _) = []
 unnamedBlock node = [node]
 
 -- Extract both fragments and assignments.
@@ -385,7 +386,10 @@ extractVariable env = \case
   (BlockText _ _) -> []
   (BlockInclude _ _ children) -> maybe [] (extractVariables env) children
   (BlockFor _ _ _ _) -> []
-  (BlockFragmentDef name names children) -> [(name, Frag names env children)]
+  (BlockFragmentDef DefinitionNormal name names children) ->
+    [(name, Frag names env children)]
+  (BlockFragmentDef DefinitionArg name names children) ->
+    [(name, Frag names env children)]
   (BlockFragmentCall _ _ _ _ _) -> []
   (BlockComment _ _) -> []
   (BlockFilter _ _) -> []
@@ -395,6 +399,33 @@ extractVariable env = \case
   (BlockImport _ _ _) -> []
   (BlockRun _ _) -> []
   (BlockAssignVars pairs) -> pairs
+  (BlockIf _ _ _) -> []
+  (BlockList _) -> []
+  (BlockCode _) -> []
+
+-- Extract fragments used as arguments of fragment calls.
+extractArguments :: Env -> [Block] -> [(Text, Expr)]
+extractArguments env = concatMap (extractArgument env)
+
+extractArgument :: Env -> Block -> [(Text, Expr)]
+extractArgument env = \case
+  BlockDoctype -> []
+  (BlockElem _ _ _ _) -> []
+  (BlockText _ _) -> []
+  (BlockInclude _ _ _) -> []
+  (BlockFor _ _ _ _) -> []
+  (BlockFragmentDef DefinitionNormal _ _ _) ->
+    []
+  (BlockFragmentDef DefinitionArg name names children) ->
+    [(name, Frag names env children)]
+  (BlockFragmentCall _ _ _ _ _) -> []
+  (BlockComment _ _) -> []
+  (BlockFilter _ _) -> []
+  (BlockRawElem _ _) -> []
+  (BlockDefault _ _) -> []
+  (BlockImport _ _ _) -> []
+  (BlockRun _ _) -> []
+  (BlockAssignVars _) -> []
   (BlockIf _ _ _) -> []
   (BlockList _) -> []
   (BlockCode _) -> []
@@ -409,7 +440,7 @@ simplify' = \case
   BlockElem name mdot attrs nodes -> [BlockElem name mdot attrs $ simplify nodes]
   node@(BlockText _ _) -> [node]
   BlockInclude mfilter path mnodes -> [BlockInclude mfilter path $ simplify <$> mnodes]
-  BlockFragmentDef _ _ _ -> []
+  BlockFragmentDef _ _ _ _ -> []
   BlockFragmentCall _ _ _ _ args -> simplify args
   BlockFor _ _ _ nodes -> simplify nodes
   node@(BlockComment _ _) -> [node]

@@ -59,9 +59,9 @@ exec ctx@(Context {..}) = \case
   Syntax.BlockInclude mname path mbody -> do
     mbody' <- traverse (execute ctx) mbody
     pure $ Syntax.BlockInclude mname path mbody'
-  Syntax.BlockFragmentDef name params nodes -> do
+  Syntax.BlockFragmentDef usage name params nodes -> do
     nodes' <- execute ctx nodes
-    pure $ Syntax.BlockFragmentDef name params nodes'
+    pure $ Syntax.BlockFragmentDef usage name params nodes'
   Syntax.BlockFragmentCall name mdot attrs values nodes -> do
     nodes' <- execute ctx nodes
     pure $ Syntax.BlockFragmentCall name mdot attrs values nodes'
