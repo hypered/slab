@@ -16,7 +16,7 @@ $ cat data/values.json
 ]
 
 $ cat example.slab
-frag hello{name}
+frag hello(name)
   li.greeting
     p Hello, #(name).
     content
@@ -24,7 +24,7 @@ frag hello{name}
 let values = data/values.json
 ul
   for value in values
-    hello{value['username']}
+    hello(value['username'])
       p Some content.
 
 $ slab render --pretty example.slab
