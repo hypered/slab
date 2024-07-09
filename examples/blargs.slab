@@ -1,0 +1,14 @@
+frag f-1
+  g
+
+frag f-2{g}
+  g
+
+frag g
+  p Paragraph.
+
+f-1
+
+f-2
+  with g
+    p Another paragraph.
