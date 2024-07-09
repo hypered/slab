@@ -272,9 +272,7 @@ page
     .c-content.flow-all.u-flow-c-4.limit-42em
       h2#modularity Modularity
 
-      p Slab code can be split in multiple files in two ways: include statements and imports.
-
-      h3#includes Includes
+      p Slab code can be split in multiple files by using include statements.
 
       p An include works by inlining the content of the included file in the including file. When the included file has a <code>.slab</code> extension, it is interpreted as if its code was present in the including file. In particular, any toplevel code that is not <code>let</code> expressions or fragment definitions will render as-if directly written in the including code, and definitions can be used in the including file.
 
@@ -295,26 +293,6 @@ page
         pre
           code
             include:escape-html ../examples/docs/mod-include-filter.html
-
-      h3#imports Imports
-
-      p An import makes it possible to call a Slab file as if it was a fragment. Its body is the content of the file. As with fragments, it is possible to pass fragments as arguments.
-
-      p Assuming a file called <code>aux-imported.slab</code> with the following content:
-
-      pre
-        code
-          include:escape-html ../examples/docs/aux-imported.slab
-
-      p It can be called as a fragment:
-
-      .switcher
-        pre
-          code
-            include:escape-html ../examples/docs/mod-import.slab
-        pre
-          code
-            include:escape-html ../examples/docs/mod-import.html
 
     .c-content.flow-all.u-flow-c-4.limit-42em
       h2#open-source Open source

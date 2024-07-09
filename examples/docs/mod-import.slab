@@ -1,5 +1,0 @@
-import aux-imported.slab
-  with first
-    h1 A title
-  with second
-    p A paragraph.

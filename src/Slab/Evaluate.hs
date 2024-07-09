@@ -24,6 +24,7 @@ module Slab.Evaluate
 
 import Control.Monad (forM)
 import Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
+import Data.List ((\\))
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -221,11 +222,20 @@ augmentVariables Env {..} xs = Env {envVariables = xs <> envVariables}
 evalFrag :: Monad m => Env -> [Text] -> Text -> [Expr] -> [Block] -> Expr -> ExceptT Error.Error m [Block]
 evalFrag env stack name values args (Frag names capturedEnv body) = do
   env' <- extractVariables' env args
-  let env'' = augmentVariables capturedEnv env'
+  case map fst env' \\ names of
+    [] -> pure ()
+    ["content"] -> pure ()
+    ns -> throwE . Error.EvaluateError $
+      "Unnecessary arguments to " <> name <> ": " <> T.pack (show ns)
+  let env'' = augmentVariables (removeFormalParams names capturedEnv) env'
       arguments = zip names (map (thunk env) values)
       env''' = augmentVariables env'' arguments
   body' <- evaluate env''' ("frag " <> name : stack) body
   pure body'
+
+removeFormalParams names Env {..} = Env { envVariables = vars' }
+ where
+  vars' = filter (not . (`elem` names) . fst) envVariables
 
 evalAttrs :: Monad m => Env -> [Text] -> [Attr] -> ExceptT Error.Error m [Attr]
 evalAttrs env stack attrs = mapM f attrs
