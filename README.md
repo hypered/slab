@@ -48,7 +48,7 @@ $ slab render --pretty example.slab
 </ul>
 ```
 
-You can think of it as HTML + functions and imports, and read more about it at
+You can think of Slab as HTML + functions and imports, and read more about it at
 [slab-lang.org](https://slab-lang.org/).
 
 # Development

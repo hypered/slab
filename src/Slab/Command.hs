@@ -91,7 +91,7 @@ parser =
           "serve"
           ( A.info (parserServe <**> A.helper) $
               A.progDesc
-                "Watch and serve a library of Slab templates to HTML"
+                "Watch and serve a library of Slab templates"
           )
         <> A.command
           "report"
