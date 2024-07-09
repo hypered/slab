@@ -399,7 +399,7 @@ extractVariable env = \case
   (BlockFragmentDef DefinitionNormal name names children) ->
     [(name, Frag names env children)]
   (BlockFragmentDef DefinitionArg name names children) ->
-    [(name, Frag names env children)]
+    []
   (BlockFragmentCall _ _ _ _ _) -> []
   (BlockComment _ _) -> []
   (BlockFilter _ _) -> []

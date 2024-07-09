@@ -3,7 +3,7 @@ frag page
   html(dir="ltr", lang="en")
     head
       meta(charset="utf-8")
-      meta(name="viewport" content="width=device-width, initial-scale=1")
+      meta(name="viewport", content="width=device-width, initial-scale=1")
       link(rel="stylesheet", href="/static/css/struct.css")
       title The Slab markup language
     body.u-container-vertical

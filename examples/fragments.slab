@@ -33,7 +33,7 @@ body
   -- This test ensures that the content passed to post can use a fragment g
   -- defined within the call.
   post
-    with g
+    frag g
       h1 Title
 
     g
