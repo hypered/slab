@@ -65,7 +65,8 @@ data Block
   | -- | Similar to an anonymous fragment call, where the fragment body is the
     -- content of the referenced file.
     BlockImport FilePath (Maybe [Block]) [Block]
-  | BlockRun Text (Maybe [Block])
+  | -- | Run an external command, with maybe some stdin input.
+    BlockRun Text (Maybe Text) (Maybe [Block])
   | BlockAssignVars [(Text, Expr)]
   | BlockIf Expr [Block] [Block]
   | BlockList [Block]
@@ -315,7 +316,7 @@ extractClasses = nub . sort . concatMap f
   f (BlockRawElem _ _) = []
   f (BlockDefault _ children) = extractClasses children
   f (BlockImport _ children blocks) = maybe [] extractClasses children <> extractClasses blocks
-  f (BlockRun _ _) = []
+  f (BlockRun _ _ _) = []
   f (BlockAssignVars _) = []
   f (BlockIf _ as bs) = extractClasses as <> extractClasses bs
   f (BlockList children) = extractClasses children
@@ -351,7 +352,7 @@ extractFragments = concatMap f
   f (BlockRawElem _ _) = []
   f (BlockDefault _ children) = extractFragments children
   f (BlockImport _ children args) = maybe [] extractFragments children <> extractFragments args
-  f (BlockRun _ _) = []
+  f (BlockRun _ _ _) = []
   f (BlockAssignVars _) = []
   f (BlockIf _ as bs) = extractFragments as <> extractFragments bs
   f (BlockList children) = extractFragments children

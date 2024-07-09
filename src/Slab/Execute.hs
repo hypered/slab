@@ -75,15 +75,15 @@ exec ctx@(Context {..}) = \case
   Syntax.BlockImport path mbody args -> do
     mbody' <- traverse (execute ctx) mbody
     pure $ Syntax.BlockImport path mbody' args
-  node@(Syntax.BlockRun _ (Just _)) -> pure node
-  Syntax.BlockRun cmd Nothing -> do
+  node@(Syntax.BlockRun _ _ (Just _)) -> pure node
+  Syntax.BlockRun cmd minput Nothing -> do
     (code, out, err) <-
       liftIO $
-        readCreateProcessWithExitCode (shell $ T.unpack cmd) ""
+        readCreateProcessWithExitCode (shell $ T.unpack cmd) $ maybe "" T.unpack minput
     case code of
       ExitSuccess ->
         pure $
-          Syntax.BlockRun cmd $
+          Syntax.BlockRun cmd minput $
             Just [Syntax.BlockText Syntax.RunOutput [Syntax.Lit $ T.pack out]]
       ExitFailure _ -> case ctxRunMode of
         Command.RunNormal ->
@@ -92,7 +92,7 @@ exec ctx@(Context {..}) = \case
               T.pack err <> T.pack out
         Command.RunPassthrough ->
           pure $
-            Syntax.BlockRun cmd $
+            Syntax.BlockRun cmd minput $
               Just $
                 [ Syntax.BlockElem
                     Syntax.Pre

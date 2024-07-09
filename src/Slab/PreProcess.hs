@@ -108,7 +108,7 @@ preproc ctx@Context {..} = \case
             pure $ BlockImport path (Just body) args'
         | otherwise ->
             throwE $ Error.PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
-  node@(BlockRun _ _) -> pure node
+  node@(BlockRun _ _ _) -> pure node
   BlockAssignVars pairs -> do
     let f (name, JsonPath path) = do
           let path' = takeDirectory ctxStartPath </> path

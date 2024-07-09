@@ -1,2 +1,6 @@
 code
   run echo Hello.
+
+code
+  run cat
+    Hello.

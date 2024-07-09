@@ -184,7 +184,7 @@ eval env stack bl = case bl of
   BlockImport path _ args -> do
     body <- call env stack (T.pack path) [] args
     pure $ BlockImport path (Just body) args
-  node@(BlockRun _ _) -> pure node
+  node@(BlockRun _ _ _) -> pure node
   node@(BlockAssignVars _) -> pure node
   BlockIf cond as bs -> do
     cond' <- evalExpr env cond
@@ -417,7 +417,7 @@ extractVariable env = \case
   (BlockDefault _ _) -> []
   (BlockImport path (Just body) _) -> [(T.pack path, Frag [] env body)]
   (BlockImport _ _ _) -> []
-  (BlockRun _ _) -> []
+  (BlockRun _ _ _) -> []
   (BlockAssignVars pairs) -> pairs
   (BlockIf _ _ _) -> []
   (BlockList _) -> []
@@ -444,7 +444,7 @@ extractArgument env = \case
   (BlockRawElem _ _) -> []
   (BlockDefault _ _) -> []
   (BlockImport _ _ _) -> []
-  (BlockRun _ _) -> []
+  (BlockRun _ _ _) -> []
   (BlockAssignVars _) -> []
   (BlockIf _ _ _) -> []
   (BlockList _) -> []
@@ -468,7 +468,7 @@ simplify' = \case
   node@(BlockRawElem _ _) -> [node]
   BlockDefault _ nodes -> simplify nodes
   BlockImport _ mbody _ -> maybe [] simplify mbody
-  BlockRun _ mbody -> maybe [] simplify mbody
+  BlockRun _ _ mbody -> maybe [] simplify mbody
   BlockAssignVars _ -> []
   BlockIf _ [] bs -> simplify bs
   BlockIf _ as _ -> simplify as

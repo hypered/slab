@@ -123,10 +123,8 @@ parserElemBody ref header =
       template <- parseInlines
       case template of
         [] -> do
-          scn
-          items <- textBlock ref parserText -- TODO Use parseInlines
-          let items' = realign items
-          pure $ L.IndentNone $ header [BlockText Dot [Lit $ T.intercalate "\n" items']]
+          s <-  parserDotText ref
+          pure $ L.IndentNone $ header [BlockText Dot [Lit s]]
         _ -> pure $ L.IndentNone $ header [BlockText Dot template]
     HasEqual -> do
       mcontent <- optional parserExpr
@@ -141,6 +139,14 @@ parserElemBody ref header =
       case template of
         [] -> pure $ L.IndentMany Nothing (pure . header) parserBlock
         _ -> pure $ L.IndentNone $ header [BlockText Normal template]
+
+-- | Parse indented text following a dot, or a run block.
+parserDotText :: Pos -> Parser Text
+parserDotText ref = do
+  scn
+  items <- textBlock ref parserText -- TODO Use parseInlines
+  let items' = realign items
+  pure $ T.intercalate "\n" items'
 
 -- | Parse lines of text, indented more than `ref`.
 -- E.g.:
@@ -631,9 +637,11 @@ parserImport = do
 --------------------------------------------------------------------------------
 parserRun :: Parser (L.IndentOpt Parser Block Block)
 parserRun = do
+  ref <- L.indentLevel
   _ <- lexeme (string "run")
   cmd <- parserText
-  pure $ L.IndentNone $ BlockRun cmd Nothing
+  s <- parserDotText ref
+  pure . L.IndentNone $ BlockRun cmd (Just s) Nothing
 
 --------------------------------------------------------------------------------
 parserLet :: Parser (L.IndentOpt Parser Block Block)
