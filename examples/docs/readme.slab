@@ -6,5 +6,5 @@ frag hello{name}
 let values = ../../data/values.json
 ul
   for value in values
-    hello{value['username']}
+    hello(value['username'])
       p Some content.

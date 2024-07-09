@@ -375,20 +375,22 @@ parserClass =
     <$> (char '.' *> some (alphaNumChar <|> oneOf ("-_" :: String)))
     <?> "class name"
 
+-- | Parse both attributes and arguments.
 -- E.g. (), (class='a')
 parserAttrList :: Parser [Attr]
 parserAttrList = (<?> "attribute") $ do
   _ <- string "("
-  pairs <- many parserPair
+  pairs <- sepBy
+    (uncurry Attr <$> try parserPair <|> Arg <$> parserExpr)
+    (lexeme $ string ",")
   _ <- string ")"
-  pure $ map (uncurry Attr) pairs
+  pure pairs
 
 parserPair :: Parser (Text, Expr)
 parserPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
   _ <- string "="
   b <- lexeme parserValue
-  _ <- optional (lexeme $ string ",")
   pure (a, b)
 
 parserValue :: Parser Expr
@@ -482,9 +484,10 @@ parserCall = do
   -- TODO Use parserNameWithAttrs.
   (name, attrs, trailing, args) <- lexeme $ do
     name <- parserIdentifier
-    attrs <- concat <$> many parserAttrs'
+    attrs_ <- concat <$> many parserAttrs'
+    let (attrs, args) = splitAttrsAndArgs attrs_
     trailing <- parserTrailingSym
-    args <- maybe [] id <$> optional parserArguments
+    kwargs <- maybe [] id <$> optional parserArguments
     pure (name, attrs, trailing, args)
   pure $ BlockFragmentCall name trailing attrs args
 

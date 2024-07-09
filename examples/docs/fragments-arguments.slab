@@ -3,5 +3,5 @@ frag hello{name}
     p Hello, #(name).
     content
 
-hello{'Alice'}
+hello('Alice')
   p Some content.

@@ -18,6 +18,7 @@ module Slab.Syntax
   , DefinitionUse (..)
   , TrailingSym (..)
   , Attr (..)
+  , splitAttrsAndArgs
   , TextSyntax (..)
   , Expr (..)
   , Inline (..)
@@ -37,7 +38,7 @@ module Slab.Syntax
   , groupAttrs
   ) where
 
-import Data.List (nub, sort)
+import Data.List (nub, partition, sort)
 import Data.Text (Text)
 import Data.Text qualified as T
 
@@ -180,9 +181,23 @@ data DefinitionUse = DefinitionNormal | DefinitionArg
 data TrailingSym = HasDot | HasEqual | NoSym
   deriving (Show, Eq)
 
+-- | Represent an attribute or an argument of an element. Attributes can be
+-- IDs, classes, or arbitrary keys. Arguments are expressions with no key.
 -- The Code must already be evaluated.
-data Attr = Id Text | Class Text | Attr Text Expr
+data Attr = Id Text | Class Text | Attr Text Expr | Arg Expr
   deriving (Show, Eq)
+
+splitAttrsAndArgs :: [Attr] -> ([Attr], [Expr])
+splitAttrsAndArgs = g . partition f
+ where
+  f = \case
+    Id _ -> True
+    Class _ -> True
+    Attr _ _ -> True
+    Arg _ -> False
+  g (a, b) = (a, map h b)
+  h (Arg e) = e
+  h _ = error "Can't happen"
 
 -- Tracks the syntax used to enter the text.
 data TextSyntax
