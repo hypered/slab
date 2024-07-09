@@ -102,7 +102,7 @@ prettyAttr :: Syntax.Attr -> Doc ann
 prettyAttr (Syntax.Id t) = pretty $ "A.id (H.toValue (\"" <> t <> "\" :: Text))"
 prettyAttr (Syntax.Class t) = pretty $ "A.class_ (H.toValue (\"" <> t <> "\" :: Text))"
 prettyAttr (Syntax.Attr a b) =
-  "H.customAttribute" <+> pretty a <+> maybe (pretty a) prettyExpr b
+  "H.customAttribute" <+> pretty a <+> prettyExpr b
 
 prettyExpr :: Syntax.Expr -> Doc ann
 prettyExpr _ = "TODO"

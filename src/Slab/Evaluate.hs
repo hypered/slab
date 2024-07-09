@@ -132,8 +132,9 @@ eval env stack b
 eval env stack bl = case bl of
   node@BlockDoctype -> pure node
   BlockElem name mdot attrs nodes -> do
+    attrs' <- evalAttrs env stack attrs
     nodes' <- evaluate env stack nodes
-    pure $ BlockElem name mdot attrs nodes'
+    pure $ BlockElem name mdot attrs' nodes'
   BlockText syn template -> do
     template' <- evalTemplate env template
     pure $ BlockText syn template'
@@ -146,9 +147,10 @@ eval env stack bl = case bl of
         pure $ BlockInclude mname path Nothing
   node@(BlockFragmentDef _ _ _ _) -> pure node
   BlockFragmentCall name mdot attrs values args -> do
+    attrs' <- evalAttrs env stack attrs
     body <- call env stack name values args
-    let body' = setAttrs attrs body
-    pure $ BlockFragmentCall name mdot attrs values body'
+    let body' = setAttrs attrs' body
+    pure $ BlockFragmentCall name mdot attrs' values body'
   BlockFor name mindex values nodes -> do
     -- Re-use BlockFor to construct a single node to return.
     let zero :: Int
@@ -224,6 +226,14 @@ evalFrag env stack name values args (Frag names capturedEnv body) = do
       env''' = augmentVariables env'' arguments
   body' <- evaluate env''' ("frag " <> name : stack) body
   pure body'
+
+evalAttrs :: Monad m => Env -> [Text] -> [Attr] -> ExceptT Error.Error m [Attr]
+evalAttrs env stack attrs = mapM f attrs
+ where
+  f (Attr a b) = do
+    b' <- evalExpr env b
+    pure $ Attr a b'
+  f attr = pure attr
 
 evalExpr :: Monad m => Env -> Expr -> ExceptT Error.Error m Expr
 evalExpr env = \case

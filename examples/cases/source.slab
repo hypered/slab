@@ -1,4 +1,4 @@
 html
-  audio(preload='auto', autobuffer, controls)
+  audio(preload='auto', autobuffer=true, controls=true)
     source(src='foo')
     source(src='bar')

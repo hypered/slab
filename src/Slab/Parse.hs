@@ -383,21 +383,20 @@ parserAttrList = (<?> "attribute") $ do
   _ <- string ")"
   pure $ map (uncurry Attr) pairs
 
-parserPair :: Parser (Text, Maybe Expr)
+parserPair :: Parser (Text, Expr)
 parserPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
-  mb <- optional $ do
-    _ <- string "="
-    b <- lexeme parserValue
-    pure b
+  _ <- string "="
+  b <- lexeme parserValue
   _ <- optional (lexeme $ string ",")
-  pure (a, mb)
+  pure (a, b)
 
 parserValue :: Parser Expr
 parserValue =
   SingleQuoteString <$> parserSingleQuoteString
     <|> SingleQuoteString <$> parserDoubleQuoteString
     <|> Int <$> parserNumber
+    <|> Variable <$> parserVariable
 
 parserSingleQuoteString :: Parser Text
 parserSingleQuoteString = do

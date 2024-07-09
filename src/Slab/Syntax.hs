@@ -181,7 +181,7 @@ data TrailingSym = HasDot | HasEqual | NoSym
   deriving (Show, Eq)
 
 -- The Code must already be evaluated.
-data Attr = Id Text | Class Text | Attr Text (Maybe Expr)
+data Attr = Id Text | Class Text | Attr Text Expr
   deriving (Show, Eq)
 
 -- Tracks the syntax used to enter the text.
@@ -309,7 +309,7 @@ extractClasses = nub . sort . concatMap f
   g (Id _) = []
   g (Class c) = [c]
   g (Attr a b) = h a b
-  h "class" (Just (SingleQuoteString c)) = [c]
+  h "class" (SingleQuoteString c) = [c]
   h "class" _ = error "The class is not a string"
   h _ _ = []
 
@@ -360,8 +360,8 @@ idNamesFromAttrs =
         Attr a b -> f a b
     )
  where
-  f "id" (Just (SingleQuoteString x)) = [x]
-  f "id" (Just _) = error "The id is not a string"
+  f "id" (SingleQuoteString x) = [x]
+  f "id" _ = error "The id is not a string"
   f _ _ = []
 
 idNamesFromAttrs' :: [Attr] -> Maybe Text
@@ -383,8 +383,8 @@ classNamesFromAttrs =
         Attr a b -> f a b
     )
  where
-  f "class" (Just (SingleQuoteString x)) = [x]
-  f "class" (Just _) = error "The class is not a string"
+  f "class" (SingleQuoteString x) = [x]
+  f "class" _ = error "The class is not a string"
   f _ _ = []
 
 namesFromAttrs :: [Attr] -> [(Text, Text)]
@@ -398,10 +398,12 @@ namesFromAttrs =
  where
   f "id" _ = []
   f "class" _ = []
-  f a (Just (SingleQuoteString b)) = [(a, b)]
-  f a (Just (Int b)) = [(a, T.pack $ show b)]
-  f _ (Just _) = error "The attribute is not a string"
-  f a Nothing = [(a, a)]
+  f a (SingleQuoteString b) = [(a, b)]
+  f a (Int b) = [(a, T.pack $ show b)]
+  f a (Bool True) = [(a, a)]
+  f a (Bool False) = []
+  f a (Variable _) = error "The attribute is not evaluated"
+  f _ _ = error "The attribute is not a string"
 
 -- | Group multiple classes or IDs in a single class or ID, and transform the
 -- other attributes in 'SingleQuoteString's.
@@ -425,4 +427,4 @@ groupAttrs attrs = elemId <> elemClass <> elemAttrs
       else [Class classNames']
 
   attrs' = namesFromAttrs attrs
-  elemAttrs = map (\(a, b) -> Attr a (Just $ SingleQuoteString b)) attrs'
+  elemAttrs = map (\(a, b) -> Attr a (SingleQuoteString b)) attrs'
