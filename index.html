@@ -97,7 +97,7 @@ card</code></pre><pre><code>&lt;h1&gt;
 &lt;/h1&gt;
 &lt;p&gt;
     Default paragraph.
-&lt;/p&gt;</code></pre></div><h3 id="expression-arguments">Expression arguments</h3><p>Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.</p><p>A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragments, (non-fragments) arguments are passed between curly braces.</p><div class="switcher"><pre><code>frag hello{name}
+&lt;/p&gt;</code></pre></div><h3 id="expression-arguments">Expression arguments</h3><p>Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.</p><p>A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragments, (non-fragments) arguments are passed between curly braces.</p><div class="switcher"><pre><code>frag hello(name)
   .greeting
     p Hello, #(name).
     content
