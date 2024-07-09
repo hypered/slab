@@ -447,6 +447,8 @@ parserPath = do
         `isSuffixOf` path
         || ".txt"
         `isSuffixOf` path
+        || ".svg"
+        `isSuffixOf` path
     )
   pure path
 
