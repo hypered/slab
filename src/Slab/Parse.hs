@@ -457,20 +457,27 @@ parserPath = do
 parserFragmentDef :: Parser (L.IndentOpt Parser Block Block)
 parserFragmentDef = do
   _ <- lexeme (string "fragment" <|> string "frag")
-  name <- lexeme parserIdentifier
-  params <- maybe [] id <$> optional parserParameters
-  pure $ L.IndentMany Nothing (pure . BlockFragmentDef DefinitionNormal name params) parserBlock
+  parserFragmentDef' DefinitionNormal
 
 parserFragmentArg :: Parser (L.IndentOpt Parser Block Block)
 parserFragmentArg = do
   _ <- lexeme (string "with")
+  parserFragmentDef' DefinitionArg
+
+parserFragmentDef' :: DefinitionUse -> Parser (L.IndentOpt Parser Block Block)
+parserFragmentDef' use = do
   name <- lexeme parserIdentifier
   params <- maybe [] id <$> optional parserParameters
-  pure $ L.IndentMany Nothing (pure . BlockFragmentDef DefinitionArg name params) parserBlock
+  kwparams <- maybe [] id <$> optional parserKwParameters
+  pure $ L.IndentMany Nothing (pure . BlockFragmentDef use name (params <> kwparams)) parserBlock
 
 -- E.g. {}, {a, b}
 parserParameters :: Parser [Text]
-parserParameters = parserList' "{" "}" (lexeme parserIdentifier) <?> "arguments"
+parserParameters = parserList' "(" ")" (lexeme parserIdentifier) <?> "parameters"
+
+-- E.g. {}, {a, b}
+parserKwParameters :: Parser [Text]
+parserKwParameters = parserList' "{" "}" (lexeme parserIdentifier) <?> "named parameters"
 
 --------------------------------------------------------------------------------
 parserFragmentCall :: Parser (L.IndentOpt Parser Block Block)

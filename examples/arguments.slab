@@ -1,4 +1,4 @@
-frag hello{name}
+frag hello(name)
   p Hello, #(name).
 
 hello(1)

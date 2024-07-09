@@ -1,4 +1,4 @@
-frag hello{name}
+frag hello(name)
   li.greeting
     p Hello, #(name).
     content
