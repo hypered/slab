@@ -57,7 +57,7 @@ p.lede.muted Catching summary.</code></pre><pre><code>&lt;h1 class=&quot;hero&qu
   comment.</code></pre><pre><code>&lt;!-- A comment in the generated HTML. --&gt;
 &lt;!-- Another comment
 in the generated
-HTML. --&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="fragments">Fragments</h2><p>Fragments are blocks of HTML that can be named and reused.</p><h3 id="basics">Basics</h3><p>To define a new fragment, the <code>frag</code> keyword is used, followed by the name of the fragment. The body of the fragment is made of the following indented lines. To call a fragment, its name is used like a regular element.</p><div class="switcher"><pre><code>frag card
+HTML. --&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="fragments">Fragments</h2><p>Fragments are blocks of HTML that can be named and reused.</p><h3 id="basics">Basics</h3><p>To define a new fragment, the <code>frag</code> keyword is used, followed by the name of the fragment. The body of the fragment is made of the following indented lines. To call a fragment, its name is used like a regular element.</p><div class="switcher"><pre><code>frag card{para}
   h1 Card
   para
 
@@ -102,7 +102,7 @@ card</code></pre><pre><code>&lt;h1&gt;
     p Hello, #(name).
     content
 
-hello{&#39;Alice&#39;}
+hello(&#39;Alice&#39;)
   p Some content.</code></pre><pre><code>&lt;div class=&quot;greeting&quot;&gt;
     &lt;p&gt;
         Hello, Alice.
@@ -172,7 +172,7 @@ ul
     &lt;li&gt;
         val: two, key: 2
     &lt;/li&gt;
-&lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="modularity">Modularity</h2><p>Slab code can be split in multiple files in two ways: include statements and imports.</p><h3 id="includes">Includes</h3><p>An include works by inlining the content of the included file in the including file. When the included file has a <code>.slab</code> extension, it is interpreted as if its code was present in the including file. In particular, any toplevel code that is not <code>let</code> expressions or fragment definitions will render as-if directly written in the including code, and definitions can be used in the including file.</p><p>The include syntax allows to specify a filter. Currently the only supported filter is <code>:escape-html</code>. It can be used when you want to show HTML code and also to show Slab code (i.e. disabling its interpretation). This is how the example code on this page is shown.</p><div class="switcher"><pre><code>include basic.slab</code></pre><pre><code>&lt;ul&gt;
+&lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="modularity">Modularity</h2><p>Slab code can be split in multiple files by using include statements.</p><p>An include works by inlining the content of the included file in the including file. When the included file has a <code>.slab</code> extension, it is interpreted as if its code was present in the including file. In particular, any toplevel code that is not <code>let</code> expressions or fragment definitions will render as-if directly written in the including code, and definitions can be used in the including file.</p><p>The include syntax allows to specify a filter. Currently the only supported filter is <code>:escape-html</code>. It can be used when you want to show HTML code and also to show Slab code (i.e. disabling its interpretation). This is how the example code on this page is shown.</p><div class="switcher"><pre><code>include basic.slab</code></pre><pre><code>&lt;ul&gt;
     &lt;li&gt;
         Item
     &lt;/li&gt;
@@ -185,20 +185,4 @@ ul
 &lt;/ul&gt;</code></pre></div><div class="switcher"><pre><code>include:escape-html basic.slab</code></pre><pre><code>ul
   li Item
   li Item
-  li Item</code></pre></div><h3 id="imports">Imports</h3><p>An import makes it possible to call a Slab file as if it was a fragment. Its body is the content of the file. As with fragments, it is possible to pass fragments as arguments.</p><p>Assuming a file called <code>aux-imported.slab</code> with the following content:</p><pre><code>div
-  default first
-div
-  default second</code></pre><p>It can be called as a fragment:</p><div class="switcher"><pre><code>import aux-imported.slab
-  with first
-    h1 A title
-  with second
-    p A paragraph.</code></pre><pre><code>&lt;div&gt;
-    &lt;h1&gt;
-        A title
-    &lt;/h1&gt;
-&lt;/div&gt;
-&lt;div&gt;
-    &lt;p&gt;
-        A paragraph.
-    &lt;/p&gt;
-&lt;/div&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="open-source">Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p><p>The Haskell package is <a href="https://hackage.haskell.org/package/slab">available on Hackage</a>.</p></div></div></main></body></html>
+  li Item</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="open-source">Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p><p>The Haskell package is <a href="https://hackage.haskell.org/package/slab">available on Hackage</a>.</p></div></div></main></body></html>
