@@ -1,0 +1,35 @@
+include layout/page.slab
+
+page
+  .u-container.u-flow-c-4
+    .c-content.flow
+      h1 Recipe &mdash; SCSS
+
+      p Using the <code>slab render</code> command makes for a simple but practical enough playground to run external commands and instantly see their results. In this recipe, we use the <code>sass</code> command-line tool to turn SCSS snippets of code, directly written in a Slab document, to edit interactively the styles of the document itself.
+
+      h2 Slab code
+
+      p This page contains this block of code:
+      
+      pre
+        code.
+          style
+            run sass --stdin
+              .red { background: red; }
+
+      p When run by Slab, it is transformed to:
+
+      pre
+        code
+          run sass --stdin
+            .red { background: red; }
+
+      style
+        run sass --stdin
+          .red { background: red; }
+
+      p As an example, we include a span with the <code>red</code> class: #{span.red This is red}.
+
+      h2 Running
+
+      p Run <code>slab serve content/</code> in a terminal, and open <code>http://127.0.0.1:9000/a.html</code> in a browser. Whenever you change and save the file, the browser should instantly reflect the changes.

@@ -19,7 +19,10 @@ let
   # Add more as we need them.
   formatters = [ nixpkgs.ormolu nixpkgs.treefmt ] ;
 
+  # Dependencies to the recipes documentation.
+  recipes = [ nixpkgs.dart-sass ] ;
+
 in hp.shellFor {
   packages = p: map (contents.getPkg p) (builtins.attrNames contents.pkgList);
-  buildInputs = nix-tooling ++ haskell-tooling ++ formatters;
+  buildInputs = nix-tooling ++ haskell-tooling ++ formatters ++ recipes;
 }
