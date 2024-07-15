@@ -55,6 +55,7 @@ library
     , blaze-svg
     , bytestring
     , containers
+    , diagnose
     , directory
     , filepath
     , fsnotify
