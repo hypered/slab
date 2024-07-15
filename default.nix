@@ -8,11 +8,13 @@ in rec
     binaries = nixpkgs.haskellPackages.slab;
     haddock = nixpkgs.haskellPackages.slab.doc;
 
+    static-binaries = nixpkgs.pkgsMusl.haskellPackagesStatic.slab;
+
     # A shell to try out our binaries
     # Run with nix-shell default.nix -A shell
     shell = nixpkgs.mkShell {
       buildInputs = [
-        binaries
+        static-binaries
         nixpkgs.busybox # for httpd
         nixpkgs.dart-sass
       ];
