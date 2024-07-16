@@ -14,7 +14,7 @@ in rec
     # Run with nix-shell default.nix -A shell
     shell = nixpkgs.mkShell {
       buildInputs = [
-        static-binaries
+        binaries
         nixpkgs.busybox # for httpd
         nixpkgs.dart-sass
       ];
