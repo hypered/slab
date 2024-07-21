@@ -7,7 +7,7 @@ page
         p Slab is a programmable markup language to generate HTML.
 
       .c-content.flow
-        p This project is still very young. Features demonstrated on this page work as shown but they don't always generalize as expected.
+        p This project is still very young. The features demonstrated on this page work as shown, but they may not always generalize as expected.
 
     .c-content.flow-all.u-flow-c-4.limit-42em
       h2#introduction Introduction
@@ -103,7 +103,7 @@ page
 
       h3#comments Comments
 
-      p Comments are introduced with <code>--</code> or <code>---</code>, either with the comment itself on the same line, or as an indented text block on the floowing lines.
+      p Comments are introduced with <code>--</code> or <code>---</code>, either with the comment itself on the same line, or as an indented text block on the following lines.
 
       .switcher
         pre
@@ -134,7 +134,7 @@ page
 
       h3#implicit-content-argument Implicit <code>content</code> argument
 
-      p To make a call to a fragment look more similar to regular HTML elements, indented lines below the call are passed as an argument called <code>content</code> when an expicit fragment with the same name is not defined. I.e. the following example is equivalent to the example above:
+      p To make a call to a fragment look more similar to regular HTML elements, indented lines below the call are passed as an argument called <code>content</code> when an explicit fragment with the same name is not defined. I.e. the following example is equivalent to the example above:
 
       .switcher
         pre
@@ -160,7 +160,7 @@ page
 
       p Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.
 
-      p A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragments, (non-fragments) arguments are passed between curly braces.
+      p A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragment, (non-fragments) arguments are passed between curly braces.
 
       .switcher
         pre
@@ -177,7 +177,7 @@ page
 
       h3#variable-declarations Variable declarations
 
-      p Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element by following the element name directly with a <code>=</code> character.
+      p Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element. This is done by following the element name directly with a <code>=</code> character.
 
       .switcher
         pre
