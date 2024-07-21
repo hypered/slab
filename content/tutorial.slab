@@ -3,7 +3,7 @@ include layout/page.slab
 page
   .u-container.u-flow-c-4
     .c-content.flow-all.u-flow-c-4.limit-42em
-      h1#tutorial Tutorial
+      h1#tutorial Slab tutorial
     .switcher
       .flow
         p Slab is a programmable markup language designed to simplify the process of generating HTML. It combines a concise notation with the power of programming constructs, allowing you to create reusable web content more efficiently.
@@ -19,17 +19,7 @@ page
         li Key features of Slab, including its concise element notation and templating capabilities
         li How to use the #{code slab} command-line tool to build your projects
         li Advanced concepts such as fragments and modularity
-      p By the end of this tutorial, you'll have a solid foundation in Slab and be ready to create your own web content.
-
-      h2 Why Slab?
-      p Slab offers several advantages over writing plain HTML or using other templating languages:
-      ul
-        li Concise syntax that reduces boilerplate and improves readability
-        li Built-in programming constructs for conditionals, loops, and variable declarations
-        li A fragment system that promotes code reuse and modularity
-        li Seamless integration with JSON data for templating
-        li A smooth learning curve for those familiar with HTML and basic programming concepts
-      p Let's dive in and start exploring Slab!
+      p By the end of this tutorial, you'll have a solid foundation in Slab and be ready to create your own web content. Let's dive in and start exploring Slab!
 
       h2#html HTML
 

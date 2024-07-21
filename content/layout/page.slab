@@ -23,7 +23,10 @@ frag page
                     a(href="/tutorial.html").menu-link Tutorial
                 li
                   .menu-item
-                    a(href="https://github.com/hypered/slab").menu-link GitHub
+                    a(href="/reference.html").menu-link Reference
+                li
+                  .menu-item
+                    a(href="https://github.com/hypered/slab").menu-link Source
  
       main
         content
