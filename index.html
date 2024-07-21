@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html dir="ltr" lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/static/css/struct.css"><title>The Slab markup language</title></head><body class="u-container-vertical"><header><div class="u-container"><div class="u-bar"><div class="u-bar__left"><style>.a-logo { color: black; text-decoration: none; }</style><a class="a-logo" href="/"><div><span class="logo">Slab</span></div></a></div><div class="u-bar__right"><ul><li><div class="menu-item"><a class="menu-link" href="https://github.com/hypered/slab">GitHub</a></div></li></ul></div></div></div></header><main><div class="u-container u-flow-c-4"><div class="switcher"><div class="flow"><p>Slab is a programmable markup language to generate HTML.</p></div><div class="c-content flow"><p>This project is still very young. Features demonstrated on this page work as shown but they don't always generalize as expected.</p></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="introduction">Introduction</h2><p>Slab is an alternative syntax for writing HTML, plus some programming language features (often found in templating languages, like conditionals and loops). <code>slab</code> is a command-line tool to process <code>.slab</code> files and render them into HTML.</p><p>Slab revolves around the concept of fragments. Fragments are pieces of HTML that work like functions. You can define a fragment and then call it:</p><pre><code>frag page
+<html dir="ltr" lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/static/css/struct.css"><title>The Slab markup language</title></head><body class="u-container-vertical"><header><div class="u-container"><div class="u-bar"><div class="u-bar__left"><style>.a-logo { color: black; text-decoration: none; }</style><a class="a-logo" href="/"><div><span class="logo">Slab</span></div></a></div><div class="u-bar__right"><ul><li><div class="menu-item"><a class="menu-link" href="https://github.com/hypered/slab">GitHub</a></div></li></ul></div></div></div></header><main><div class="u-container u-flow-c-4"><div class="switcher"><div class="flow"><p>Slab is a programmable markup language to generate HTML.</p></div><div class="c-content flow"><p>This project is still very young. The features demonstrated on this page work as shown, but they may not always generalize as expected.</p></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="introduction">Introduction</h2><p>Slab is an alternative syntax for writing HTML, plus some programming language features (often found in templating languages, like conditionals and loops). <code>slab</code> is a command-line tool to process <code>.slab</code> files and render them into HTML.</p><p>Slab revolves around the concept of fragments. Fragments are pieces of HTML that work like functions. You can define a fragment and then call it:</p><pre><code>frag page
   doctype html
   body
     content
@@ -42,7 +42,7 @@ p.lede.muted Catching summary.</code></pre><pre><code>&lt;h1 class=&quot;hero&qu
     &lt;div id=&quot;app&quot;&gt;
     &lt;/div&gt;
 &lt;/div&gt;</code></pre></div><h3 id="attributes">Attributes</h3><p>Attributes (including IDs and classes) can be assigned to an element using a syntax similar to HTML itself, by writing them in parenthesis, directly after the element name.</p><div class="switcher"><pre><code>form(action=&#39;/login&#39;, method=&#39;POST&#39;)</code></pre><pre><code>&lt;form action=&quot;/login&quot; method=&quot;POST&quot;&gt;
-&lt;/form&gt;</code></pre></div><h3 id="comments">Comments</h3><p>Comments are introduced with <code>--</code> or <code>---</code>, either with the comment itself on the same line, or as an indented text block on the floowing lines.</p><div class="switcher"><pre><code>-- A regular comment.
+&lt;/form&gt;</code></pre></div><h3 id="comments">Comments</h3><p>Comments are introduced with <code>--</code> or <code>---</code>, either with the comment itself on the same line, or as an indented text block on the following lines.</p><div class="switcher"><pre><code>-- A regular comment.
 
 --- A comment in the generated HTML.
 
@@ -68,7 +68,7 @@ card
 &lt;/h1&gt;
 &lt;p&gt;
     A paragraph.
-&lt;/p&gt;</code></pre></div><p>In the above example, the fragment <code>card</code> is defined. In its body, it itself calls another fragment, <code>content</code>. That fragment is passed as an argument when <code>card</code> called. Arguments are given by defining fragments with the corresponding name, indented below the call.</p><h3 id="implicit-content-argument">Implicit <code>content</code> argument</h3><p>To make a call to a fragment look more similar to regular HTML elements, indented lines below the call are passed as an argument called <code>content</code> when an expicit fragment with the same name is not defined. I.e. the following example is equivalent to the example above:</p><div class="switcher"><pre><code>frag card
+&lt;/p&gt;</code></pre></div><p>In the above example, the fragment <code>card</code> is defined. In its body, it itself calls another fragment, <code>content</code>. That fragment is passed as an argument when <code>card</code> called. Arguments are given by defining fragments with the corresponding name, indented below the call.</p><h3 id="implicit-content-argument">Implicit <code>content</code> argument</h3><p>To make a call to a fragment look more similar to regular HTML elements, indented lines below the call are passed as an argument called <code>content</code> when an explicit fragment with the same name is not defined. I.e. the following example is equivalent to the example above:</p><div class="switcher"><pre><code>frag card
   h1 Card
   content
 
@@ -97,7 +97,7 @@ card</code></pre><pre><code>&lt;h1&gt;
 &lt;/h1&gt;
 &lt;p&gt;
     Default paragraph.
-&lt;/p&gt;</code></pre></div><h3 id="expression-arguments">Expression arguments</h3><p>Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.</p><p>A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragments, (non-fragments) arguments are passed between curly braces.</p><div class="switcher"><pre><code>frag hello(name)
+&lt;/p&gt;</code></pre></div><h3 id="expression-arguments">Expression arguments</h3><p>Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.</p><p>A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragment, (non-fragments) arguments are passed between curly braces.</p><div class="switcher"><pre><code>frag hello(name)
   .greeting
     p Hello, #(name).
     content
@@ -110,7 +110,7 @@ hello(&#39;Alice&#39;)
     &lt;p&gt;
         Some content.
     &lt;/p&gt;
-&lt;/div&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="expression-language">Expression language</h2><p>In addition of its lightweight syntax equivalent to HTML, Slab supports some constructs usually found in programming languages.</p><h3 id="variable-declarations">Variable declarations</h3><p>Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element by following the element name directly with a <code>=</code> character.</p><div class="switcher"><pre><code>let a = 1
+&lt;/div&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="expression-language">Expression language</h2><p>In addition of its lightweight syntax equivalent to HTML, Slab supports some constructs usually found in programming languages.</p><h3 id="variable-declarations">Variable declarations</h3><p>Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element. This is done by following the element name directly with a <code>=</code> character.</p><div class="switcher"><pre><code>let a = 1
 let b = &quot;Alice&quot;
 p= a
 p= b</code></pre><pre><code>&lt;p&gt;
