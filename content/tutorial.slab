@@ -1,0 +1,162 @@
+include layout/page.slab
+
+page
+  .u-container.u-flow-c-4
+    .c-content.flow-all.u-flow-c-4.limit-42em
+      h1#tutorial Slab tutorial
+    .switcher
+      .flow
+        p Slab is a programmable markup language that simplifies the creation of HTML.
+
+      div
+        -- empty
+
+    .c-content.flow-all.limit-42em
+
+      p In this tutorial, we'll explore:
+
+      ul
+        li The basics of HTML and how Slab provides an alternative syntax
+        li Key features of Slab, including its concise element notation and templating capabilities
+        li How to use the #{code slab} command-line tool to build your projects
+        li Advanced concepts like as fragments and modularity
+      p By the end of this tutorial, you'll have a solid foundation in Slab and be ready to start creating your own web content. Let's dive in and start exploring Slab!
+
+      h2#html HTML
+
+      p Slab is a small markup language designed for authoring HTML. HTML itself is a markup language, so let's start with that.
+
+      p HTML stands for HyperText Markup Language. Its purpose is to allow the writing of text enhanced with markup information. The markup provides additional structure and data to help computer software process the text. For example, the markup may indicate that one piece of text is a title and another piece is a paragraph, or it may indicate that some words need to be emphasized. The hypertext nature comes from the ability to mark words as links: when followed (e.g., by clicking with the mouse), they allow navigation to different pages referenced by attributes of the links.
+
+      p Below, we show the same text twice, without and with HTML markup.
+
+      .switcher
+        style.
+          .wrap {white-space: pre-wrap;}
+        pre
+          code.wrap
+            :escape-html
+              A short story
+
+              Alice quickly jumped over the lazy rabbit and disappeared under the tree.
+              
+        pre
+          code.wrap
+            :escape-html
+              <h1>A short story</h1>
+              <p>Alice <em>quickly</em> jumped over <a href="https://en.wikipedia.org/wiki/White_Rabbit">the lazy rabbit</a> and disappeared under the tree.</p>
+
+      p In this example, we can see that the HTML markup is usually written by pairs of <em>tags</em>. For instance, the opening tag <code>&lt;h1&gt;</code> and corresponding closing tag <code>&lt;/h1&gt;</code> are used to delimit "A short story" and specify that it is a level 1 heading. (The opening tag, closing tag, and text content together are called an <em>element</em>.) Within the opening tag <code>&lt;a&gt;</code> (short for "anchor", used to specify hyperlinks), we see the attribute "href", used to specify where the link goes to; in this case, a Wikipedia page.
+
+      p The above HTML may look like this when interpreted by a web browser. Note how the word "quickly" is rendered in italics and how the words "the lazy rabbit" form a link.
+
+      .u-container
+          <h4>A short story</h4>
+          <p>Alice <em>quickly</em> jumped over <a href="https://en.wikipedia.org/wiki/White_Rabbit">the lazy rabbit</a> and disappeared under the tree.</p>
+
+      p Note: The exact fonts, text size, or link color used to render HTML are collectively called "styles". The styles to use are usually described by another language called CSS.
+
+      h2#alternative-syntax Slab, an alternative syntax
+
+      p At its core, Slab is an alternative syntax for writing HTML. The above example written in Slab might look like this:
+
+      pre
+        code.wrap
+          :escape-html
+            h1 A short story
+            p Alice <em>quickly</em> jumped over <a href="https://en.wikipedia.org/wiki/White_Rabbit">the lazy rabbit</a> and disappeared under the tree.
+
+      p Note that Slab supports regular HTML: the <code>h1</code> element uses the Slab syntax, but the <code>em</code> element is written as regular HTML. If we are not using raw HTML, the above example could also look like this:
+
+      pre
+        code.wrap
+          :escape-html
+            h1 A short story
+            p Alice #{em quickly} jumped over #{a(href="https://en.wikipedia.org/wiki/White_Rabbit") the lazy rabbit} and disappeared under the tree.
+
+      p The differences between Slab and HTML may not seem worthwhile if you write mostly text and little markup. Here is another example where the markup is a larger part of our content than the text.
+
+      .switcher
+        pre
+          code
+            include:escape-html ../examples/docs/basic.slab
+        pre
+          code
+            include:escape-html ../examples/docs/basic.html
+
+      p In this case, the brevity of the Slab syntax to generate HTML elements is more apparent. This example also shows how the tree-structured nature of HTML is captured by indentation in Slab (note how the closing <code>&lt;/ul&gt;</code> tag appears at the very bottom). In addition to a different but equivalent syntax to HTML, Slab offers something that doesn't exist in HTML: templating, which we'll look at in a next section.
+
+      h2#cli Using the <code>slab</code> command-line tool
+
+      p Slab is implemented as a command-line tool called <code>slab</code>. You can <a href="https://github.com/hypered/slab/releases">get a copy from its GitHub release page</a>. At the time of writing, the only release available is version <code>v0.0.3.0</code>, which is offered for Linux (this is a statically-linked binary; it should work on any Linux distribution).
+
+      p Here's a way to download it, rename it to <code>slab</code>, and mark it as an executable file:
+
+      pre
+        code.
+          $ curl -sL https://github.com/hypered/slab/releases/download/v0.0.3.0-alpha/slab-v0.0.3.0-linux-x86-64-musl -o /bin/slab
+          $ chmod +x /bin/slab
+
+      p The <code>slab</code> binary supports a <code>--help</code> flag:
+
+      pre
+        code
+          | $ slab --help
+          |
+          run slab --help
+
+      p The two most useful commands are #{code build} and #{code serve}.
+
+      p #{code build} requires an argument: the path to a directory containing files with a #{code .slab} extension. It translates these files, written in the Slab syntax, to HTML, and writes the result to a directory called #{code _site}. For example, this is how this website is generated:
+
+      pre
+        code.
+          $ slab build content/
+          Building ./_site/index.html...
+          Building ./_site/layout/page.html...
+          No generated content for content/layout/page.slab
+          Building ./_site/reference.html...
+          Building ./_site/tutorial.html...
+
+      p In addition to the #{code build} command, the #{code serve} command is useful during development. It starts a local web server and automatically rebuilds your content as files change.
+
+      pre
+        code.
+          $ slab serve content/
+
+      p With this command running, you can view your site at #{code http://127.0.0.1:9000} in your web browser. Any changes you make to your #{code .slab} files will be reflected immediately without the need to manually refresh the page.
+
+      p The #{code serve} command is especially useful if you make frequent changes and want to see the results quickly without having to manually rebuild your site each time.
+
+      p Both commands support the #{code --dist} option. When building, it specifies the directory where the resulting HTML files must be written. When running the development server, it is used to specify a directory to serve additional resources, such as images or CSS files.
+
+      h2#templating Templating
+
+      p Slab is also a templating language: Slab documents are templates that can be combined with external data.
+
+      p Let's assume we have a file named <code>values.json</code> with the following content:
+      pre
+        code
+          include:escape-html ../data/values.json
+
+      p JSON is another text-based syntax, this time used to represent data. In this example, the square brackets <code>[</code> and <code>]</code> are used to delimit a list of two objects. The objects themselves are delimited by the curly braces <code>{</code> and <code>}</code>, and each contains two fields named "username" and "email". The values corresponding to these fields are "Alice" and "alice@example.com", and "Bob" and "bob@example.com".
+
+      p We can now write a Slab template that references the above JSON file and uses its content to fill the template:
+
+      .switcher
+        pre
+          code
+            include:escape-html ../examples/docs/expr-json.slab
+        pre
+          code
+            include:escape-html ../examples/docs/expr-json.html
+
+      p Referencing the JSON file is done by using the <code>let ... = ...</code> syntax to create a variable named "values". (We could choose a different variable name, such as "clients", instead of "values".) Now "values" is a list of objects, as described above. Then we use the <code>for</code> syntax to iterate through the list, and do two things: assign each object to the "value" variable in turn, and select the "username" field using the <code>value['username']</code> syntax. We then format the username with a <code>li</code> element. Note that we use the <code>li=</code> syntax (and not #{code li}) when we want to produce the value of some code expression.
+
+      h2#next Next steps
+
+      -- p After reading this short tutorial, you can continue with <a>recipes</a> for common uses of Slab, or read the <a href="/reference.html">reference</a> page of this site to learn everything Slab has to offer.
+
+      p After reading this short tutorial, you can read the <a href="/reference.html">reference</a> page of this site to learn everything Slab has to offer.
+
+      p If you find Slab useful in your projects, we'd love to hear from you! Please drop us a note with your feedback or share details about your project. We are excited to feature it in our upcoming list of projects using Slab.
