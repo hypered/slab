@@ -9,4 +9,5 @@ frag page(titl)
 
 let t = "My first Slab page"
 page(t)
-  p Welcome to Slab! This is a simple example of how Slab works.
+  .main-content
+    p Welcome to Slab! This is a simple example of how Slab works.

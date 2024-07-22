@@ -30,3 +30,9 @@ frag page
  
       main
         content
+      footer
+        .u-container.u-container-top
+          hr
+          .c-text.flow.limit-40ch
+            p
+              small Slab is written in Belgium by <a href="https://github.com/noteed">Võ Minh Thu</a> (<a href="https://twitter.com/noteed">@noteed</a>). As a software engineer, I am currently looking for new opportunities. If you're interested in my skills, please <a href="https://noteed.com">consider hiring me</a>.

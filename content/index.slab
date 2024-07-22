@@ -7,34 +7,16 @@ page
 
     .switcher
       .flow
-        p Slab is a programmable markup language designed to simplify the process of generating HTML. It combines a concise notation with the power of programming constructs, allowing you to create reusable web content more efficiently.
+        p Slab is a programmable markup language that simplifies the creation of HTML. It combines concise notation with standard programming constructs to create reusable web content more efficiently.
 
       .c-content.flow
         -- empty
 
     .c-content.flow-all.u-flow-c-4.limit-42em
-      h2 Why Slab?
-      p Slab offers several advantages over writing plain HTML or using other templating languages:
-      ul
-        li Concise syntax that reduces boilerplate and improves readability
-        li Built-in programming constructs for conditionals, loops, and variable declarations
-        li A fragment system that promotes code reuse and modularity
-        li Seamless integration with JSON data for templating
-        li A smooth learning curve for those familiar with HTML and basic programming concepts
-
-      h2 Get started
-
-      p Ready to dive in? Here are some resources to help you get started with Slab:
-
-      ul
-        li <a href="tutorial.html">Tutorial</a>: A step-by-step guide to learn the basics of Slab
-        li <a href="reference.html">Reference</a>: Comprehensive documentation of Slab's features and syntax
-        li <a href="https://github.com/hypered/slab">GitHub project</a>: Access the source code, contribute to the project, and download the #{code slab} binary from the <a href="https://github.com/hypered/slab/releases">Releases page</a>
-        li <a href="https://hackage.haskell.org/package/slab">Haskell package</a>: Find Slab on Hackage
 
       h2 A taste of Slab
 
-      p Here's a quick example of Slab code, and the resulting HTML. This shows how Slab can generates clean, readable HTML with minimal effort.
+      p Here's a quick example of Slab code and the resulting HTML. This shows how Slab can generate well-organized HTML with minimal effort.
 
       .switcher
         pre
@@ -44,9 +26,25 @@ page
           code
             include:escape-html ../examples/docs/landing.html
 
-      h2 Get involved
+      h2 Why Slab?
 
-      p Slab is an open-source project, and we welcome contributions from the community. Whether you're interested in improving the documentation, adding new features, or fixing bugs, your help is appreciated. Visit our <a href="https://github.com/hypered/slab">GitHub repository</a> to get started.
+      p Slab offers several advantages over writing plain HTML or using other templating languages:
+      ul
+        li Concise syntax that reduces boilerplate and improves readability
+        li Built-in programming constructs for conditionals, loops, and variable declarations
+        li A fragment system that encourages code reuse and modularity
+        li Seamless integration with JSON data for templating
+        li A smooth learning curve for those familiar with HTML and basic programming concepts
+
+      h2 Getting started
+
+      p Ready to dive in? Here are some resources to help you get started with Slab:
+
+      ul
+        li <a href="tutorial.html">Tutorial</a>: A step-by-step guide to learning the basics of Slab
+        li <a href="reference.html">Reference</a>: Comprehensive documentation of Slab's features and syntax
+        li <a href="https://github.com/hypered/slab">GitHub project</a>: Access the source code, contribute to the project, and download the #{code slab} binary from the <a href="https://github.com/hypered/slab/releases">Releases page</a>
+        li <a href="https://hackage.haskell.org/package/slab">Haskell package</a>: Find Slab on Hackage
 
       h2 Open source
 

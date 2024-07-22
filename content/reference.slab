@@ -10,7 +10,7 @@ page
         p This reference guide provides a comprehensive overview of Slab's features and syntax.
 
       .c-content.flow
-        p Note: Slab is a young project. The features demonstrated here work as shown, but they may not always generalize as expected.
+        p Note: Slab is still a young project. The features demonstrated here work as shown, but they may not always generalize as expected.
 
     .c-content.flow-all.limit-42em
 
@@ -18,15 +18,15 @@ page
 
       h2#introduction Introduction
 
-      p Slab is an alternative syntax for writing HTML, plus some programming language features (often found in templating languages, like conditionals and loops). The #{code slab} command-line tool processes #{code .slab} files and renders them into HTML.
+      p Slab is an alternative syntax for writing HTML, plus some programming language features (often found in templating languages, such as conditionals and loops). The #{code slab} command-line tool processes #{code .slab} files and renders them into HTML.
 
-      p Slab revolves around the concept of fragments. Fragments are pieces of HTML that work like functions. You can define a fragment and then call it:
+      p Slab revolves around the concept of fragments. Fragments are pieces of HTML that act like functions. You can define a fragment and then call it:
 
       pre
         code
           include:escape-html ../examples/docs/frag.slab
 
-      p The example above defines a fragment named #{code page}. It then calls #{code page}, passing a block of HTML (containing a heading and a paragraph) as an argument (implicitly called #{code content}).
+      p The above example defines a fragment named #{code page}. It then calls #{code page}, passing a block of HTML (containing a heading and a paragraph) as an argument (implicitly called #{code content}).
 
       p The #{code slab render --pretty} command can be used to transform the above code into the following HTML:
 
@@ -34,7 +34,7 @@ page
         code
           include:escape-html ../examples/docs/frag.html
 
-      p When not pretty-printed, it looks like this instead:
+      p When it is not pretty-printed, it looks like this instead:
 
       pre
         code
@@ -46,7 +46,7 @@ page
       h2#basic-syntax Basic syntax
       h3#elements Elements
 
-      p At its core, Slab is a short-hand notation to represent HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to the one used in Pug, which inspired Slab.
+      p At its core, Slab is a shorthand notation for representing HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to that used in <a href="https://pugjs.org/">Pug</a>, which inspired Slab.
 
       .switcher
         pre
@@ -56,7 +56,7 @@ page
           code
             include:escape-html ../examples/docs/basic.html
 
-      p Note: we show the resulting HTML pretty-printed. In a production setting, we would instead generate the following:
+      p Note: We show the resulting HTML pretty-printed. In a production environment, we would  generate the following instead:
 
       pre
         code
@@ -75,7 +75,7 @@ page
           code
             include:escape-html ../examples/docs/basic-id.html
 
-      p Classes work similarly and use the #{code .} character for the short notation instead.
+      p Classes work similarly, using the #{code .} character for short notation instead.
 
       .switcher
         pre
@@ -85,7 +85,7 @@ page
           code
             include:escape-html ../examples/docs/basic-class.html
 
-      p An ID or a class can also be used on their own. In that case, a #{code div} element is assumed.
+      p An ID or a class can also be used by itself. In this case, a #{code div} element is assumed.
 
       .switcher
         pre
@@ -97,7 +97,7 @@ page
 
       h3#attributes Attributes
 
-      p Attributes (including IDs and classes) can be assigned to an element using a syntax similar to HTML itself, by writing them in parentheses, directly after the element name.
+      p Attributes (including IDs and classes) can be assigned to an element using a syntax similar to HTML itself, by placing them in parentheses, directly after the element name. To add multiple attributes, use a comma to separate them.
 
       .switcher
         pre
@@ -109,7 +109,7 @@ page
 
       h3#comments Comments
 
-      p Comments are introduced with #{code --} or #{code ---}, either with the comment itself on the same line, or as an indented text block on the following lines.
+      p Comments are introduced with #{code --} or #{code ---}, either with the comment itself on the same line, or as an indented block of text on subsequent lines.
 
       .switcher
         pre
@@ -126,7 +126,7 @@ page
 
       h3#basics Basics
 
-      p To define a new fragment, the #{code frag} keyword is used, followed by the name of the fragment. The body of the fragment is made of the following indented lines. To call a fragment, its name is used like a regular element.
+      p To define a new fragment, the #{code frag} keyword is used, followed by the name of the fragment, and optionally by its formal parameters (in curly braces). The body of the fragment consists of the following indented lines. To call a fragment, its name is used as a regular element and its actual arguments are introduced with the #{code with} keyword.
 
       .switcher
         pre
@@ -136,11 +136,11 @@ page
           code
             include:escape-html ../examples/docs/fragments.html
 
-      p In the above example, the fragment #{code card} is defined. In its body, it itself calls another fragment, #{code content}. That fragment is passed as an argument when #{code card} is called. Arguments are given by defining fragments with the corresponding name, indented below the call.
+      p In the example above, the fragment #{code card} is defined. In its body, it itself calls another fragment, #{code para}. This fragment is passed as an argument when #{code card} is called. Arguments are indented below the call.
 
       h3#implicit-content-argument Implicit #{code content} argument
 
-      p To make a call to a fragment look more similar to regular HTML elements, indented lines below the call are passed as an argument called #{code content} when an explicit fragment with the same name is not defined. I.e. the following example is equivalent to the example above:
+      p To make a call to a fragment look more like a regular HTML elements, indented lines below the call are passed as an argument called #{code content}. I.e. the following example is equivalent to the example above:
 
       .switcher
         pre
@@ -164,9 +164,9 @@ page
 
       h3#expression-arguments Expression arguments
 
-      p Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.
+      p Fragments can also take non-fragment arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.
 
-      p A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameter names. Similarly, when calling a fragment, (non-fragments) arguments are passed between curly braces.
+      p A fragment is defined to take (non-fragment) arguments by using parentheses directly after its name, mentioning parameter names. Similarly, when calling a fragment, (non-fragment) arguments are passed between parentheses.
 
       .switcher
         pre
@@ -179,11 +179,11 @@ page
     .c-content.flow-all.u-flow-c-4.limit-42em
       h2#expression-language Expression language
 
-      p In addition to its lightweight syntax equivalent to HTML, Slab supports some constructs usually found in programming languages.
+      p In addition to its lightweight syntax equivalent to HTML, Slab supports some constructs commonly found in programming languages.
 
       h3#variable-declarations Variable declarations
 
-      p Variables are declared using the #{code let} keyword. A variable (or a more general expression) can be used as the content of an element. This is done by following the element name directly with a #{code =} character.
+      p Variables are declared with the #{code let} keyword. A variable (or a more general expression) can be used as the content of an element. This is done by immediately following the element name with a #{code =} character.
 
       .switcher
         pre
@@ -193,11 +193,9 @@ page
           code
             include:escape-html ../examples/docs/expr.html
 
-      p A current limitation is that each declaration requires its own #{code let} line.
-
       h3#expressions Expressions
 
-      p Simple values (booleans, integers and string literals) are supported alongside simple operations: addition, subtraction, multiplication, and division for integers, and comparison for all types.
+      p Simple values (booleans, integers and string literals) are supported, as well as simple operations: addition, subtraction, multiplication, and division for integers, and comparison for all types.
 
       .switcher
         pre
@@ -207,7 +205,7 @@ page
           code
             include:escape-html ../examples/docs/exprs.html
 
-      p Strings can be concatenated with the #{code +} operator. Integers can be converted to strings using the #{code show} function. Strings can be "converted" to booleans using the #{code null} function.
+      p Strings can be concatenated using the #{code +} operator. Integers can be converted to strings with the #{code show} function. Strings can be "converted" to booleans using the #{code null} function.
 
       .switcher
         pre
@@ -231,12 +229,14 @@ page
 
       h3#json-support JSON support
 
-      p Static JSON files can be loaded by using their relative path.
+      p Static JSON files can be loaded by using their relative path. This makes it easy to store and template data outside of a Slab file.
 
-      p Assuming a file with the following content:
+      p Assume a file with the following JSON content:
       pre
         code
           include:escape-html ../data/values.json
+
+      p Here is an example of how to format the JSON data:
 
       .switcher
         pre
@@ -282,7 +282,7 @@ page
 
       p An include works by inlining the content of the included file in the including file. When the included file has a #{code .slab} extension, it is interpreted as if its code was present in the including file. In particular, any toplevel code that is not #{code let} expressions or fragment definitions will render as-if directly written in the including code, and definitions can be used in the including file.
 
-      p The include syntax allows you to specify a filter. Currently, the only supported filter is #{code :escape-html}. It can be used when you want to show HTML code and also to show Slab code (i.e. disabling its interpretation). This is how the example code on this page is shown.
+      p The include syntax allows you to specify a filter. Currently, the only supported filter is #{code :escape-html}. It can be used when you want to show HTML code and also to show Slab code (i.e. disabling its interpretation). This is how the code examples on this page are shown.
 
       .switcher
         pre
