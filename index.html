@@ -1,188 +1,32 @@
 <!DOCTYPE HTML>
-<html dir="ltr" lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/static/css/struct.css"><title>The Slab markup language</title></head><body class="u-container-vertical"><header><div class="u-container"><div class="u-bar"><div class="u-bar__left"><style>.a-logo { color: black; text-decoration: none; }</style><a class="a-logo" href="/"><div><span class="logo">Slab</span></div></a></div><div class="u-bar__right"><ul><li><div class="menu-item"><a class="menu-link" href="https://github.com/hypered/slab">GitHub</a></div></li></ul></div></div></div></header><main><div class="u-container u-flow-c-4"><div class="switcher"><div class="flow"><p>Slab is a programmable markup language to generate HTML.</p></div><div class="c-content flow"><p>This project is still very young. The features demonstrated on this page work as shown, but they may not always generalize as expected.</p></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="introduction">Introduction</h2><p>Slab is an alternative syntax for writing HTML, plus some programming language features (often found in templating languages, like conditionals and loops). <code>slab</code> is a command-line tool to process <code>.slab</code> files and render them into HTML.</p><p>Slab revolves around the concept of fragments. Fragments are pieces of HTML that work like functions. You can define a fragment and then call it:</p><pre><code>frag page
+<html dir="ltr" lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/static/css/struct.css"><title>The Slab markup language</title></head><body class="u-container-vertical"><header><div class="u-container"><div class="u-bar"><div class="u-bar__left"><style>.a-logo { color: black; text-decoration: none; }</style><a class="a-logo" href="/"><div><span class="logo">Slab</span></div></a></div><div class="u-bar__right"><ul><li><div class="menu-item"><a class="menu-link" href="/tutorial.html">Tutorial</a></div></li><li><div class="menu-item"><a class="menu-link" href="/reference.html">Reference</a></div></li><li><div class="menu-item"><a class="menu-link" href="https://github.com/hypered/slab">Source</a></div></li></ul></div></div></div></header><main><div class="u-container u-flow-c-4"><div class="c-content flow-all u-flow-c-4 limit-42em"><h1>Welcome to Slab</h1></div><div class="switcher"><div class="flow"><p>Slab is a programmable markup language that simplifies the creation of HTML. It combines concise notation with standard programming constructs to create reusable web content more efficiently.</p></div><div class="c-content flow"></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2>A taste of Slab</h2><p>Here's a quick example of Slab code and the resulting HTML. This shows how Slab can generate well-organized HTML with minimal effort.</p><div class="switcher"><pre><code>frag page(titl)
   doctype html
-  body
-    content
+  html
+    head
+      title= titl
+    body
+      h1= titl
+      content
 
-page
-  h1 A title
-  p A paragraph.</code></pre><p>The example above defines a fragment named <code>page</code>. It then calls <code>page</code>, passing a block of HTML (containing a heading and a paragraph) as an argument (implicitly called <code>content</code>).</p><p>The <code>slab render --pretty</code> command can be used to transform the above code into the following HTML:</p><pre><code>&lt;!DOCTYPE HTML&gt;
+let t = &quot;My first Slab page&quot;
+page(t)
+  .main-content
+    p Welcome to Slab! This is a simple example of how Slab works.</code></pre><pre><code>&lt;!DOCTYPE HTML&gt;
 
-&lt;body&gt;
-    &lt;h1&gt;
-        A title
-    &lt;/h1&gt;
-    &lt;p&gt;
-        A paragraph.
-    &lt;/p&gt;
-&lt;/body&gt;</code></pre><p>When not pretty-printed, it looks like this instead:</p><pre><code>&lt;!DOCTYPE HTML&gt;
-&lt;body&gt;&lt;h1&gt;A title&lt;/h1&gt;&lt;p&gt;A paragraph.&lt;/p&gt;&lt;/body&gt;</code></pre></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="basic-syntax">Basic syntax</h2><h3 id="elements">Elements</h3><p>At its core, Slab is a short-hand notation to represent HTML. An HTML element is written as its tag name, followed by text content, or by other elements. The tree structure is captured by indenting child elements instead of using closing tags. This syntax is identical to the one used in Pug, which inspired Slab.</p><div class="switcher"><pre><code>ul
-  li Item
-  li Item
-  li Item</code></pre><pre><code>&lt;ul&gt;
-    &lt;li&gt;
-        Item
-    &lt;/li&gt;
-    &lt;li&gt;
-        Item
-    &lt;/li&gt;
-    &lt;li&gt;
-        Item
-    &lt;/li&gt;
-&lt;/ul&gt;</code></pre></div><p>Note: we show on the resulting HTML pretty-printed. In a production setting, we would instead generate the following:</p><pre><code>&lt;ul&gt;&lt;li&gt;Item&lt;/li&gt;&lt;li&gt;Item&lt;/li&gt;&lt;li&gt;Item&lt;/li&gt;&lt;/ul&gt;</code></pre><h3 id="ids-and-classes">IDs and classes</h3><p>To assign an ID to an element, the regular attribute notation can be used (see below). Slab also supports tacking the ID directly to the element name with a <code>#</code> character.</p><div class="switcher"><pre><code>h1#title A title</code></pre><pre><code>&lt;h1 id=&quot;title&quot;&gt;
-    A title
-&lt;/h1&gt;</code></pre></div><p>Classes work similarly and use and the <code>.</code> character for the short notation instead.</p><div class="switcher"><pre><code>h1.hero A title
-p.lede.muted Catching summary.</code></pre><pre><code>&lt;h1 class=&quot;hero&quot;&gt;
-    A title
-&lt;/h1&gt;
-&lt;p class=&quot;lede muted&quot;&gt;
-    Catching summary.
-&lt;/p&gt;</code></pre></div><p>An ID or a class can also be used on their own. In that case, a <code>div</code> element is assumed.</p><div class="switcher"><pre><code>.playground
-  #app</code></pre><pre><code>&lt;div class=&quot;playground&quot;&gt;
-    &lt;div id=&quot;app&quot;&gt;
-    &lt;/div&gt;
-&lt;/div&gt;</code></pre></div><h3 id="attributes">Attributes</h3><p>Attributes (including IDs and classes) can be assigned to an element using a syntax similar to HTML itself, by writing them in parenthesis, directly after the element name.</p><div class="switcher"><pre><code>form(action=&#39;/login&#39;, method=&#39;POST&#39;)</code></pre><pre><code>&lt;form action=&quot;/login&quot; method=&quot;POST&quot;&gt;
-&lt;/form&gt;</code></pre></div><h3 id="comments">Comments</h3><p>Comments are introduced with <code>--</code> or <code>---</code>, either with the comment itself on the same line, or as an indented text block on the following lines.</p><div class="switcher"><pre><code>-- A regular comment.
-
---- A comment in the generated HTML.
-
----
-  Another comment
-  in the generated
-  HTML.
-
---
-  Another
-  regular
-  comment.</code></pre><pre><code>&lt;!-- A comment in the generated HTML. --&gt;
-&lt;!-- Another comment
-in the generated
-HTML. --&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="fragments">Fragments</h2><p>Fragments are blocks of HTML that can be named and reused.</p><h3 id="basics">Basics</h3><p>To define a new fragment, the <code>frag</code> keyword is used, followed by the name of the fragment. The body of the fragment is made of the following indented lines. To call a fragment, its name is used like a regular element.</p><div class="switcher"><pre><code>frag card{para}
-  h1 Card
-  para
-
-card
-  with para
-    p A paragraph.</code></pre><pre><code>&lt;h1&gt;
-    Card
-&lt;/h1&gt;
-&lt;p&gt;
-    A paragraph.
-&lt;/p&gt;</code></pre></div><p>In the above example, the fragment <code>card</code> is defined. In its body, it itself calls another fragment, <code>content</code>. That fragment is passed as an argument when <code>card</code> called. Arguments are given by defining fragments with the corresponding name, indented below the call.</p><h3 id="implicit-content-argument">Implicit <code>content</code> argument</h3><p>To make a call to a fragment look more similar to regular HTML elements, indented lines below the call are passed as an argument called <code>content</code> when an explicit fragment with the same name is not defined. I.e. the following example is equivalent to the example above:</p><div class="switcher"><pre><code>frag card
-  h1 Card
-  content
-
-card
-  p A paragraph.</code></pre><pre><code>&lt;h1&gt;
-    Card
-&lt;/h1&gt;
-&lt;p&gt;
-    A paragraph.
-&lt;/p&gt;</code></pre></div><h3 id="default-arguments">Default arguments</h3><p>Fragments can define default contents for their arguments (making them optional) by using the <code>default</code> keyword before calling an argument.</p><div class="switcher"><pre><code>frag card
-  h1 Card
-  default content
-    p Default paragraph.
-
-card
-  p Another paragraph.
-
-card</code></pre><pre><code>&lt;h1&gt;
-    Card
-&lt;/h1&gt;
-&lt;p&gt;
-    Another paragraph.
-&lt;/p&gt;
-&lt;h1&gt;
-    Card
-&lt;/h1&gt;
-&lt;p&gt;
-    Default paragraph.
-&lt;/p&gt;</code></pre></div><h3 id="expression-arguments">Expression arguments</h3><p>Fragments can also take (non-fragment) arguments. The expressions that can be used in Slab are documented in the <a href="#expression-language">Expression language</a> section.</p><p>A fragment is defined to take (non-fragments) arguments using curly braces directly after its name, mentioning parameters names. Similarly, when calling a fragment, (non-fragments) arguments are passed between curly braces.</p><div class="switcher"><pre><code>frag hello(name)
-  .greeting
-    p Hello, #(name).
-    content
-
-hello(&#39;Alice&#39;)
-  p Some content.</code></pre><pre><code>&lt;div class=&quot;greeting&quot;&gt;
-    &lt;p&gt;
-        Hello, Alice.
-    &lt;/p&gt;
-    &lt;p&gt;
-        Some content.
-    &lt;/p&gt;
-&lt;/div&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="expression-language">Expression language</h2><p>In addition of its lightweight syntax equivalent to HTML, Slab supports some constructs usually found in programming languages.</p><h3 id="variable-declarations">Variable declarations</h3><p>Variables are declared using the <code>let</code> keyword. A variable (or a more general expression) can be used as the content of an element. This is done by following the element name directly with a <code>=</code> character.</p><div class="switcher"><pre><code>let a = 1
-let b = &quot;Alice&quot;
-p= a
-p= b</code></pre><pre><code>&lt;p&gt;
-    1
-&lt;/p&gt;
-&lt;p&gt;
-    Alice
-&lt;/p&gt;</code></pre></div><p>A current limitation is that each declaration requires its own <code>let</code> line.</p><h3 id="expressions">Expressions</h3><p>Simple values (booleans, integers and string literals) are supported alongside simple operations: addition, substraction, multiplication, and division for integers, and comparison for all types.</p><div class="switcher"><pre><code>let a = 1
-p= a + 2 * 3</code></pre><pre><code>&lt;p&gt;
-    7
-&lt;/p&gt;</code></pre></div><p>Strings can be concatenated with the <code>+</code> operator. Integers can be converted to strings using the <code>show</code> function. Strings can be "converted" to booleans using the <code>null</code> function.</p><div class="switcher"><pre><code>let a = 1
-p= show (a + 2) + &#39;.&#39;</code></pre><pre><code>&lt;p&gt;
-    3.
-&lt;/p&gt;</code></pre></div><h3 id="string-interpolation">String interpolation</h3><p>Expressions can be used within the text content of an element using the the <code>#(...)</code> syntax.</p><div class="switcher"><pre><code>let name = &quot;Bob&quot;
-p Hello, #(name).</code></pre><pre><code>&lt;p&gt;
-    Hello, Bob.
-&lt;/p&gt;</code></pre></div><h3 id="json-support">JSON support</h3><p>Static JSON files can be loaded by using their relative path.</p><p>Assuming a file with the following content:</p><pre><code>[
-  {
-    &quot;username&quot;: &quot;Alice&quot;,
-    &quot;email&quot;: &quot;alice@example.com&quot;
-  },
-  {
-    &quot;username&quot;: &quot;Bob&quot;,
-    &quot;email&quot;: &quot;bob@example.com&quot;
-  }
-]</code></pre><div class="switcher"><pre><code>let values = ../../data/values.json
-ul
-  for value in values
-    li= value[&#39;username&#39;]</code></pre><pre><code>&lt;ul&gt;
-    &lt;li&gt;
-        Alice
-    &lt;/li&gt;
-    &lt;li&gt;
-        Bob
-    &lt;/li&gt;
-&lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="control-flow">Control flow</h2><p>Slab supports conditionals and loops using <code>if</code> and <code>for</code> blocks.</p><h3 id="conditionals">Conditionals</h3><p>The <code>else</code> branch is optional.</p><div class="switcher"><pre><code>if true
-  p A.
-else
-  p B.</code></pre><pre><code>&lt;p&gt;
-    A.
-&lt;/p&gt;</code></pre></div><h3 id="loops">Loops</h3><p>It is possible to iterate on lists and objects. In the following example, the index and the key are optional.</p><div class="switcher"><pre><code>ul
-  for val, index in [1, 2]
-    li val: #(val), index: #(index)
-
-ul
-  for val, key in {1: &#39;one&#39;, 2: &#39;two&#39;}
-    li val: #(val), key: #(key)</code></pre><pre><code>&lt;ul&gt;
-    &lt;li&gt;
-        val: 1, index: 0
-    &lt;/li&gt;
-    &lt;li&gt;
-        val: 2, index: 1
-    &lt;/li&gt;
-&lt;/ul&gt;
-&lt;ul&gt;
-    &lt;li&gt;
-        val: one, key: 1
-    &lt;/li&gt;
-    &lt;li&gt;
-        val: two, key: 2
-    &lt;/li&gt;
-&lt;/ul&gt;</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="modularity">Modularity</h2><p>Slab code can be split in multiple files by using include statements.</p><p>An include works by inlining the content of the included file in the including file. When the included file has a <code>.slab</code> extension, it is interpreted as if its code was present in the including file. In particular, any toplevel code that is not <code>let</code> expressions or fragment definitions will render as-if directly written in the including code, and definitions can be used in the including file.</p><p>The include syntax allows to specify a filter. Currently the only supported filter is <code>:escape-html</code>. It can be used when you want to show HTML code and also to show Slab code (i.e. disabling its interpretation). This is how the example code on this page is shown.</p><div class="switcher"><pre><code>include basic.slab</code></pre><pre><code>&lt;ul&gt;
-    &lt;li&gt;
-        Item
-    &lt;/li&gt;
-    &lt;li&gt;
-        Item
-    &lt;/li&gt;
-    &lt;li&gt;
-        Item
-    &lt;/li&gt;
-&lt;/ul&gt;</code></pre></div><div class="switcher"><pre><code>include:escape-html basic.slab</code></pre><pre><code>ul
-  li Item
-  li Item
-  li Item</code></pre></div></div><div class="c-content flow-all u-flow-c-4 limit-42em"><h2 id="open-source">Open source</h2><p>Slab is an open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p><p>The Haskell package is <a href="https://hackage.haskell.org/package/slab">available on Hackage</a>.</p></div></div></main></body></html>
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;
+            My first Slab page
+        &lt;/title&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;h1&gt;
+            My first Slab page
+        &lt;/h1&gt;
+        &lt;div class=&quot;main-content&quot;&gt;
+            &lt;p&gt;
+                Welcome to Slab! This is a simple example of how Slab works.
+            &lt;/p&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</code></pre></div><h2>Why Slab?</h2><p>Slab offers several advantages over writing plain HTML or using other templating languages:</p><ul><li>Concise syntax that reduces boilerplate and improves readability</li><li>Built-in programming constructs for conditionals, loops, and variable declarations</li><li>A fragment system that encourages code reuse and modularity</li><li>Seamless integration with JSON data for templating</li><li>A smooth learning curve for those familiar with HTML and basic programming concepts</li></ul><h2>Getting started</h2><p>Ready to dive in? Here are some resources to help you get started with Slab:</p><ul><li><a href="tutorial.html">Tutorial</a>: A step-by-step guide to learning the basics of Slab</li><li><a href="reference.html">Reference</a>: Comprehensive documentation of Slab's features and syntax</li><li><a href="https://github.com/hypered/slab">GitHub project</a>: Access the source code, contribute to the project, and download the <code>slab</code> binary from the <a href="https://github.com/hypered/slab/releases">Releases page</a></li><li><a href="https://hackage.haskell.org/package/slab">Haskell package</a>: Find Slab on Hackage</li></ul><h2>Open source</h2><p>Slab is an evolving open source project released under the terms of the 2-Clause BSD license. The source code and issue tracker are available on <a href="https://github.com/hypered/slab">GitHub</a>.</p></div></div></main><footer><div class="u-container u-container-top"><hr><div class="c-text flow limit-40ch"><p><small>Slab is written in Belgium by <a href="https://github.com/noteed">Võ Minh Thu</a> (<a href="https://twitter.com/noteed">@noteed</a>). As a software engineer, I am currently looking for new opportunities. If you're interested in my skills, please <a href="https://noteed.com">consider hiring me</a>.</small></p></div></div></footer></body></html>

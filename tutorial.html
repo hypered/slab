@@ -1,0 +1,67 @@
+<!DOCTYPE HTML>
+<html dir="ltr" lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/static/css/struct.css"><title>The Slab markup language</title></head><body class="u-container-vertical"><header><div class="u-container"><div class="u-bar"><div class="u-bar__left"><style>.a-logo { color: black; text-decoration: none; }</style><a class="a-logo" href="/"><div><span class="logo">Slab</span></div></a></div><div class="u-bar__right"><ul><li><div class="menu-item"><a class="menu-link" href="/tutorial.html">Tutorial</a></div></li><li><div class="menu-item"><a class="menu-link" href="/reference.html">Reference</a></div></li><li><div class="menu-item"><a class="menu-link" href="https://github.com/hypered/slab">Source</a></div></li></ul></div></div></div></header><main><div class="u-container u-flow-c-4"><div class="c-content flow-all u-flow-c-4 limit-42em"><h1 id="tutorial">Slab tutorial</h1></div><div class="switcher"><div class="flow"><p>Slab is a programmable markup language that simplifies the creation of HTML.</p></div><div></div></div><div class="c-content flow-all limit-42em"><p>In this tutorial, we'll explore:</p><ul><li>The basics of HTML and how Slab provides an alternative syntax</li><li>Key features of Slab, including its concise element notation and templating capabilities</li><li>How to use the <code>slab</code> command-line tool to build your projects</li><li>Advanced concepts like as fragments and modularity</li></ul><p>By the end of this tutorial, you'll have a solid foundation in Slab and be ready to start creating your own web content. Let's dive in and start exploring Slab!</p><h2 id="html">HTML</h2><p>Slab is a small markup language designed for authoring HTML. HTML itself is a markup language, so let's start with that.</p><p>HTML stands for HyperText Markup Language. Its purpose is to allow the writing of text enhanced with markup information. The markup provides additional structure and data to help computer software process the text. For example, the markup may indicate that one piece of text is a title and another piece is a paragraph, or it may indicate that some words need to be emphasized. The hypertext nature comes from the ability to mark words as links: when followed (e.g., by clicking with the mouse), they allow navigation to different pages referenced by attributes of the links.</p><p>Below, we show the same text twice, without and with HTML markup.</p><div class="switcher"><style>.wrap {white-space: pre-wrap;}</style><pre><code class="wrap">A short story
+
+Alice quickly jumped over the lazy rabbit and disappeared under the tree.</code></pre><pre><code class="wrap">&lt;h1&gt;A short story&lt;/h1&gt;
+&lt;p&gt;Alice &lt;em&gt;quickly&lt;/em&gt; jumped over &lt;a href=&quot;https://en.wikipedia.org/wiki/White_Rabbit&quot;&gt;the lazy rabbit&lt;/a&gt; and disappeared under the tree.&lt;/p&gt;</code></pre></div><p>In this example, we can see that the HTML markup is usually written by pairs of <em>tags</em>. For instance, the opening tag <code>&lt;h1&gt;</code> and corresponding closing tag <code>&lt;/h1&gt;</code> are used to delimit "A short story" and specify that it is a level 1 heading. (The opening tag, closing tag, and text content together are called an <em>element</em>.) Within the opening tag <code>&lt;a&gt;</code> (short for "anchor", used to specify hyperlinks), we see the attribute "href", used to specify where the link goes to; in this case, a Wikipedia page.</p><p>The above HTML may look like this when interpreted by a web browser. Note how the word "quickly" is rendered in italics and how the words "the lazy rabbit" form a link.</p><div class="u-container"><h4>A short story</h4><p>Alice <em>quickly</em> jumped over <a href="https://en.wikipedia.org/wiki/White_Rabbit">the lazy rabbit</a> and disappeared under the tree.</p></div><p>Note: The exact fonts, text size, or link color used to render HTML are collectively called "styles". The styles to use are usually described by another language called CSS.</p><h2 id="alternative-syntax">Slab, an alternative syntax</h2><p>At its core, Slab is an alternative syntax for writing HTML. The above example written in Slab might look like this:</p><pre><code class="wrap">h1 A short story
+p Alice &lt;em&gt;quickly&lt;/em&gt; jumped over &lt;a href=&quot;https://en.wikipedia.org/wiki/White_Rabbit&quot;&gt;the lazy rabbit&lt;/a&gt; and disappeared under the tree.</code></pre><p>Note that Slab supports regular HTML: the <code>h1</code> element uses the Slab syntax, but the <code>em</code> element is written as regular HTML. If we are not using raw HTML, the above example could also look like this:</p><pre><code class="wrap">h1 A short story
+p Alice #{em quickly} jumped over #{a(href=&quot;https://en.wikipedia.org/wiki/White_Rabbit&quot;) the lazy rabbit} and disappeared under the tree.</code></pre><p>The differences between Slab and HTML may not seem worthwhile if you write mostly text and little markup. Here is another example where the markup is a larger part of our content than the text.</p><div class="switcher"><pre><code>ul
+  li Item
+  li Item
+  li Item</code></pre><pre><code>&lt;ul&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+    &lt;li&gt;
+        Item
+    &lt;/li&gt;
+&lt;/ul&gt;</code></pre></div><p>In this case, the brevity of the Slab syntax to generate HTML elements is more apparent. This example also shows how the tree-structured nature of HTML is captured by indentation in Slab (note how the closing <code>&lt;/ul&gt;</code> tag appears at the very bottom). In addition to a different but equivalent syntax to HTML, Slab offers something that doesn't exist in HTML: templating, which we'll look at in a next section.</p><h2 id="cli">Using the <code>slab</code> command-line tool</h2><p>Slab is implemented as a command-line tool called <code>slab</code>. You can <a href="https://github.com/hypered/slab/releases">get a copy from its GitHub release page</a>. At the time of writing, the only release available is version <code>v0.0.3.0</code>, which is offered for Linux (this is a statically-linked binary; it should work on any Linux distribution).</p><p>Here's a way to download it, rename it to <code>slab</code>, and mark it as an executable file:</p><pre><code>$ curl -sL https://github.com/hypered/slab/releases/download/v0.0.3.0-alpha/slab-v0.0.3.0-linux-x86-64-musl -o /bin/slab
+$ chmod +x /bin/slab</code></pre><p>The <code>slab</code> binary supports a <code>--help</code> flag:</p><pre><code>$ slab --help
+slab - A programmable markup language to generate HTML
+
+Usage: slab COMMAND
+
+  Slab is a programmable markup language to generate HTML.
+
+Available options:
+  -h,--help                Show this help text
+
+Available commands:
+  build                    Build a library of Slab templates to HTML
+  watch                    Watch and build a library of Slab templates to HTML
+  serve                    Watch and serve a library of Slab templates
+  report                   Analyse a library of Slab templates
+  render                   Render a Slab template to HTML
+  run                      Execute a Slab template
+  evaluate                 Evaluate a Slab template
+  parse                    Parse a Slab template to AST
+  generate                 Generate code corresponding to a Slab template
+  classes                  Parse a Slab template and report its CSS classes
+  fragments                Parse a Slab template and report its fragments
+</code></pre><p>The two most useful commands are <code>build</code> and <code>serve</code>.</p><p><code>build</code> requires an argument: the path to a directory containing files with a <code>.slab</code> extension. It translates these files, written in the Slab syntax, to HTML, and writes the result to a directory called <code>_site</code>. For example, this is how this website is generated:</p><pre><code>$ slab build content/
+Building ./_site/index.html...
+Building ./_site/layout/page.html...
+No generated content for content/layout/page.slab
+Building ./_site/reference.html...
+Building ./_site/tutorial.html...</code></pre><p>In addition to the <code>build</code> command, the <code>serve</code> command is useful during development. It starts a local web server and automatically rebuilds your content as files change.</p><pre><code>$ slab serve content/</code></pre><p>With this command running, you can view your site at <code>http://127.0.0.1:9000</code> in your web browser. Any changes you make to your <code>.slab</code> files will be reflected immediately without the need to manually refresh the page.</p><p>The <code>serve</code> command is especially useful if you make frequent changes and want to see the results quickly without having to manually rebuild your site each time.</p><p>Both commands support the <code>--dist</code> option. When building, it specifies the directory where the resulting HTML files must be written. When running the development server, it is used to specify a directory to serve additional resources, such as images or CSS files.</p><h2 id="templating">Templating</h2><p>Slab is also a templating language: Slab documents are templates that can be combined with external data.</p><p>Let's assume we have a file named <code>values.json</code> with the following content:</p><pre><code>[
+  {
+    &quot;username&quot;: &quot;Alice&quot;,
+    &quot;email&quot;: &quot;alice@example.com&quot;
+  },
+  {
+    &quot;username&quot;: &quot;Bob&quot;,
+    &quot;email&quot;: &quot;bob@example.com&quot;
+  }
+]</code></pre><p>JSON is another text-based syntax, this time used to represent data. In this example, the square brackets <code>[</code> and <code>]</code> are used to delimit a list of two objects. The objects themselves are delimited by the curly braces <code>{</code> and <code>}</code>, and each contains two fields named "username" and "email". The values corresponding to these fields are "Alice" and "alice@example.com", and "Bob" and "bob@example.com".</p><p>We can now write a Slab template that references the above JSON file and uses its content to fill the template:</p><div class="switcher"><pre><code>let values = ../../data/values.json
+ul
+  for value in values
+    li= value[&#39;username&#39;]</code></pre><pre><code>&lt;ul&gt;
+    &lt;li&gt;
+        Alice
+    &lt;/li&gt;
+    &lt;li&gt;
+        Bob
+    &lt;/li&gt;
+&lt;/ul&gt;</code></pre></div><p>Referencing the JSON file is done by using the <code>let ... = ...</code> syntax to create a variable named "values". (We could choose a different variable name, such as "clients", instead of "values".) Now "values" is a list of objects, as described above. Then we use the <code>for</code> syntax to iterate through the list, and do two things: assign each object to the "value" variable in turn, and select the "username" field using the <code>value['username']</code> syntax. We then format the username with a <code>li</code> element. Note that we use the <code>li=</code> syntax (and not <code>li</code>) when we want to produce the value of some code expression.</p><h2 id="next">Next steps</h2><p>After reading this short tutorial, you can read the <a href="/reference.html">reference</a> page of this site to learn everything Slab has to offer.</p><p>If you find Slab useful in your projects, we'd love to hear from you! Please drop us a note with your feedback or share details about your project. We are excited to feature it in our upcoming list of projects using Slab.</p></div></div></main><footer><div class="u-container u-container-top"><hr><div class="c-text flow limit-40ch"><p><small>Slab is written in Belgium by <a href="https://github.com/noteed">Võ Minh Thu</a> (<a href="https://twitter.com/noteed">@noteed</a>). As a software engineer, I am currently looking for new opportunities. If you're interested in my skills, please <a href="https://noteed.com">consider hiring me</a>.</small></p></div></div></footer></body></html>
