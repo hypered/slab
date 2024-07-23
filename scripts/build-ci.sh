@@ -7,3 +7,4 @@ set -e
 
 slab build content/
 cp -r static/ _site/
+cp static/favicon.ico _site/
