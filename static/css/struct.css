@@ -209,6 +209,10 @@ body {
   padding-block-start: var(--grid-gutter);
 }
 
+.u-container-bottom {
+  padding-block-end: var(--grid-gutter);
+}
+
 .inset {
   padding: var(--grid-gutter);
 }
@@ -227,10 +231,38 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+.u-bar--top-aligned {
+  align-items: start;
+}
 
 .u-bar__right ul li {
   display: inline;
   margin-left: var(--space-s);
+}
+
+.hsep {
+  display: flex;
+  gap: 1em;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.vsep {
+  display: flex;
+  gap: 1em;
+  flex-direction: column;
+}
+
+.hspread {
+  display: flex;
+  gap: 1em;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.grow {
+  flex-grow: 1;
 }
 
 .switcher {
@@ -267,17 +299,10 @@ body {
   flex-grow: 1;
 }
 
-/* Used to display layouting primitives. This adds some padding so that the
-   borders of other (displayed) layout primitives and placeholders don't touch
-   each others.
- */
-.wrapper {
-  padding: calc(var(--grid-gutter) / 3);
-  outline: 2px dashed purple;
-}
-
-.wrapper + .wrapper {
-  margin-top: calc(var(--grid-gutter) / 3);
+.height-64px {
+  height: 64px;
+  display: flex;
+  align-items: center;
 }
 
 .bordered {
@@ -820,6 +845,21 @@ img.adapt {
   cursor: pointer;
 }
 
+/* This matches the height of .menu-item (when used with a .menu-link or
+   .menu-dropdown) and center its content vertically.
+   This is meant to be used in .u-bar with the .u-bar--top-aligned modifier.
+   For instance when used on a logo, this ensures the logo is on the same line
+   as the menu items, but remains on the top of the bar, instead of being
+   vertically-centered when the menu items are spread on multiple line (on
+   a narrow screen).
+   See the examples at specimens/layout-bar.slab.
+ */
+.menu-item-height {
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
 /* Add a small down arrow to the dropdown button. */
 .menu-dropdown:before {
   pointer-events: none;
@@ -1249,6 +1289,10 @@ input.no-style {
   padding-block-start: var(--grid-gutter);
 }
 
+.u-container-bottom {
+  padding-block-end: var(--grid-gutter);
+}
+
 .inset {
   padding: var(--grid-gutter);
 }
@@ -1267,10 +1311,38 @@ input.no-style {
   justify-content: space-between;
   align-items: center;
 }
+.u-bar--top-aligned {
+  align-items: start;
+}
 
 .u-bar__right ul li {
   display: inline;
   margin-left: var(--space-s);
+}
+
+.hsep {
+  display: flex;
+  gap: 1em;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.vsep {
+  display: flex;
+  gap: 1em;
+  flex-direction: column;
+}
+
+.hspread {
+  display: flex;
+  gap: 1em;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.grow {
+  flex-grow: 1;
 }
 
 .switcher {
@@ -1305,6 +1377,12 @@ input.no-style {
   --measure: 40ch;
   flex-basis: calc((var(--measure) - 100%) * 999);
   flex-grow: 1;
+}
+
+.height-64px {
+  height: 64px;
+  display: flex;
+  align-items: center;
 }
 
 /* Optional */
