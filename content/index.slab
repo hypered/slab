@@ -19,10 +19,13 @@ page
       p Here's a quick example of Slab code and the resulting HTML. This shows how Slab can generate well-organized HTML with minimal effort.
 
       .switcher
-        pre
+        style.
+          .wrap {white-space: pre-wrap;}
+          .clip { overflow-x: auto; }
+        pre.clip
           code
             include:escape-html ../examples/docs/landing.slab
-        pre
+        pre.clip
           code
             include:escape-html ../examples/docs/landing.html
 
