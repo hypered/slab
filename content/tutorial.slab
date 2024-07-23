@@ -33,6 +33,7 @@ page
       .switcher
         style.
           .wrap {white-space: pre-wrap;}
+          .clip { overflow-x: auto; }
         pre
           code.wrap
             :escape-html
@@ -92,14 +93,14 @@ page
 
       p Here's a way to download it, rename it to <code>slab</code>, and mark it as an executable file:
 
-      pre
+      pre.clip
         code.
           $ curl -sL https://github.com/hypered/slab/releases/download/v0.0.3.0-alpha/slab-v0.0.3.0-linux-x86-64-musl -o /bin/slab
           $ chmod +x /bin/slab
 
       p The <code>slab</code> binary supports a <code>--help</code> flag:
 
-      pre
+      pre.clip
         code
           | $ slab --help
           |
