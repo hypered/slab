@@ -21,7 +21,7 @@ frag hello(name)
     p Hello, #(name).
     content
 
-let values = data/values.json
+let values = ./data/values.json
 ul
   for value in values
     hello(value['username'])
