@@ -20,8 +20,10 @@ module Slab.Command
   ) where
 
 import Data.Text (Text)
+import Data.Version (showVersion)
 import Options.Applicative ((<**>))
 import Options.Applicative qualified as A
+import Paths_slab (version)
 
 --------------------------------------------------------------------------------
 data Command
@@ -65,11 +67,14 @@ data RunMode
 --------------------------------------------------------------------------------
 parserInfo :: A.ParserInfo Command
 parserInfo =
-  A.info (parser <**> A.helper) $
+  A.info (parser <**> simpleVersioner ("slab " <> version') <**> A.helper) $
     A.fullDesc
-      <> A.header "slab - A programmable markup language to generate HTML"
+      <> A.header
+        ("slab " <> version' <> " - A programmable markup language to generate HTML")
       <> A.progDesc
         "Slab is a programmable markup language to generate HTML."
+ where
+  version' = showVersion version
 
 --------------------------------------------------------------------------------
 parser :: A.Parser Command
@@ -318,3 +323,22 @@ parserPassthroughFlag =
     RunPassthrough
     ( A.long "passthrough" <> A.help "Allow external command failures"
     )
+
+-- From optparse-applicative ~ 0.18 (we're on 0.17), although we add also `-v`.
+
+-- | A hidden \"--version\" option that displays the version.
+--
+-- > opts :: ParserInfo Sample
+-- > opts = info (sample <**> simpleVersioner "v1.2.3") mempty
+simpleVersioner
+  :: String
+  -- ^ Version string to be shown
+  -> A.Parser (a -> a)
+simpleVersioner version =
+  A.infoOption version $
+    mconcat
+      [ A.long "version"
+      , A.short 'v'
+      , A.help "Show version information"
+      , A.hidden
+      ]

@@ -1,6 +1,6 @@
 cabal-version:      2.2
 name:               slab
-version:            0.0.3.0
+version:            0.0.4.0
 license:            BSD-2-Clause
 license-file:       LICENSE
 copyright:          2024 Võ Minh Thu, Hypered SRL
@@ -92,6 +92,8 @@ library
     Slab.Serve
     Slab.Syntax
     Slab.Watch
+  other-modules:
+    Paths_slab
 
 executable slab
   import: common-extensions, common-options, common-dependencies
