@@ -79,7 +79,8 @@ exec ctx@(Context {..}) = \case
   Syntax.BlockRun cmd minput Nothing -> do
     (code, out, err) <-
       liftIO $
-        readCreateProcessWithExitCode (shell $ T.unpack cmd) $ maybe "" T.unpack minput
+        readCreateProcessWithExitCode (shell $ T.unpack cmd) $
+          maybe "" T.unpack minput
     case code of
       ExitSuccess ->
         pure $

@@ -123,7 +123,7 @@ parserElemBody ref header =
       template <- parseInlines
       case template of
         [] -> do
-          s <-  parserDotText ref
+          s <- parserDotText ref
           pure $ L.IndentNone $ header [BlockText Dot [Lit s]]
         _ -> pure $ L.IndentNone $ header [BlockText Dot template]
     HasEqual -> do
@@ -386,9 +386,10 @@ parserClass =
 parserAttrList :: Parser [Attr]
 parserAttrList = (<?> "attribute") $ do
   _ <- string "("
-  pairs <- sepBy
-    (uncurry Attr <$> try parserPair <|> Arg <$> parserExpr)
-    (lexeme $ string ",")
+  pairs <-
+    sepBy
+      (uncurry Attr <$> try parserPair <|> Arg <$> parserExpr)
+      (lexeme $ string ",")
   _ <- string ")"
   pure pairs
 

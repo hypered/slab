@@ -225,15 +225,16 @@ evalFrag env stack name values args (Frag names capturedEnv body) = do
   case map fst env' \\ names of
     [] -> pure ()
     ["content"] -> pure ()
-    ns -> throwE . Error.EvaluateError $
-      "Unnecessary arguments to " <> name <> ": " <> T.pack (show ns)
+    ns ->
+      throwE . Error.EvaluateError $
+        "Unnecessary arguments to " <> name <> ": " <> T.pack (show ns)
   let env'' = augmentVariables (removeFormalParams names capturedEnv) env'
       arguments = zip names (map (thunk env) values)
       env''' = augmentVariables env'' arguments
   body' <- evaluate env''' ("frag " <> name : stack) body
   pure body'
 
-removeFormalParams names Env {..} = Env { envVariables = vars' }
+removeFormalParams names Env {..} = Env {envVariables = vars'}
  where
   vars' = filter (not . (`elem` names) . fst) envVariables
 
