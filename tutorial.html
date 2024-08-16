@@ -20,13 +20,14 @@ p Alice #{em quickly} jumped over #{a(href=&quot;https://en.wikipedia.org/wiki/W
     &lt;/li&gt;
 &lt;/ul&gt;</code></pre></div><p>In this case, the brevity of the Slab syntax to generate HTML elements is more apparent. This example also shows how the tree-structured nature of HTML is captured by indentation in Slab (note how the closing <code>&lt;/ul&gt;</code> tag appears at the very bottom). In addition to a different but equivalent syntax to HTML, Slab offers something that doesn't exist in HTML: templating, which we'll look at in a next section.</p><h2 id="cli">Using the <code>slab</code> command-line tool</h2><p>Slab is implemented as a command-line tool called <code>slab</code>. You can <a href="https://github.com/hypered/slab/releases">get a copy from its GitHub release page</a>. At the time of writing, the only release available is version <code>v0.0.3.0</code>, which is offered for Linux (this is a statically-linked binary; it should work on any Linux distribution).</p><p>Here's a way to download it, rename it to <code>slab</code>, and mark it as an executable file:</p><pre class="clip"><code>$ curl -sL https://github.com/hypered/slab/releases/download/v0.0.3.0-alpha/slab-v0.0.3.0-linux-x86-64-musl -o /bin/slab
 $ chmod +x /bin/slab</code></pre><p>The <code>slab</code> binary supports a <code>--help</code> flag:</p><pre class="clip"><code>$ slab --help
-slab - A programmable markup language to generate HTML
+slab 0.0.4.0 - A programmable markup language to generate HTML
 
 Usage: slab COMMAND
 
   Slab is a programmable markup language to generate HTML.
 
 Available options:
+  -v,--version             Show version information
   -h,--help                Show this help text
 
 Available commands:
