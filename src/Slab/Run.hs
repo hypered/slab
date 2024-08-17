@@ -45,6 +45,7 @@ run (Command.Watch srcDir renderMode passthrough distDir) =
 run (Command.Serve srcDir distDir) = Serve.run srcDir distDir
 run (Command.ReportPages srcDir) = Report.reportPages srcDir
 run (Command.ReportHeadings path) = Report.reportHeadings path
+run (Command.ReportElement i path) = Report.reportElement i path
 run (Command.Generate path) = Generate.renderHs path
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal passthrough)) = do
   nodes <- executeWithMode path pmode passthrough >>= Error.unwrap

@@ -32,6 +32,8 @@ data Command
   | Serve FilePath FilePath
   | ReportPages FilePath
   | ReportHeadings FilePath
+  | -- | Return the content of element matching the provided ID.
+    ReportElement Text FilePath
   | -- | Generate code. Only Haskell for now.
     Generate FilePath
   | CommandWithPath FilePath ParseMode CommandWithPath
@@ -203,6 +205,12 @@ parserReport =
               A.progDesc
                 "Report the headings of a page"
           )
+        <> A.command
+          "element"
+          ( A.info (parserReportElement <**> A.helper) $
+              A.progDesc
+                "Return the content of element matching the provided ID"
+          )
     )
 
 parserReportPages :: A.Parser Command
@@ -217,6 +225,15 @@ parserReportHeadings :: A.Parser Command
 parserReportHeadings = do
   path <- parserTemplatePath
   pure $ ReportHeadings path
+
+parserReportElement :: A.Parser Command
+parserReportElement = do
+  id_ <-
+    A.argument
+      A.str
+      (A.metavar "ID" <> A.help "Element ID to match.")
+  path <- parserTemplatePath
+  pure $ ReportElement id_ path
 
 parserWatch :: A.Parser Command
 parserWatch = do
@@ -334,8 +351,8 @@ simpleVersioner
   :: String
   -- ^ Version string to be shown
   -> A.Parser (a -> a)
-simpleVersioner version =
-  A.infoOption version $
+simpleVersioner version_ =
+  A.infoOption version_ $
     mconcat
       [ A.long "version"
       , A.short 'v'

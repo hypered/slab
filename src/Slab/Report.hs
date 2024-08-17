@@ -7,8 +7,10 @@
 module Slab.Report
   ( reportPages
   , reportHeadings
+  , reportElement
   ) where
 
+import Control.Monad (when)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Tree (Tree (..), drawForest)
@@ -17,6 +19,8 @@ import Slab.Error qualified as Error
 import Slab.Evaluate qualified as Evaluate
 import Slab.Render qualified as Render
 import Slab.Syntax qualified as Syntax
+import System.Exit (exitFailure, exitSuccess)
+import Text.Pretty.Simple (pPrintNoColor)
 
 --------------------------------------------------------------------------------
 reportPages :: FilePath -> IO ()
@@ -40,10 +44,19 @@ isPage _ = False
 --------------------------------------------------------------------------------
 reportHeadings :: FilePath -> IO ()
 reportHeadings path = do
-  modl <- buildFile path
+  modl <- buildFile False path
   let headings = extractHeadings . Evaluate.simplify $ moduleNodes modl
       f (Heading level _ t) = show level <> " " <> T.unpack t
   putStrLn . drawForest . map (fmap f) $ buildTrees headings
+
+--------------------------------------------------------------------------------
+reportElement :: Text -> FilePath -> IO ()
+reportElement i path = do
+  modl <- buildFile True path
+  let me = extractElement i . Evaluate.simplify $ moduleNodes modl
+  case me of
+    Just e -> pPrintNoColor e >> exitSuccess
+    Nothing -> exitFailure
 
 --------------------------------------------------------------------------------
 -- Similar to Build.buildDir and buildFile, but don't render HTML to disk.
@@ -52,11 +65,11 @@ reportHeadings path = do
 buildDir :: FilePath -> IO [Module]
 buildDir srcDir = do
   templates <- Build.listTemplates srcDir
-  mapM buildFile templates
+  mapM (buildFile False) templates
 
-buildFile :: FilePath -> IO Module
-buildFile path = do
-  putStrLn $ "Reading " <> path <> "..."
+buildFile :: Bool -> FilePath -> IO Module
+buildFile quiet path = do
+  when (not quiet) $ putStrLn $ "Reading " <> path <> "..."
   nodes <- Evaluate.evaluateFile path >>= Error.unwrap
   pure
     Module
@@ -111,4 +124,32 @@ extractHeadings = concatMap f
   f (Syntax.BlockAssignVars _) = []
   f (Syntax.BlockIf _ as bs) = extractHeadings as <> extractHeadings bs
   f (Syntax.BlockList children) = extractHeadings children
+  f (Syntax.BlockCode _) = []
+
+extractElement :: Text -> [Syntax.Block] -> Maybe Syntax.Block
+extractElement i blocks = case go blocks of
+  [e] -> Just e
+  _ -> Nothing
+ where
+  go :: [Syntax.Block] -> [Syntax.Block]
+  go = concatMap f
+  f Syntax.BlockDoctype = []
+  f e@(Syntax.BlockElem el _ attrs children)
+    | Syntax.idNamesFromAttrs' attrs == Just i = [e]
+  f (Syntax.BlockElem el _ attrs children) = go children
+  f (Syntax.BlockText _ _) = []
+  f (Syntax.BlockInclude _ _ children) = maybe [] go children
+  f (Syntax.BlockFragmentDef _ _ _ _) = []
+  f (Syntax.BlockFragmentCall _ _ _ _ children) =
+    go children
+  f (Syntax.BlockFor _ _ _ children) = go children
+  f (Syntax.BlockComment _ _) = []
+  f (Syntax.BlockFilter _ _) = []
+  f (Syntax.BlockRawElem _ _) = []
+  f (Syntax.BlockDefault _ children) = go children
+  f (Syntax.BlockImport _ children args) = maybe [] go children <> go args
+  f (Syntax.BlockRun _ _ _) = []
+  f (Syntax.BlockAssignVars _) = []
+  f (Syntax.BlockIf _ as bs) = go as <> go bs
+  f (Syntax.BlockList children) = go children
   f (Syntax.BlockCode _) = []
