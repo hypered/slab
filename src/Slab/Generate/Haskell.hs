@@ -20,9 +20,9 @@ import Slab.PreProcess qualified as PreProcess
 import Slab.Syntax qualified as Syntax
 
 --------------------------------------------------------------------------------
-renderHs :: FilePath -> IO ()
-renderHs path = do
-  blocks <- PreProcess.preprocessFile path >>= Error.unwrap
+renderHs :: Maybe FilePath -> IO ()
+renderHs mpath = do
+  blocks <- PreProcess.preprocessFile mpath >>= Error.unwrap
   T.putStrLn $ renderModule blocks
 
 renderModule :: [Syntax.Block] -> Text

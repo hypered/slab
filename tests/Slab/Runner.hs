@@ -53,7 +53,7 @@ mkGoldenTest path = do
  where
   action :: IO Text
   action = do
-    let ctx = Execute.Context path Command.RunNormal
+    let ctx = Execute.Context (Just path) Command.RunNormal
     evaluated <- Execute.executeFile ctx
     case evaluated of
       Left _ -> pure "TODO"

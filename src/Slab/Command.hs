@@ -31,12 +31,13 @@ data Command
   | Watch FilePath RenderMode RunMode FilePath
   | Serve FilePath FilePath
   | ReportPages FilePath
-  | ReportHeadings FilePath
+  | ReportHeadings (Maybe FilePath)
   | -- | Return the content of element matching the provided ID.
-    ReportElement Text FilePath
+    ReportElement Text (Maybe FilePath)
   | -- | Generate code. Only Haskell for now.
-    Generate FilePath
-  | CommandWithPath FilePath ParseMode CommandWithPath
+    Generate (Maybe FilePath)
+  | -- | When the filepath is Nothing, use stdin.
+    CommandWithPath (Maybe FilePath) ParseMode CommandWithPath
 
 -- | Commands operating on a path.
 data CommandWithPath
@@ -223,8 +224,8 @@ parserReportPages = do
 
 parserReportHeadings :: A.Parser Command
 parserReportHeadings = do
-  path <- parserTemplatePath
-  pure $ ReportHeadings path
+  mpath <- parserTemplatePath
+  pure $ ReportHeadings mpath
 
 parserReportElement :: A.Parser Command
 parserReportElement = do
@@ -232,8 +233,8 @@ parserReportElement = do
     A.argument
       A.str
       (A.metavar "ID" <> A.help "Element ID to match.")
-  path <- parserTemplatePath
-  pure $ ReportElement id_ path
+  mpath <- parserTemplatePath
+  pure $ ReportElement id_ mpath
 
 parserWatch :: A.Parser Command
 parserWatch = do
@@ -296,8 +297,8 @@ parserParse = do
 
 parserGenerate :: A.Parser Command
 parserGenerate = do
-  path <- parserTemplatePath
-  pure $ Generate path
+  mpath <- parserTemplatePath
+  pure $ Generate mpath
 
 parserClasses :: A.Parser Command
 parserClasses = do
@@ -315,14 +316,19 @@ parserFragments = do
   pure $ uncurry CommandWithPath pathAndmode $ Fragments mname
 
 --------------------------------------------------------------------------------
-parserWithPath :: A.Parser (FilePath, ParseMode)
+parserWithPath :: A.Parser (Maybe FilePath, ParseMode)
 parserWithPath = (,) <$> parserTemplatePath <*> parserShallowFlag
 
-parserTemplatePath :: A.Parser FilePath
-parserTemplatePath =
-  A.argument
+parserTemplatePath :: A.Parser (Maybe FilePath)
+parserTemplatePath = do
+  path <- A.argument
     A.str
     (A.metavar "FILE" <> A.action "file" <> A.help "Slab template to parse.")
+  pure (
+    if path == "-"
+    then Nothing
+    else Just path
+    )
 
 parserShallowFlag :: A.Parser ParseMode
 parserShallowFlag =

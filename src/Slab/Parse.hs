@@ -44,13 +44,15 @@ import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
 
 --------------------------------------------------------------------------------
-parseFile :: FilePath -> IO (Either Error.Error [Block])
+parseFile :: Maybe FilePath -> IO (Either Error.Error [Block])
 parseFile = runExceptT . parseFileE
 
-parseFileE :: FilePath -> ExceptT Error.Error IO [Block]
-parseFileE path = do
-  content <- liftIO $ T.readFile path
-  withExceptT Error.ParseError . except $ parse path content
+parseFileE :: Maybe FilePath -> ExceptT Error.Error IO [Block]
+parseFileE mpath = do
+  content <- liftIO $ case mpath of
+    Just path -> T.readFile path
+    Nothing -> T.getContents
+  withExceptT Error.ParseError . except $ parse (maybe "-" id mpath) content
 
 --------------------------------------------------------------------------------
 

@@ -37,15 +37,15 @@ data Context = Context
 --------------------------------------------------------------------------------
 
 -- | Similar to `parseFile` but pre-process the include statements.
-preprocessFile :: FilePath -> IO (Either Error.Error [Block])
+preprocessFile :: Maybe FilePath -> IO (Either Error.Error [Block])
 preprocessFile = runExceptT . preprocessFileE
 
-preprocessFileE :: FilePath -> ExceptT Error.Error IO [Block]
-preprocessFileE path = do
-  nodes <- Parse.parseFileE path
+preprocessFileE :: Maybe FilePath -> ExceptT Error.Error IO [Block]
+preprocessFileE mpath = do
+  nodes <- Parse.parseFileE mpath
   let ctx =
         Context
-          { ctxStartPath = path
+          { ctxStartPath = maybe "." id mpath
           }
   preprocess ctx nodes
 
@@ -75,7 +75,7 @@ preproc ctx@Context {..} = \case
             pure $ BlockInclude mname path (Just [node])
         | exists -> do
             -- Parse and process the .slab file.
-            nodes' <- preprocessFileE includedPath
+            nodes' <- preprocessFileE (Just includedPath)
             pure $ BlockInclude mname path (Just nodes')
         | otherwise ->
             throwE $ Error.PreProcessError $ "File " <> T.pack includedPath <> " doesn't exist"
@@ -103,7 +103,7 @@ preproc ctx@Context {..} = \case
             throwE $ Error.PreProcessError $ "Extends requires a .slab file"
         | exists -> do
             -- Parse and process the .slab file.
-            body <- preprocessFileE includedPath
+            body <- preprocessFileE (Just includedPath)
             args' <- mapM (preproc ctx) args
             pure $ BlockImport path (Just body) args'
         | otherwise ->

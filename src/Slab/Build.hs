@@ -43,7 +43,7 @@ buildFile :: FilePath -> Command.RenderMode -> Command.RunMode -> FilePath -> Fi
 buildFile srcDir mode passthrough distDir path = do
   let path' = distDir </> replaceExtension (makeRelative srcDir path) ".html"
       dir' = takeDirectory path'
-      ctx = Execute.Context path passthrough
+      ctx = Execute.Context (Just path) passthrough
   putStrLn $ "Building " <> path' <> "..."
   createDirectoryIfMissing True dir'
 
@@ -72,7 +72,7 @@ buildDirInMemory srcDir mode passthrough store = do
 buildFileInMemory :: FilePath -> Command.RenderMode -> Command.RunMode -> StmStore -> FilePath -> IO ()
 buildFileInMemory srcDir mode passthrough store path = do
   let path' = replaceExtension (makeRelative srcDir path) ".html"
-      ctx = Execute.Context path passthrough
+      ctx = Execute.Context (Just path) passthrough
   putStrLn $ "Building " <> path' <> "..."
 
   mnodes <- Execute.executeFile ctx

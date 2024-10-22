@@ -35,12 +35,12 @@ import Slab.Syntax
 --------------------------------------------------------------------------------
 
 -- | Similar to `preprocessFile` but evaluate the template.
-evaluateFile :: FilePath -> IO (Either Error.Error [Block])
+evaluateFile :: Maybe FilePath -> IO (Either Error.Error [Block])
 evaluateFile = runExceptT . evaluateFileE
 
-evaluateFileE :: FilePath -> ExceptT Error.Error IO [Block]
-evaluateFileE path =
-  PreProcess.preprocessFileE path >>= evaluate defaultEnv [T.pack path]
+evaluateFileE :: Maybe FilePath -> ExceptT Error.Error IO [Block]
+evaluateFileE mpath =
+  PreProcess.preprocessFileE mpath >>= evaluate defaultEnv [maybe "-" T.pack mpath]
 
 --------------------------------------------------------------------------------
 defaultEnv :: Env

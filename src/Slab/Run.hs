@@ -45,7 +45,7 @@ run (Command.Watch srcDir renderMode passthrough distDir) =
 run (Command.Serve srcDir distDir) = Serve.run srcDir distDir
 run (Command.ReportPages srcDir) = Report.reportPages srcDir
 run (Command.ReportHeadings path) = Report.reportHeadings path
-run (Command.ReportElement i path) = Report.reportElement i path
+run (Command.ReportElement i mpath) = Report.reportElement i mpath
 run (Command.Generate path) = Generate.renderHs path
 run (Command.CommandWithPath path pmode (Command.Render Command.RenderNormal passthrough)) = do
   nodes <- executeWithMode path pmode passthrough >>= Error.unwrap
@@ -63,14 +63,14 @@ run (Command.CommandWithPath path pmode (Command.Evaluate simpl)) = do
   if simpl
     then TL.putStrLn $ pShowNoColor $ Evaluate.simplify nodes
     else TL.putStrLn $ pShowNoColor nodes
-run (Command.CommandWithPath path pmode Command.Parse) = do
-  nodes <- parseWithMode path pmode >>= Error.unwrap
+run (Command.CommandWithPath mpath pmode Command.Parse) = do
+  nodes <- parseWithMode mpath pmode >>= Error.unwrap
   TL.putStrLn $ pShowNoColor nodes
-run (Command.CommandWithPath path pmode Command.Classes) = do
-  nodes <- parseWithMode path pmode >>= Error.unwrap
+run (Command.CommandWithPath mpath pmode Command.Classes) = do
+  nodes <- parseWithMode mpath pmode >>= Error.unwrap
   mapM_ T.putStrLn $ Syntax.extractClasses nodes
-run (Command.CommandWithPath path pmode (Command.Fragments mname)) = do
-  nodes <- parseWithMode path pmode >>= Error.unwrap
+run (Command.CommandWithPath mpath pmode (Command.Fragments mname)) = do
+  nodes <- parseWithMode mpath pmode >>= Error.unwrap
   let ms = Syntax.extractFragments nodes
   case mname of
     Just name -> case Syntax.findFragment name ms of
@@ -80,49 +80,51 @@ run (Command.CommandWithPath path pmode (Command.Fragments mname)) = do
 
 --------------------------------------------------------------------------------
 parseWithMode
-  :: FilePath
+  :: (Maybe FilePath)
   -> Command.ParseMode
   -> IO (Either Error.Error [Syntax.Block])
-parseWithMode path pmode = runExceptT $ parseWithModeE path pmode
+parseWithMode mpath pmode = runExceptT $ parseWithModeE mpath pmode
 
 evaluateWithMode
-  :: FilePath
+  :: Maybe FilePath
   -> Command.ParseMode
   -> IO (Either Error.Error [Syntax.Block])
-evaluateWithMode path pmode = runExceptT $ evaluateWithModeE path pmode
+evaluateWithMode mpath pmode = runExceptT $ evaluateWithModeE mpath pmode
 
 executeWithMode
-  :: FilePath
+  :: Maybe FilePath
   -> Command.ParseMode
   -> Command.RunMode
   -> IO (Either Error.Error [Syntax.Block])
-executeWithMode path pmode passthrough = runExceptT $ executeWithModeE path pmode passthrough
+executeWithMode mpath pmode passthrough =
+  runExceptT $ executeWithModeE mpath pmode passthrough
 
 --------------------------------------------------------------------------------
 parseWithModeE
-  :: FilePath
+  :: Maybe FilePath
   -> Command.ParseMode
   -> ExceptT Error.Error IO [Syntax.Block]
-parseWithModeE path pmode =
+parseWithModeE mpath pmode =
   case pmode of
-    Command.ParseShallow -> Parse.parseFileE path
-    Command.ParseDeep -> PreProcess.preprocessFileE path
+    Command.ParseShallow -> Parse.parseFileE mpath
+    Command.ParseDeep -> PreProcess.preprocessFileE mpath
 
 evaluateWithModeE
-  :: FilePath
+  :: Maybe FilePath
   -> Command.ParseMode
   -> ExceptT Error.Error IO [Syntax.Block]
-evaluateWithModeE path pmode = do
-  parsed <- parseWithModeE path pmode
-  Evaluate.evaluate Evaluate.defaultEnv [T.pack path] parsed
+evaluateWithModeE mpath pmode = do
+  parsed <- parseWithModeE mpath pmode
+  Evaluate.evaluate Evaluate.defaultEnv [maybe "-" T.pack mpath] parsed
 
 executeWithModeE
-  :: FilePath
+  :: Maybe FilePath
   -> Command.ParseMode
   -> Command.RunMode
   -> ExceptT Error.Error IO [Syntax.Block]
-executeWithModeE path pmode passthrough =
-  evaluateWithModeE path pmode >>= Execute.execute (Execute.Context path passthrough)
+executeWithModeE mpath pmode passthrough =
+  evaluateWithModeE mpath pmode >>=
+    Execute.execute (Execute.Context mpath passthrough)
 
 --------------------------------------------------------------------------------
 -- Play with the whole language.

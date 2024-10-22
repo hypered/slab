@@ -42,17 +42,17 @@ isPage Module {moduleNodes = (x : _)} = Syntax.isDoctype x
 isPage _ = False
 
 --------------------------------------------------------------------------------
-reportHeadings :: FilePath -> IO ()
-reportHeadings path = do
-  modl <- buildFile False path
+reportHeadings :: Maybe FilePath -> IO ()
+reportHeadings mpath = do
+  modl <- buildFile False mpath
   let headings = extractHeadings . Evaluate.simplify $ moduleNodes modl
       f (Heading level _ t) = show level <> " " <> T.unpack t
   putStrLn . drawForest . map (fmap f) $ buildTrees headings
 
 --------------------------------------------------------------------------------
-reportElement :: Text -> FilePath -> IO ()
-reportElement i path = do
-  modl <- buildFile True path
+reportElement :: Text -> Maybe FilePath -> IO ()
+reportElement i mpath = do
+  modl <- buildFile True mpath
   let me = extractElement i . Evaluate.simplify $ moduleNodes modl
   case me of
     Just e -> pPrintNoColor e >> exitSuccess
@@ -65,15 +65,15 @@ reportElement i path = do
 buildDir :: FilePath -> IO [Module]
 buildDir srcDir = do
   templates <- Build.listTemplates srcDir
-  mapM (buildFile False) templates
+  mapM (buildFile False . Just) templates
 
-buildFile :: Bool -> FilePath -> IO Module
-buildFile quiet path = do
-  when (not quiet) $ putStrLn $ "Reading " <> path <> "..."
-  nodes <- Evaluate.evaluateFile path >>= Error.unwrap
+buildFile :: Bool -> Maybe FilePath -> IO Module
+buildFile quiet mpath = do
+  when (not quiet) $ putStrLn $ "Reading " <> maybe "stdin" id mpath <> "..."
+  nodes <- Evaluate.evaluateFile mpath >>= Error.unwrap
   pure
     Module
-      { modulePath = path
+      { modulePath = maybe "." id mpath
       , moduleNodes = nodes
       }
 

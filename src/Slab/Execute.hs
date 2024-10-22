@@ -30,7 +30,7 @@ import System.Process (readCreateProcessWithExitCode, shell)
 
 --------------------------------------------------------------------------------
 data Context = Context
-  { ctxPath :: FilePath
+  { ctxPath :: Maybe FilePath
   , ctxRunMode :: Command.RunMode
   }
 
