@@ -44,8 +44,8 @@ data CommandWithPath
   = Render RenderMode RunMode
   | -- | If True, simplify the evaluated AST.
     Execute Bool RunMode
-  | -- | If True, simplify the evaluated AST.
-    Evaluate Bool
+  | -- | If True, simplify the evaluated AST. If a variable name is provided, only output that variable value.
+    Evaluate Bool (Maybe Text)
   | Parse
   | -- | List the classes used in a template. TODO Later, we want to list (or create a tree) of extends/includes.
     Classes
@@ -288,7 +288,12 @@ parserEvaluate = do
     A.switch
       ( A.long "simplify" <> A.help "Simplify the AST"
       )
-  pure $ uncurry CommandWithPath pathAndmode $ Evaluate simpl
+  mname <-
+    A.optional $
+      A.argument
+        A.str
+        (A.metavar "NAME" <> A.help "Variable name to evaluate.")
+  pure $ uncurry CommandWithPath pathAndmode $ Evaluate simpl mname
 
 parserParse :: A.Parser Command
 parserParse = do

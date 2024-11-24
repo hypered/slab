@@ -58,11 +58,16 @@ run (Command.CommandWithPath path pmode (Command.Execute simpl passthrough)) = d
   if simpl
     then TL.putStrLn $ pShowNoColor $ Evaluate.simplify nodes
     else TL.putStrLn $ pShowNoColor nodes
-run (Command.CommandWithPath path pmode (Command.Evaluate simpl)) = do
-  nodes <- evaluateWithMode path pmode >>= Error.unwrap
-  if simpl
-    then TL.putStrLn $ pShowNoColor $ Evaluate.simplify nodes
-    else TL.putStrLn $ pShowNoColor nodes
+run (Command.CommandWithPath path pmode (Command.Evaluate simpl mname)) = do
+  case mname of
+    Nothing -> do
+      nodes <- evaluateWithMode path pmode >>= Error.unwrap
+      if simpl
+        then TL.putStrLn $ pShowNoColor $ Evaluate.simplify nodes
+        else TL.putStrLn $ pShowNoColor nodes
+    Just name -> do
+      val <- evaluateVarWithMode path pmode name >>= Error.unwrap
+      TL.putStrLn $ pShowNoColor val
 run (Command.CommandWithPath mpath pmode Command.Parse) = do
   nodes <- parseWithMode mpath pmode >>= Error.unwrap
   TL.putStrLn $ pShowNoColor nodes
@@ -91,6 +96,13 @@ evaluateWithMode
   -> IO (Either Error.Error [Syntax.Block])
 evaluateWithMode mpath pmode = runExceptT $ evaluateWithModeE mpath pmode
 
+evaluateVarWithMode
+  :: Maybe FilePath
+  -> Command.ParseMode
+  -> Text
+  -> IO (Either Error.Error Syntax.Expr)
+evaluateVarWithMode mpath pmode name = runExceptT $ evaluateVarWithModeE mpath pmode name
+
 executeWithMode
   :: Maybe FilePath
   -> Command.ParseMode
@@ -116,6 +128,15 @@ evaluateWithModeE
 evaluateWithModeE mpath pmode = do
   parsed <- parseWithModeE mpath pmode
   Evaluate.evaluate Evaluate.defaultEnv [maybe "-" T.pack mpath] parsed
+
+evaluateVarWithModeE
+  :: Maybe FilePath
+  -> Command.ParseMode
+  -> Text
+  -> ExceptT Error.Error IO Syntax.Expr
+evaluateVarWithModeE mpath pmode name = do
+  parsed <- parseWithModeE mpath pmode
+  Evaluate.evaluateVar Evaluate.defaultEnv [maybe "-" T.pack mpath] parsed name
 
 executeWithModeE
   :: Maybe FilePath

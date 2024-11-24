@@ -17,6 +17,7 @@
 module Slab.Evaluate
   ( evaluateFile
   , evaluate
+  , evaluateVar
   , evalExpr
   , defaultEnv
   , simplify
@@ -119,6 +120,14 @@ evaluate env stack nodes = do
   let vars = extractVariables env' nodes
       env' = augmentVariables env vars
   mapM (eval env' stack) nodes
+
+evaluateVar :: Monad m => Env -> [Text] -> [Block] -> Text -> ExceptT Error.Error m Expr
+evaluateVar env stack nodes name = do
+  -- Note that we pass the environment that we are constructing, so that each
+  -- definition sees all definitions (including later ones and itself).
+  let vars = extractVariables env' nodes
+      env' = augmentVariables env vars
+  evalExpr env' (Variable name)
 
 eval :: Monad m => Env -> [Text] -> Block -> ExceptT Error.Error m Block
 eval env stack b

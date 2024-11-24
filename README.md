@@ -178,6 +178,15 @@ ghci> :main generate a.slab
 Currently, a very small subset of the Slab language is supported, and only
 Haskell code can be generated.
 
+# To test and document
+
+The `evaluate` command can evaluate a given toplevel variable:
+
+```
+→ :main evaluate examples/let.slab i
+Int 11
+```
+
 # Why the name
 
 In the context of [memory
