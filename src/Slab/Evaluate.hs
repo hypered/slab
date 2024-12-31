@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 
 -- |
 -- Module      : Slab.Evaluate
@@ -21,6 +22,7 @@ module Slab.Evaluate
   , evalExpr
   , defaultEnv
   , simplify
+  , simplifyVal
   ) where
 
 import Control.Monad (forM)
@@ -341,6 +343,9 @@ evalExpr env = \case
   Block b -> do
     b' <- eval env ["block"] b
     pure $ Block b'
+  Route as -> do
+    as' <- mapM (\(a, b) -> (a,) <$> evalExpr env b) as
+    pure $ Route as'
   code -> pure code
 
 evalApplication :: Monad m => Env -> Expr -> Expr -> ExceptT Error.Error m Expr
@@ -484,3 +489,11 @@ simplify' = \case
   BlockIf _ as _ -> simplify as
   BlockList nodes -> simplify nodes
   node@(BlockCode _) -> [node]
+
+simplifyVal :: Expr -> Expr
+simplifyVal = \case
+  Route as ->
+    let f (Block node) = Block . BlockList $ simplify' node
+        f a = a
+    in Route $ map (\(a, b) -> (a, f b)) as
+  val -> val
