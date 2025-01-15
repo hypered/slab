@@ -1,0 +1,10 @@
+frag home
+  p Hello.
+let
+  a = 1
+  index =
+    route
+      / = 1
+      /a = 2
+      /b = home
+  b = 1

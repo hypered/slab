@@ -13,6 +13,7 @@ module Slab.Parse
   , parseFileE
   , parse
   , parseExpr
+  , parseRoute
   , parserTextInclude
   -- Inline parsing stuff
 
@@ -66,6 +67,14 @@ parse fn = runParser (many parserBlock <* eof) fn
 -- @
 parseExpr :: Text -> Either (ParseErrorBundle Text Void) Expr
 parseExpr = runParser (sc *> (getSourcePos >>= parserExprInd) <* eof) ""
+
+-- | We expose the route parser for development:
+--
+-- @
+--     Parse.parseRoute "/ = 1"
+-- @
+parseRoute :: Text -> Either (ParseErrorBundle Text Void) Expr
+parseRoute = runParser (sc *> (parserRouteInd) <* eof) ""
 
 --------------------------------------------------------------------------------
 type Parser = Parsec Void Text
@@ -264,6 +273,46 @@ parserExprInd initialIndent = makeExprParser pApp (operatorTable' initialIndent)
       <|> parens (parserExprInd initialIndent)
   parens = between (lx $ char '(') (lx $ char ')')
   lx = lexeme' initialIndent
+
+-- | Same as "parserExprInd" but parses routes introduced by the @route@ keyword.
+-- It is written with indentBlock, which forces paths to be indented w.r.t. to the
+-- @route@ keyword. This should be improved:
+--
+-- @
+-- let
+--   index = route
+--     / = 1
+-- @
+--
+-- is currently not permitted. The supported syntax is currently
+--
+-- @
+--   let
+--     index = route
+--               / = 1
+-- @
+parserRouteInd :: Parser Expr
+parserRouteInd = do
+  L.indentBlock scn $ do
+    _ <- string "route"
+    pure $ L.IndentMany Nothing (pure . Route) parserRoutePathDef
+
+parserRoutePathDef :: Parser (Text, Expr)
+parserRoutePathDef = do
+  path <- lexeme parserRoutePath
+  _ <- lexeme $ string "="
+  val <- parserExpr
+  pure (path, val)
+
+parserRoutePath :: Parser Text
+parserRoutePath =
+  T.pack
+    <$> ( do
+            a <- char '/'
+            as <- many (alphaNumChar <|> oneOf ("-_" :: String))
+            pure (a : as)
+        )
+    <?> "route path"
 
 parserVariable :: Parser Text
 parserVariable = parserName
@@ -659,7 +708,7 @@ parserLet = do
       )
     name <- lexeme' initialIndent parserName
     _ <- lexeme' initialIndent (string "=")
-    val <- parserExprInd initialIndent
+    val <- parserRouteInd <|> parserExprInd initialIndent
     pure (name, val)
   pure $ L.IndentNone $ BlockAssignVars pairs
 

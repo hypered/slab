@@ -187,6 +187,10 @@ The `evaluate` command can evaluate a given toplevel variable:
 Int 11
 ```
 
+```
+$ slab evaluate examples/routes.slab index
+```
+
 # Why the name
 
 In the context of [memory

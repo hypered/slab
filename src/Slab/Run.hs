@@ -67,7 +67,9 @@ run (Command.CommandWithPath path pmode (Command.Evaluate simpl mname)) = do
         else TL.putStrLn $ pShowNoColor nodes
     Just name -> do
       val <- evaluateVarWithMode path pmode name >>= Error.unwrap
-      TL.putStrLn $ pShowNoColor val
+      if simpl
+        then TL.putStrLn $ pShowNoColor $ Evaluate.simplifyVal val
+        else TL.putStrLn $ pShowNoColor val
 run (Command.CommandWithPath mpath pmode Command.Parse) = do
   nodes <- parseWithMode mpath pmode >>= Error.unwrap
   TL.putStrLn $ pShowNoColor nodes
