@@ -26,7 +26,7 @@ import Data.Vector qualified as V
 import Slab.Error qualified as Error
 import Slab.Parse qualified as Parse
 import Slab.Syntax
-import System.Directory (doesFileExist)
+import System.Directory (canonicalizePath, doesFileExist)
 import System.FilePath (takeDirectory, takeExtension, (</>))
 
 --------------------------------------------------------------------------------
@@ -64,8 +64,8 @@ preproc ctx@Context {..} = \case
     pure $ BlockElem name mdot attrs nodes'
   node@(BlockText _ _) -> pure node
   BlockInclude mname path _ -> do
-    let includedPath = takeDirectory ctxStartPath </> path
-        slabExt = takeExtension includedPath == ".slab"
+    includedPath <- liftIO $ canonicalizePath $ takeDirectory ctxStartPath </> path
+    let slabExt = takeExtension includedPath == ".slab"
     exists <- liftIO $ doesFileExist includedPath
     if
         | exists && (not slabExt || mname == Just "escape-html") -> do
