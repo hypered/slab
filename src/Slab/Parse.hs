@@ -448,15 +448,8 @@ parserPair :: Parser (Text, Expr)
 parserPair = do
   a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
   _ <- string "="
-  b <- lexeme parserValue
+  b <- lexeme parserExpr
   pure (a, b)
-
-parserValue :: Parser Expr
-parserValue =
-  SingleQuoteString <$> parserSingleQuoteString
-    <|> SingleQuoteString <$> parserDoubleQuoteString
-    <|> Int <$> parserNumber
-    <|> Variable <$> parserVariable
 
 parserSingleQuoteString :: Parser Text
 parserSingleQuoteString = do
