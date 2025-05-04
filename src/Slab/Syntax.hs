@@ -245,7 +245,8 @@ data Expr
   | -- | Allow to assign the content of a JSON file to a variable.
     JsonPath FilePath
   | BuiltIn Text
-  | Route [(Text, Expr)] -- ^ This should probably be separate from "Expr".
+  | -- | This should probably be separate from "Expr".
+    Route [(Text, Expr)]
   deriving (Show, Eq)
 
 -- | A representation of a 'Data.Text' template is a list of Inline, supporting

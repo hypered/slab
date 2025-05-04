@@ -146,8 +146,8 @@ executeWithModeE
   -> Command.RunMode
   -> ExceptT Error.Error IO [Syntax.Block]
 executeWithModeE mpath pmode passthrough =
-  evaluateWithModeE mpath pmode >>=
-    Execute.execute (Execute.Context mpath passthrough)
+  evaluateWithModeE mpath pmode
+    >>= Execute.execute (Execute.Context mpath passthrough)
 
 --------------------------------------------------------------------------------
 -- Play with the whole language.

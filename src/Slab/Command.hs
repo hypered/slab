@@ -326,13 +326,14 @@ parserWithPath = (,) <$> parserTemplatePath <*> parserShallowFlag
 
 parserTemplatePath :: A.Parser (Maybe FilePath)
 parserTemplatePath = do
-  path <- A.argument
-    A.str
-    (A.metavar "FILE" <> A.action "file" <> A.help "Slab template to parse.")
-  pure (
-    if path == "-"
-    then Nothing
-    else Just path
+  path <-
+    A.argument
+      A.str
+      (A.metavar "FILE" <> A.action "file" <> A.help "Slab template to parse.")
+  pure
+    ( if path == "-"
+        then Nothing
+        else Just path
     )
 
 parserShallowFlag :: A.Parser ParseMode

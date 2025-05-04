@@ -495,5 +495,5 @@ simplifyVal = \case
   Route as ->
     let f (Block node) = Block . BlockList $ simplify' node
         f a = a
-    in Route $ map (\(a, b) -> (a, f b)) as
+     in Route $ map (\(a, b) -> (a, f b)) as
   val -> val
