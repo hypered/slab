@@ -95,7 +95,7 @@ Available options:
 Available commands:
   build                    Build a library of Slab templates to HTML
   watch                    Watch and build a library of Slab templates to HTML
-  serve                    Watch and serve a library of Slab templates to HTML
+  serve                    Watch and serve a library of Slab templates
   report                   Analyse a library of Slab templates
   render                   Render a Slab template to HTML
   run                      Execute a Slab template
