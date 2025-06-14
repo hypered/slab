@@ -1,12 +1,12 @@
+{
+  sources
+}:
 let
 
-  sources = import ./sources.nix;
-  defNixpkgs = import sources.nixpkgs { };
+  nixpkgs = import sources.nixpkgs { };
   nix-filter = import sources.nix-filter;
+  inherit (nixpkgs.lib.attrsets) getAttrFromPath;
 
-in { nixpkgs ? defNixpkgs }:
-
-let inherit (nixpkgs.lib.attrsets) getAttrFromPath;
 in {
   # Lists all packages made available through this nix project.
   # The format is `{ <pkgName> : <pkgDir> }` (we refer to this as pInfo).

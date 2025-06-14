@@ -3,9 +3,13 @@
 # 2. Provide this particular package with a fixed point of overlayed packages,
 #    if they become needed.
 
+{
+  compiler ? "ghc928",
+  sources
+}:
+
 let
 
-  sources = import ./sources.nix;
   #inherit (sources) commence hypered-design;
 
   getOverlays = pkg : import "${pkg}/nix/overlays.nix";
@@ -16,4 +20,4 @@ let
     #++ getOverlays hypered-design
     ;
 
-in haskellOverlays ++ [ (import ./overlay.nix) ]
+in haskellOverlays ++ [ (import ./overlay.nix { inherit compiler sources; }) ]

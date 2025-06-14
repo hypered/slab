@@ -1,6 +1,10 @@
+{
+  channel ? "23.05",
+  compiler ? "ghc928",
+  sources ? import ./nix/${channel}/nix/sources.nix
+}:
 let
-  sources = import ./nix/sources.nix;
-  overlays = import ./nix/overlays.nix;
+  overlays = import ./nix/overlays.nix { inherit compiler sources; };
   nixpkgs = import sources.nixpkgs { inherit overlays; };
 in rec
   {

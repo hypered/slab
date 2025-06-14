@@ -1,9 +1,13 @@
+{
+  compiler,
+  sources
+}:
+
 final: super:
 let
 
   lib = super.lib;
-  sources = import ./sources.nix;
-  contents = import ./contents.nix { nixpkgs = super; };
+  contents = import ./contents.nix { inherit sources; };
   inherit (super.lib.attrsets) mapAttrs;
 
   ourOverrides = selfh: superh:
@@ -59,19 +63,19 @@ let
   };
 
 in {
-  haskellPackages = super.haskellPackages.override (old: {
+  haskellPackages = super.haskell.packages."${compiler}".override (old: {
     overrides =
       lib.composeExtensions (old.overrides or (_: _: { })) ourOverrides;
   });
 
-  haskellPackagesNoProfiling = super.haskellPackages.override (old: {
+  haskellPackagesNoProfiling = super.haskell.packages."${compiler}".override (old: {
     overrides =
       lib.composeExtensions
         (lib.composeExtensions (old.overrides or (_: _: { })) ourOverrides)
         theseOverrides;
   });
 
-  haskellPackagesStatic = super.haskellPackages.override (old: {
+  haskellPackagesStatic = super.haskell.packages."${compiler}".override (old: {
     overrides =
       lib.composeExtensions
         (lib.composeExtensions (old.overrides or (_: _: { })) ourOverrides)
