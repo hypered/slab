@@ -1,6 +1,6 @@
 {
-  channel ? "23.05",
-  compiler ? "ghc928",
+  channel ? "25.05",
+  compiler ? "ghc948",
   sources ? import ./nix/${channel}/nix/sources.nix
 }:
 let
@@ -13,6 +13,9 @@ in rec
     haddock = nixpkgs.haskellPackages.slab.doc;
 
     static-binaries = nixpkgs.pkgsMusl.haskellPackagesStatic.slab;
+
+    # nix-instantiate --eval --argstr channel 23.05 --attr compilers
+    compilers = builtins.attrNames nixpkgs.haskell.packages;
 
     # A shell to try out our binaries
     # Run with nix-shell default.nix -A shell
