@@ -4,7 +4,7 @@
 #    if they become needed.
 
 {
-  compiler ? "ghc928",
+  compiler,
   sources
 }:
 
