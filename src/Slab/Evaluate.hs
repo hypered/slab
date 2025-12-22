@@ -74,6 +74,7 @@ defaultEnv =
     , mkElem "pre" Pre
     , mkElem "p" P
     , mkElem "em" Em
+    , mkElem "strong" Strong
     , mkElem "ul" Ul
     , mkElem "li" Li
     , mkElem "title" Title
