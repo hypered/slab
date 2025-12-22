@@ -97,7 +97,9 @@ defaultEnv =
     , mkElem "style" Style
     , mkElem "small" Small
     , mkElem "svg" Svg
+    , mkElem "select" Select
     , mkElem "textarea" Textarea
+    , mkElem "option" Option
     , mkElem "canvas" Canvas
     , -- Elements with no content.
       ("br", Block (BlockElem Br NoSym [] []))

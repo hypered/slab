@@ -169,6 +169,8 @@ data Elem
   | Input
   | I
   | Svg
+  | Select
+  | Option
   | Textarea
   | Canvas
   | -- | Arbitrary element name, using the @el@ keyword.

@@ -222,6 +222,8 @@ renderElem = \case
   Syntax.Input -> const H.input
   Syntax.I -> H.i
   Syntax.Svg -> S.svg
+  Syntax.Select -> H.select
+  Syntax.Option -> H.option
   Syntax.Textarea -> H.textarea
   Syntax.Canvas -> H.canvas
   Syntax.Elem name -> I.customParent (H.textTag name)
