@@ -145,6 +145,7 @@ data Elem
   | Table
   | Thead
   | Tbody
+  | Th
   | Tr
   | Td
   | Dl

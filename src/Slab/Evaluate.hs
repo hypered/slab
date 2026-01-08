@@ -81,6 +81,7 @@ defaultEnv =
     , mkElem "table" Table
     , mkElem "thead" Thead
     , mkElem "tbody" Tbody
+    , mkElem "th" Th
     , mkElem "tr" Tr
     , mkElem "td" Td
     , mkElem "dl" Dl

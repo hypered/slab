@@ -198,6 +198,7 @@ renderElem = \case
   Syntax.Table -> H.table
   Syntax.Thead -> H.thead
   Syntax.Tbody -> H.tbody
+  Syntax.Th -> H.th
   Syntax.Tr -> H.tr
   Syntax.Td -> H.td
   Syntax.Dl -> H.dl
