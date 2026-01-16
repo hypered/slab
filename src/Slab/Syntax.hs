@@ -134,6 +134,7 @@ data Elem
   | Head
   | Meta
   | Main
+  | Nav
   | Link
   | A
   | P
@@ -145,6 +146,7 @@ data Elem
   | Table
   | Thead
   | Tbody
+  | Tfoot
   | Th
   | Tr
   | Td
@@ -170,6 +172,10 @@ data Elem
   | Input
   | I
   | Svg
+  | Circle
+  | Line
+  | Path
+  | Rect
   | Select
   | Option
   | Textarea

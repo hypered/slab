@@ -66,6 +66,7 @@ defaultEnv =
     , mkElem "header" Header
     , mkElem "head" Head
     , mkElem "main" Main
+    , mkElem "nav" Nav
     , mkElem "audio" Audio
     , mkElem "a" A
     , mkElem "code" Code
@@ -81,6 +82,7 @@ defaultEnv =
     , mkElem "table" Table
     , mkElem "thead" Thead
     , mkElem "tbody" Tbody
+    , mkElem "tfoot" Tfoot
     , mkElem "th" Th
     , mkElem "tr" Tr
     , mkElem "td" Td
@@ -98,6 +100,10 @@ defaultEnv =
     , mkElem "style" Style
     , mkElem "small" Small
     , mkElem "svg" Svg
+    , mkElem "circle" Circle
+    , mkElem "line" Line
+    , mkElem "path" Path
+    , mkElem "rect" Rect
     , mkElem "select" Select
     , mkElem "textarea" Textarea
     , mkElem "option" Option

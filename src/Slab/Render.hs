@@ -187,6 +187,7 @@ renderElem = \case
   Syntax.Head -> H.head
   Syntax.Meta -> const H.meta
   Syntax.Main -> H.main
+  Syntax.Nav -> H.nav
   Syntax.Link -> const H.link
   Syntax.A -> H.a
   Syntax.P -> H.p
@@ -198,6 +199,7 @@ renderElem = \case
   Syntax.Table -> H.table
   Syntax.Thead -> H.thead
   Syntax.Tbody -> H.tbody
+  Syntax.Tfoot -> H.tfoot
   Syntax.Th -> H.th
   Syntax.Tr -> H.tr
   Syntax.Td -> H.td
@@ -223,6 +225,10 @@ renderElem = \case
   Syntax.Input -> const H.input
   Syntax.I -> H.i
   Syntax.Svg -> S.svg
+  Syntax.Circle -> const S.circle
+  Syntax.Line -> const S.line
+  Syntax.Path -> const S.path
+  Syntax.Rect -> const S.rect
   Syntax.Select -> H.select
   Syntax.Option -> H.option
   Syntax.Textarea -> H.textarea
