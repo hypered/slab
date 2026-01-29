@@ -446,7 +446,7 @@ parserAttrList = (<?> "attribute") $ do
 
 parserPair :: Parser (Text, Expr)
 parserPair = do
-  a <- T.pack <$> (some (noneOf (",()= \n" :: String))) <?> "key"
+  a <- T.pack <$> (some (noneOf ("\",()= \n" :: String))) <?> "key"
   _ <- string "="
   b <- lexeme parserExpr
   pure (a, b)
