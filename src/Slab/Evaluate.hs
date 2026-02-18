@@ -103,6 +103,7 @@ defaultEnv =
     , mkElem "circle" Circle
     , mkElem "line" Line
     , mkElem "path" Path
+    , mkElem "polyline" Polyline
     , mkElem "rect" Rect
     , mkElem "select" Select
     , mkElem "textarea" Textarea

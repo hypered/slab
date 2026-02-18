@@ -228,6 +228,7 @@ renderElem = \case
   Syntax.Circle -> const S.circle
   Syntax.Line -> const S.line
   Syntax.Path -> const S.path
+  Syntax.Polyline -> const S.polyline
   Syntax.Rect -> const S.rect
   Syntax.Select -> H.select
   Syntax.Option -> H.option

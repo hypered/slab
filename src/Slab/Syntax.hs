@@ -175,6 +175,7 @@ data Elem
   | Circle
   | Line
   | Path
+  | Polyline
   | Rect
   | Select
   | Option
