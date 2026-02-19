@@ -140,6 +140,7 @@ data Elem
   | P
   | Em
   | Strong
+  | Ol
   | Ul
   | Li
   | Title

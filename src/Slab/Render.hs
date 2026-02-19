@@ -193,6 +193,7 @@ renderElem = \case
   Syntax.P -> H.p
   Syntax.Em -> H.em
   Syntax.Strong -> H.strong
+  Syntax.Ol -> H.ol
   Syntax.Ul -> H.ul
   Syntax.Li -> H.li
   Syntax.Title -> H.title
