@@ -228,6 +228,7 @@ renderElem = \case
   Syntax.Svg -> S.svg
   Syntax.Circle -> const S.circle
   Syntax.Line -> const S.line
+  Syntax.HObject -> H.object
   Syntax.Path -> const S.path
   Syntax.Polyline -> const S.polyline
   Syntax.Rect -> const S.rect

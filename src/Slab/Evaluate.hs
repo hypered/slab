@@ -103,6 +103,7 @@ defaultEnv =
     , mkElem "svg" Svg
     , mkElem "circle" Circle
     , mkElem "line" Line
+    , mkElem "object" HObject
     , mkElem "path" Path
     , mkElem "polyline" Polyline
     , mkElem "rect" Rect

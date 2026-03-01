@@ -175,6 +175,7 @@ data Elem
   | Svg
   | Circle
   | Line
+  | HObject
   | Path
   | Polyline
   | Rect
