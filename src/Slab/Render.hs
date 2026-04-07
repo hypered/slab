@@ -225,6 +225,7 @@ renderElem = \case
   Syntax.IFrame -> H.iframe
   Syntax.Input -> const H.input
   Syntax.I -> H.i
+  Syntax.Kbd -> H.kbd
   Syntax.Svg -> S.svg
   Syntax.Circle -> const S.circle
   Syntax.Line -> const S.line

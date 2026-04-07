@@ -72,6 +72,7 @@ defaultEnv =
     , mkElem "code" Code
     , mkElem "iframe" IFrame
     , mkElem "i" I
+    , mkElem "kbd" Kbd
     , mkElem "pre" Pre
     , mkElem "p" P
     , mkElem "em" Em

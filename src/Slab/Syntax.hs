@@ -172,6 +172,7 @@ data Elem
   | IFrame
   | Input
   | I
+  | Kbd
   | Svg
   | Circle
   | Line
